@@ -3,7 +3,7 @@
    Mantem todas as regras e geradores originais.
 ========================================================= */
 
-const PERF_CACHE_PREFIXO = "PERF_V11_4_";
+const PERF_CACHE_PREFIXO = "PERF_V11_4_2_";
 const PERF_CACHE_SEGUNDOS = 1800;
 const PERF_CACHE_PARTE = 80000;
 
@@ -14,7 +14,8 @@ function obterResumoPortalOtimizado(dataInicio, dataFim, forcarAtualizacao) {
   const eventosPorMatricula = base.eventosPorMatricula || {};
 
   const convocarTodos = gerarListaConvocar(lista, dataInicio, dataFim)
-    .filter(c => !c.asoRealizadoValido);
+    .filter(c => !c.asoRealizadoValido)
+    .filter(c => !ehNaoCompareceuAso(c));
   const examesComplementares = gerarExamesComplementares(lista, dataInicio, dataFim)
     .filter(c => !c.asoRealizadoValido);
   const agendadosPeriodo = lista
@@ -78,7 +79,8 @@ function obterModuloPortalOtimizado(modulo, dataInicio, dataFim, forcarAtualizac
   switch (nome) {
     case "CONVOCAR": {
       const todos = gerarListaConvocar(lista, dataInicio, dataFim)
-        .filter(c => !c.asoRealizadoValido);
+        .filter(c => !c.asoRealizadoValido)
+        .filter(c => !ehNaoCompareceuAso(c));
       resultado = {
         convocar: {
           todos: todos,
@@ -125,9 +127,19 @@ function obterModuloPortalOtimizado(modulo, dataInicio, dataFim, forcarAtualizac
           .filter(c => !c.asoRealizadoValido)
       };
       break;
-    case "COLABORADORES":
-      resultado = { colaboradores: gerarColaboradoresPortal(lista) };
+    case "COLABORADORES": {
+      const ordenada = lista.slice().sort((a, b) => {
+        const atrasoA = ehVencido(a) && !a.asoRealizadoValido ? 0 : 1;
+        const atrasoB = ehVencido(b) && !b.asoRealizadoValido ? 0 : 1;
+        if (atrasoA !== atrasoB) return atrasoA - atrasoB;
+        const diasA = Number(a.diasParaVencer);
+        const diasB = Number(b.diasParaVencer);
+        if (!isNaN(diasA) && !isNaN(diasB) && diasA !== diasB) return diasA - diasB;
+        return String(a.nome || "").localeCompare(String(b.nome || ""));
+      });
+      resultado = { colaboradores: gerarColaboradoresPortal(ordenada) };
       break;
+    }
     case "INDICADORES":
       resultado = { indicadores: gerarIndicadores(lista) };
       break;
