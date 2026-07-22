@@ -38,7 +38,8 @@ const COL = {
 function doGet() {
   const index = HtmlService.createHtmlOutputFromFile("Index").getContent();
   const performance = HtmlService.createHtmlOutputFromFile("PerformanceClient").getContent();
-  const html = index.replace("</body>", performance + "</body>");
+  const ajustes = HtmlService.createHtmlOutputFromFile("UIEnhancements").getContent();
+  const html = index.replace("</body>", performance + ajustes + "</body>");
 
   return HtmlService
     .createHtmlOutput(html)
