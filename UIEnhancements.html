@@ -1,0 +1,198 @@
+<style>
+  .filtros{display:flex!important;gap:10px!important;align-items:flex-end!important;flex-wrap:wrap!important}
+  #filtrosModuloTopo{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;flex:1;min-width:320px}
+  #filtrosModuloTopo .linha-filtros{display:flex!important;gap:10px!important;align-items:flex-end!important;flex-wrap:wrap!important;margin:0!important;width:100%}
+  #filtroSituacaoGlobal{display:none;gap:6px;align-items:center;flex-wrap:wrap;padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;max-width:100%}
+  #filtroSituacaoGlobal strong{font-size:11px;color:#334155;margin-right:4px}
+  #filtroSituacaoGlobal label{display:flex;align-items:center;gap:4px;margin:0;font-size:10px;font-weight:600;white-space:nowrap}
+  #filtroSituacaoGlobal input{min-width:0;width:14px;height:14px;padding:0}
+  #dashboardGraficoMeta{margin-top:16px}
+  #dashboardGraficoMeta h3{margin:0 0 10px}
+  .info-copia-fixa{font-size:10px;color:#64748b;margin-top:4px}
+  .prioridade-acoes{display:flex;gap:7px;align-items:flex-end;flex-wrap:wrap}
+</style>
+<script>
+(function(){
+  const origensFiltros = new Map();
+  let filtroMovido = null;
+  let situacoesSelecionadasGlobal = new Set(["ATIVO","FERIAS"]);
+  let abaAnterior = "dashboard";
+
+  function normUI(v){return String(v||"").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
+
+  function reordenarMenu(){
+    const abas=document.querySelector('.abas');
+    if(!abas)return;
+    const ordem=['abaDashboard','abaColaboradores','abaFaltosos','abaPrioridade','abaConvocar','abaComplementares','abaVencidos','abaIndicadores'];
+    ordem.forEach(id=>{const el=document.getElementById(id);if(el)abas.appendChild(el)});
+    const nomes={abaDashboard:'Dashboard',abaColaboradores:'Geral',abaFaltosos:'Pendências',abaPrioridade:'Prioridade',abaConvocar:'Convocar',abaComplementares:'Ex. Complementares',abaVencidos:'Vencidos',abaIndicadores:'Indicadores'};
+    Object.keys(nomes).forEach(id=>{const el=document.getElementById(id);if(el)el.dataset.nomeBase=nomes[id]});
+    const h2=document.querySelector('#colaboradores h2');if(h2)h2.textContent='Geral';
+  }
+
+  function prepararBarraSuperior(){
+    const barra=document.querySelector('.filtros');
+    if(!barra)return;
+    if(!document.getElementById('filtrosModuloTopo')){
+      const area=document.createElement('div');area.id='filtrosModuloTopo';barra.appendChild(area);
+      const situ=document.createElement('div');situ.id='filtroSituacaoGlobal';barra.appendChild(situ);
+    }
+    document.querySelectorAll('.conteudo .linha-filtros').forEach(el=>{
+      if(!origensFiltros.has(el))origensFiltros.set(el,{pai:el.parentNode,proximo:el.nextSibling});
+    });
+  }
+
+  function restaurarFiltroMovido(){
+    if(!filtroMovido)return;
+    const o=origensFiltros.get(filtroMovido);
+    if(o){o.pai.insertBefore(filtroMovido,o.proximo)}
+    filtroMovido=null;
+  }
+
+  function moverFiltrosDaAba(id){
+    prepararBarraSuperior();
+    restaurarFiltroMovido();
+    const area=document.getElementById('filtrosModuloTopo');
+    if(!area)return;
+    area.innerHTML='';
+    const linha=document.querySelector('#'+id+' .linha-filtros');
+    if(linha){area.appendChild(linha);filtroMovido=linha}
+  }
+
+  function moverGraficoParaDashboard(){
+    const dashboard=document.getElementById('dashboard');
+    const grafico=document.getElementById('graficoMetaMensal');
+    if(!dashboard||!grafico)return;
+    let bloco=document.getElementById('dashboardGraficoMeta');
+    if(!bloco){
+      bloco=document.createElement('div');bloco.id='dashboardGraficoMeta';
+      bloco.innerHTML='<h3>Desempenho mensal da meta</h3>';
+      dashboard.appendChild(bloco);
+    }
+    bloco.appendChild(grafico);
+    const indicadores=document.getElementById('indicadores');
+    if(indicadores){
+      Array.from(indicadores.querySelectorAll('h3')).forEach(h=>{if(normUI(h.textContent)==='DESEMPENHO MENSAL DA META')h.remove()});
+    }
+  }
+
+  function listasAba(id){
+    if(!window.dadosPortal)return[];
+    if(id==='convocar')return dadosPortal.convocar?.todos||[];
+    if(id==='faltosos'){
+      const p=dadosPortal.pendencias||{};return [].concat(p.necessitaReconvocacao||[],p.agendadosReagendados||[],p.operacionais||[]);
+    }
+    if(id==='prioridade')return [].concat(dadosPortal.prioridadeAtivos||[],dadosPortal.prioridadeOutros||[]);
+    if(id==='vencidos')return [].concat(dadosPortal.vencidosAtivos||[],dadosPortal.vencidosOutros||[]);
+    if(id==='complementares')return dadosPortal.examesComplementares||[];
+    if(id==='colaboradores')return dadosPortal.colaboradores||[];
+    return[];
+  }
+
+  function montarFiltroSituacao(id){
+    const box=document.getElementById('filtroSituacaoGlobal');if(!box)return;
+    const lista=listasAba(id);
+    const situacoes=[...new Set(lista.map(x=>x.situacao).filter(Boolean))].sort();
+    if(!situacoes.length){box.style.display='none';box.innerHTML='';return}
+    box.style.display='flex';
+    let html='<strong>Situação:</strong>';
+    situacoes.forEach(s=>{
+      const n=normUI(s);const fixa=n==='ATIVO'||n.includes('FERIAS');
+      if(fixa)situacoesSelecionadasGlobal.add(n);
+      const marcado=fixa||situacoesSelecionadasGlobal.has(n);
+      html+='<label><input type="checkbox" data-situacao="'+encodeURIComponent(n)+'" '+(marcado?'checked ':'')+(fixa?'disabled ':'')+'>'+s+'</label>';
+    });
+    box.innerHTML=html;
+    box.querySelectorAll('input:not([disabled])').forEach(ch=>ch.onchange=function(){
+      const s=decodeURIComponent(this.dataset.situacao);if(this.checked)situacoesSelecionadasGlobal.add(s);else situacoesSelecionadasGlobal.delete(s);
+      aplicarFiltroSituacaoTabela(id);
+    });
+  }
+
+  function aplicarFiltroSituacaoTabela(id){
+    const area=document.getElementById(id);if(!area)return;
+    area.querySelectorAll('table').forEach(table=>{
+      const ths=Array.from(table.querySelectorAll('thead th'));
+      const idx=ths.findIndex(th=>normUI(th.textContent).includes('SITUACAO'));
+      if(idx<0)return;
+      table.querySelectorAll('tbody tr').forEach(tr=>{
+        const cel=tr.children[idx];if(!cel)return;
+        const s=normUI(cel.textContent);const fixa=s==='ATIVO'||s.includes('FERIAS');
+        tr.style.display=(fixa||situacoesSelecionadasGlobal.has(s))?'':'none';
+      });
+    });
+  }
+
+  function adicionarInfoCopia(){
+    ['emailGestorConvocacao','emailGestorPendencia','emailGestorPrioridade'].forEach(id=>{
+      const input=document.getElementById(id);if(!input||input.parentNode.querySelector('.info-copia-fixa'))return;
+      const d=document.createElement('div');d.className='info-copia-fixa';d.textContent='Cópia automática: thais.tpc@isgh.org.br';input.parentNode.appendChild(d);
+    });
+  }
+
+  function prepararPrioridadesEmail(){
+    const linha=document.querySelector('#prioridade .linha-filtros');if(!linha||document.getElementById('emailGestorPrioridade'))return;
+    const bloco=document.createElement('div');bloco.className='prioridade-acoes';
+    bloco.innerHTML='<div class="email-gestor"><label>E-mail do coordenador</label><input type="text" id="emailGestorPrioridade" placeholder="gestor@isgh.org.br; outro@isgh.org.br"><div class="info-copia-fixa">Cópia automática: thais.tpc@isgh.org.br</div></div><button class="azul" type="button" onclick="enviarPrioridadesSelecionadas()">Enviar selecionados</button>';
+    linha.appendChild(bloco);
+  }
+
+  function adicionarChecksPrioridade(){
+    document.querySelectorAll('#tabelaPrioridade table').forEach(table=>{
+      if(table.dataset.checkPrioridade==='1')return;table.dataset.checkPrioridade='1';
+      const trh=table.querySelector('thead tr');if(trh){const th=document.createElement('th');th.innerHTML='<input type="checkbox" onchange="marcarPrioridadesTabela(this)">';trh.insertBefore(th,trh.firstChild)}
+      table.querySelectorAll('tbody tr').forEach(tr=>{const mat=tr.children[0]?.textContent.trim()||'';const td=document.createElement('td');td.innerHTML='<input type="checkbox" class="check-prioridade" data-mat="'+mat+'">';tr.insertBefore(td,tr.firstChild)});
+    });
+  }
+
+  window.marcarPrioridadesTabela=function(ch){const table=ch.closest('table');table.querySelectorAll('.check-prioridade').forEach(c=>c.checked=ch.checked)};
+  window.enviarPrioridadesSelecionadas=function(){
+    const mats=Array.from(document.querySelectorAll('.check-prioridade:checked')).map(c=>c.dataset.mat).filter(Boolean);
+    const emails=document.getElementById('emailGestorPrioridade')?.value||'';
+    if(!mats.length){mostrarErro('Selecione pelo menos um colaborador.');return}
+    if(!emails.trim()){mostrarErro('Informe o e-mail do coordenador.');return}
+    const p={inicio:document.getElementById('dataInicio').value,fim:document.getElementById('dataFim').value};
+    const lotes=[];for(let i=0;i<mats.length;i+=10)lotes.push(mats.slice(i,i+10));
+    mostrarLoading(true);
+    const enviarLote=i=>{
+      if(i>=lotes.length){mostrarLoading(false);mostrarOk('Envio concluído.');return}
+      google.script.run.withSuccessHandler(()=>enviarLote(i+1)).withFailureHandler(e=>{mostrarLoading(false);mostrarErro(e.message||e)}).enviarConvocacoesSelecionadasGestor(lotes[i],emails,p.inicio,p.fim,{});
+    };enviarLote(0);
+  };
+
+  document.addEventListener('DOMContentLoaded',function(){
+    reordenarMenu();prepararBarraSuperior();moverGraficoParaDashboard();prepararPrioridadesEmail();adicionarInfoCopia();
+  });
+
+  const abrirOriginal=window.abrirAba;
+  window.abrirAba=function(id,botao){
+    abaAnterior=id;
+    abrirOriginal(id,botao);
+    moverFiltrosDaAba(id);
+    setTimeout(function(){montarFiltroSituacao(id);aplicarFiltroSituacaoTabela(id);adicionarInfoCopia();if(id==='prioridade')adicionarChecksPrioridade()},80);
+  };
+
+  const renderOriginal=window.renderizarAbaAtiva;
+  window.renderizarAbaAtiva=function(){
+    renderOriginal();
+    const id=typeof obterAbaAtiva==='function'?obterAbaAtiva():abaAnterior;
+    setTimeout(function(){montarFiltroSituacao(id);aplicarFiltroSituacaoTabela(id);if(id==='prioridade')adicionarChecksPrioridade()},40);
+  };
+
+  const atualizarDashboardOriginal=window.atualizarDashboard;
+  window.atualizarDashboard=function(d){
+    atualizarDashboardOriginal(d);
+    moverGraficoParaDashboard();
+    const p=chavePeriodoPerformance();
+    const k=p+'|indicadores';
+    if(!modulosCarregadosPerformance[k])setTimeout(()=>carregarModuloPerformance('indicadores',false),120);
+  };
+
+  const atualizarNomesOriginal=window.atualizarNomesAbas;
+  window.atualizarNomesAbas=function(d){
+    atualizarNomesOriginal(d);
+    const nomes={abaDashboard:'Dashboard',abaColaboradores:'Geral',abaFaltosos:'Pendências',abaPrioridade:'Prioridade',abaConvocar:'Convocar',abaComplementares:'Ex. Complementares',abaVencidos:'Vencidos',abaIndicadores:'Indicadores'};
+    Object.keys(nomes).forEach(id=>{const el=document.getElementById(id);if(!el)return;const m=el.textContent.match(/\(\d+\)/);el.textContent=nomes[id]+(m?' '+m[0]:'')});
+  };
+})();
+</script>
