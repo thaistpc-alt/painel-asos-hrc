@@ -40,7 +40,8 @@ function doGet() {
   const layout = HtmlService.createHtmlOutputFromFile("LayoutOverride").getContent();
   const performance = HtmlService.createHtmlOutputFromFile("PerformanceClient").getContent();
   const ajustes = HtmlService.createHtmlOutputFromFile("UIEnhancements").getContent();
-  const html = index.replace("</body>", layout + performance + ajustes + "</body>");
+  const correcoesFinais = HtmlService.createHtmlOutputFromFile("ZZ_UIRuntimeFix").getContent();
+  const html = index.replace("</body>", layout + performance + ajustes + correcoesFinais + "</body>");
 
   return HtmlService
     .createHtmlOutput(html)
