@@ -12,44 +12,14 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
   const ICONES={abaDashboard:'▦',abaColaboradores:'⌕',abaFaltosos:'↻',abaPrioridade:'!',abaConvocar:'✉',abaComplementares:'⌁',abaVencidos:'⚠',abaIndicadores:'▥'};
   const NOMES={abaDashboard:'Dashboard',abaColaboradores:'Geral',abaFaltosos:'Pendências',abaPrioridade:'Prioridade',abaConvocar:'Convocar',abaComplementares:'Ex. Complementares',abaVencidos:'Vencidos',abaIndicadores:'Indicadores'};
   const MODULOS={convocar:'CONVOCAR',faltosos:'PENDENCIAS',prioridade:'PRIORIDADE',vencidos:'VENCIDOS',complementares:'COMPLEMENTARES',colaboradores:'COLABORADORES',indicadores:'INDICADORES'};
-  const carregados=new Set();
-  const origens=new Map();
-  let filtroAtivo=null;
-  let abaAtual='dashboard';
-  let requisicao=0;
-
-  function periodo(){return {inicio:document.getElementById('dataInicio').value,fim:document.getElementById('dataFim').value}}
-  function chaveModulo(id){const p=periodo();return p.inicio+'|'+p.fim+'|'+id}
+  const carregados=new Set(),origens=new Map();
+  let filtroAtivo=null,abaAtual='dashboard',requisicao=0;
+  const periodo=()=>({inicio:document.getElementById('dataInicio').value,fim:document.getElementById('dataFim').value});
+  const chaveModulo=id=>{const p=periodo();return p.inicio+'|'+p.fim+'|'+id};
   function debounce(fn,ms){let t;return function(){clearTimeout(t);const a=arguments,c=this;t=setTimeout(()=>fn.apply(c,a),ms)}}
 
-  function montarShell(){
-    if(document.querySelector('.painel-sidebar'))return;
-    const abas=document.querySelector('.abas');if(!abas)return;
-    const ordem=['abaDashboard','abaColaboradores','abaFaltosos','abaPrioridade','abaConvocar','abaComplementares','abaVencidos','abaIndicadores'];
-    ordem.forEach(id=>{const el=document.getElementById(id);if(el)abas.appendChild(el)});
-    const sidebar=document.createElement('aside');sidebar.className='painel-sidebar';
-    sidebar.innerHTML='<div class="painel-brand"><div class="painel-logo">S</div><div><strong>SESMT HRC</strong><span>Painel de ASOs</span></div></div>';
-    sidebar.appendChild(abas);
-    const rodape=document.createElement('div');rodape.className='painel-rodape';rodape.innerHTML='<button type="button"><span class="menu-icone">↤</span><span class="toggle-texto">Recolher menu</span></button>';
-    sidebar.appendChild(rodape);document.body.appendChild(sidebar);
-    const top=document.createElement('header');top.className='painel-topbar';top.innerHTML='<div><h1>PAINEL DE ASOS SESMT HRC</h1><p>Gestão de exames ocupacionais e convocações</p></div><button class="painel-atualizar" type="button">Atualizar dados</button>';document.body.appendChild(top);
-    top.querySelector('button').onclick=()=>atualizarDadosForcado();
-    rodape.querySelector('button').onclick=()=>document.body.classList.toggle('menu-fechado');
-    const barra=document.querySelector('.filtros');
-    const area=document.createElement('div');area.id='toolbarModulo';barra.appendChild(area);
-    barra.querySelectorAll('button').forEach(b=>{if(String(b.getAttribute('onclick')||'').includes('limparFiltrosLocais'))b.textContent='Limpar'});
-    document.querySelectorAll('.conteudo .linha-filtros').forEach(el=>origens.set(el,{pai:el.parentNode,proximo:el.nextSibling}));
-    aplicarRotulosMenu();
-    prepararGraficoDashboard();
-    prepararPesquisas();
-  }
-
   function aplicarRotulosMenu(){
-    Object.keys(NOMES).forEach(id=>{
-      const el=document.getElementById(id);if(!el)return;
-      const cont=(el.textContent.match(/\(\d+\)/)||[])[0]||'';
-      el.innerHTML='<span class="menu-icone">'+ICONES[id]+'</span><span class="aba-texto">'+NOMES[id]+(cont?' '+cont:'')+'</span>';
-    });
+    Object.keys(NOMES).forEach(id=>{const el=document.getElementById(id);if(!el)return;const cont=(el.textContent.match(/\(\d+\)/)||[])[0]||'';el.innerHTML='<span class="menu-icone">'+ICONES[id]+'</span><span class="aba-texto">'+NOMES[id]+(cont?' '+cont:'')+'</span>'});
     const h=document.querySelector('#colaboradores h2');if(h)h.textContent='Geral';
   }
 
@@ -57,12 +27,6 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
     const mapa={pesquisaConvocar:()=>filtrarConvocacaoPorSituacao(),pesquisaFaltosos:()=>filtrarPendencias(),pesquisaPrioridade:()=>filtrarTabelaPorTexto('tabelaPrioridade','pesquisaPrioridade'),pesquisaVencidos:()=>filtrarTabelaPorTexto('tabelaVencidos','pesquisaVencidos'),pesquisaComplementares:()=>filtrarComplementares(),pesquisaColaboradores:()=>filtrarColaboradores()};
     Object.keys(mapa).forEach(id=>{const el=document.getElementById(id);if(!el)return;el.removeAttribute('oninput');el.oninput=debounce(mapa[id],250)});
     document.querySelectorAll('.linha-filtros label').forEach(l=>{const t=l.textContent.trim().toLowerCase();if(t.startsWith('filtrar situação'))l.textContent='Situação';if(t==='grupo')l.textContent='Grupo de exame'});
-  }
-
-  function moverFiltro(id){
-    if(filtroAtivo){const o=origens.get(filtroAtivo);if(o&&o.pai.isConnected)o.pai.insertBefore(filtroAtivo,o.proximo);filtroAtivo=null}
-    const area=document.getElementById('toolbarModulo');if(!area)return;area.innerHTML='';
-    const linha=document.querySelector('#'+id+' .linha-filtros');if(linha){area.appendChild(linha);filtroAtivo=linha}
   }
 
   function prepararGraficoDashboard(){
@@ -74,26 +38,41 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
     const el=document.getElementById('dashboardGraficoConteudo');if(!el)return;
     const itens=(resumo&&resumo.resumoMensal)||[];
     if(!itens.length){el.className='grafico-vazio';el.textContent='Sem dados para o período.';return}
-    el.className='grafico-meta';el.innerHTML=itens.map(i=>{const p=Math.max(0,Math.min(100,Math.round((Number(i.percentual)||0)*100)));return '<div class="linha-grafico"><span>'+String(i.mesAnalise||i.mes||'').substring(5,7)+'/'+String(i.mesAnalise||i.mes||'').substring(0,4)+'</span><div class="barra-externa"><div class="barra-interna" style="width:'+p+'%"></div></div><strong>'+p+'%</strong></div>'}).join('');
+    el.className='grafico-meta';el.innerHTML=itens.map(i=>{const p=Math.max(0,Math.min(100,Math.round((Number(i.percentual)||0)*100)));const m=String(i.mesAnalise||i.mes||'');return '<div class="linha-grafico"><span>'+m.substring(5,7)+'/'+m.substring(0,4)+'</span><div class="barra-externa"><div class="barra-interna" style="width:'+p+'%"></div></div><strong>'+p+'%</strong></div>'}).join('');
+  }
+
+  function carregarGrafico(){
+    const p=periodo();
+    google.script.run.withSuccessHandler(renderGrafico).withFailureHandler(()=>{const el=document.getElementById('dashboardGraficoConteudo');if(el){el.className='grafico-vazio';el.textContent='Não foi possível carregar o gráfico.'}}).obterGraficoPortalV13(p.inicio,p.fim);
+  }
+
+  function montarShell(){
+    if(document.querySelector('.painel-sidebar'))return;
+    const abas=document.querySelector('.abas');if(!abas)return;
+    ['abaDashboard','abaColaboradores','abaFaltosos','abaPrioridade','abaConvocar','abaComplementares','abaVencidos','abaIndicadores'].forEach(id=>{const el=document.getElementById(id);if(el)abas.appendChild(el)});
+    const sidebar=document.createElement('aside');sidebar.className='painel-sidebar';sidebar.innerHTML='<div class="painel-brand"><div class="painel-logo">S</div><div><strong>SESMT HRC</strong><span>Painel de ASOs</span></div></div>';sidebar.appendChild(abas);
+    const rodape=document.createElement('div');rodape.className='painel-rodape';rodape.innerHTML='<button type="button"><span class="menu-icone">↤</span><span class="toggle-texto">Recolher menu</span></button>';sidebar.appendChild(rodape);document.body.appendChild(sidebar);
+    const top=document.createElement('header');top.className='painel-topbar';top.innerHTML='<div><h1>PAINEL DE ASOS SESMT HRC</h1><p>Gestão de exames ocupacionais e convocações</p></div><button class="painel-atualizar" type="button">Atualizar dados</button>';document.body.appendChild(top);
+    top.querySelector('button').onclick=()=>atualizarDadosForcado();rodape.querySelector('button').onclick=()=>document.body.classList.toggle('menu-fechado');
+    const barra=document.querySelector('.filtros'),area=document.createElement('div');area.id='toolbarModulo';barra.appendChild(area);barra.querySelectorAll('button').forEach(b=>{if(String(b.getAttribute('onclick')||'').includes('limparFiltrosLocais'))b.textContent='Limpar'});
+    document.querySelectorAll('.conteudo .linha-filtros').forEach(el=>origens.set(el,{pai:el.parentNode,proximo:el.nextSibling}));
+    aplicarRotulosMenu();prepararGraficoDashboard();prepararPesquisas();
+  }
+
+  function moverFiltro(id){
+    if(filtroAtivo){const o=origens.get(filtroAtivo);if(o&&o.pai.isConnected)o.pai.insertBefore(filtroAtivo,o.proximo);filtroAtivo=null}
+    const area=document.getElementById('toolbarModulo');if(!area)return;area.innerHTML='';const linha=document.querySelector('#'+id+' .linha-filtros');if(linha){area.appendChild(linha);filtroAtivo=linha}
   }
 
   function carregarResumo(forcar){
     const p=periodo();if(!p.inicio||!p.fim){mostrarErro('Informe a data inicial e a data final.');return}
-    const token=++requisicao;mostrarLoading(true);limparMensagens();
-    if(forcar){carregados.clear();dadosPortal=null}
-    google.script.run.withSuccessHandler(r=>{
-      if(token!==requisicao)return;
-      dadosPortal={dashboard:r.dashboard,indicadoresResumo:r.indicadoresResumo};periodoCarregadoPortal=p.inicio+'|'+p.fim;
-      atualizarDashboard(r.dashboard);atualizarNomesAbas(r.dashboard);aplicarRotulosMenu();renderGrafico(r.indicadoresResumo);mostrarLoading(false);
-      if(abaAtual!=='dashboard')carregarModulo(abaAtual,forcar);
-    }).withFailureHandler(e=>{mostrarLoading(false);mostrarErro(e.message||e)}).obterResumoPortalV13(p.inicio,p.fim,!!forcar);
+    const token=++requisicao;mostrarLoading(true);limparMensagens();if(forcar){carregados.clear();dadosPortal=null}
+    google.script.run.withSuccessHandler(r=>{if(token!==requisicao)return;dadosPortal={dashboard:r.dashboard};periodoCarregadoPortal=p.inicio+'|'+p.fim;atualizarDashboard(r.dashboard);atualizarNomesAbas(r.dashboard);aplicarRotulosMenu();mostrarLoading(false);carregarGrafico();if(abaAtual!=='dashboard')carregarModulo(abaAtual,forcar)}).withFailureHandler(e=>{mostrarLoading(false);mostrarErro(e.message||e)}).obterResumoPortalV13Leve(p.inicio,p.fim,!!forcar);
   }
 
   function carregarModulo(id,forcar){
-    const nome=MODULOS[id];if(!nome||id==='dashboard')return;
-    const chave=chaveModulo(id);if(!forcar&&carregados.has(chave)){renderizarModulo(id);return}
-    const p=periodo();mostrarLoading(true);
-    google.script.run.withSuccessHandler(r=>{dadosPortal=Object.assign(dadosPortal||{},r||{});carregados.add(chave);mostrarLoading(false);renderizarModulo(id)}).withFailureHandler(e=>{mostrarLoading(false);mostrarErro(e.message||e)}).obterModuloPortalV13(nome,p.inicio,p.fim,!!forcar);
+    const nome=MODULOS[id];if(!nome||id==='dashboard')return;const chave=chaveModulo(id);if(!forcar&&carregados.has(chave)){renderizarModulo(id);return}
+    const p=periodo();mostrarLoading(true);google.script.run.withSuccessHandler(r=>{dadosPortal=Object.assign(dadosPortal||{},r||{});carregados.add(chave);mostrarLoading(false);renderizarModulo(id)}).withFailureHandler(e=>{mostrarLoading(false);mostrarErro(e.message||e)}).obterModuloPortalV13(nome,p.inicio,p.fim,!!forcar);
   }
 
   function renderizarModulo(id){
@@ -108,10 +87,10 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
 
   const atualizarNomesAntigo=window.atualizarNomesAbas;
   window.atualizarNomesAbas=function(d){atualizarNomesAntigo(d);aplicarRotulosMenu()};
-  window.carregarDados=function(forcar){carregarResumo(!!forcar)};
-  window.atualizarDadosForcado=function(){carregarResumo(true)};
-  window.renderizarAbaAtiva=function(){if(abaAtual==='dashboard')return;carregarModulo(abaAtual,false)};
+  window.carregarDados=forcar=>carregarResumo(!!forcar);
+  window.atualizarDadosForcado=()=>carregarResumo(true);
+  window.renderizarAbaAtiva=function(){if(abaAtual!=='dashboard')carregarModulo(abaAtual,false)};
   window.abrirAba=function(id,botao){document.querySelectorAll('.conteudo').forEach(d=>d.style.display='none');const alvo=document.getElementById(id);if(alvo)alvo.style.display='block';document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));if(botao)botao.classList.add('ativa');abaAtual=id;moverFiltro(id);if(id!=='dashboard')carregarModulo(id,false)};
-  window.onload=function(){montarShell();const hoje=new Date();const ini=new Date(hoje.getFullYear(),hoje.getMonth(),1);const fim=new Date(hoje.getFullYear(),hoje.getMonth()+1,0);document.getElementById('dataInicio').value=formatarDataInput(ini);document.getElementById('dataFim').value=formatarDataInput(fim);document.getElementById('dataInicio').removeAttribute('onchange');document.getElementById('dataFim').removeAttribute('onchange');moverFiltro('dashboard');carregarResumo(false)};
+  window.onload=function(){montarShell();const hoje=new Date(),ini=new Date(hoje.getFullYear(),hoje.getMonth(),1),fim=new Date(hoje.getFullYear(),hoje.getMonth()+1,0);document.getElementById('dataInicio').value=formatarDataInput(ini);document.getElementById('dataFim').value=formatarDataInput(fim);document.getElementById('dataInicio').removeAttribute('onchange');document.getElementById('dataFim').removeAttribute('onchange');moverFiltro('dashboard');carregarResumo(false)};
 })();
 </script>
