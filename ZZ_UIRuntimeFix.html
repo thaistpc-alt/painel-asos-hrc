@@ -1,0 +1,95 @@
+<style>
+/* Barra superior organizada em duas linhas limpas, sem desalinhamento. */
+.filtros{
+  display:grid!important;
+  grid-template-columns:180px 180px auto auto auto 1fr!important;
+  gap:10px 12px!important;
+  align-items:end!important;
+}
+#filtrosModuloTopo{
+  grid-column:1 / -1!important;
+  display:block!important;
+  min-width:0!important;
+}
+#filtrosModuloTopo .linha-filtros{
+  display:grid!important;
+  grid-template-columns:minmax(180px,220px) minmax(300px,1fr)!important;
+  gap:10px 12px!important;
+  align-items:end!important;
+  margin:0!important;
+  width:100%!important;
+}
+#filtrosModuloTopo .acoes-lote,
+#filtrosModuloTopo .prioridade-acoes{
+  grid-column:1 / -1!important;
+  display:grid!important;
+  grid-template-columns:minmax(260px,1fr) repeat(5,auto)!important;
+  gap:8px!important;
+  align-items:end!important;
+  width:100%!important;
+}
+#filtrosModuloTopo .email-gestor input,
+#filtrosModuloTopo .campo-pesquisa input,
+#filtrosModuloTopo select{width:100%!important;min-width:0!important}
+#filtroSituacaoGlobal{grid-column:1 / -1!important;margin-top:2px}
+#dashboardGraficoMeta{min-height:120px}
+#dashboardGraficoMeta .grafico-meta{margin-top:8px}
+#infoVersao,#infoSincronizacaoAgenda{display:none!important}
+@media(max-width:1200px){
+  .filtros{grid-template-columns:1fr 1fr auto auto!important}
+  #filtrosModuloTopo .linha-filtros{grid-template-columns:1fr!important}
+  #filtrosModuloTopo .acoes-lote,#filtrosModuloTopo .prioridade-acoes{grid-template-columns:1fr 1fr!important}
+}
+</style>
+<script>
+(function(){
+  function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+  function renderGraficoDashboardLeve(dados){
+    const alvo=document.getElementById('graficoMetaMensal');
+    if(!alvo)return;
+    const lista=(dados&&dados.resumoMensal)||[];
+    if(!lista.length){alvo.innerHTML='<div class="vazio">Sem dados para o gráfico.</div>';return}
+    const linhas=lista.map(function(i){
+      const pct=Math.max(0,Math.min(100,Math.round(Number(i.percentual||0)*100)));
+      const rotulo=String(i.mesAnalise||i.mes||'').replace(/^(\d{4})-(\d{2})$/,'$2/$1');
+      return '<div class="linha-grafico"><div>'+esc(rotulo)+'</div><div class="barra-externa"><div class="barra-interna" style="width:'+pct+'%"></div></div><div><strong>'+pct+'%</strong></div></div>';
+    }).join('');
+    alvo.innerHTML='<div class="grafico-meta">'+linhas+'</div>';
+  }
+
+  let graficoSolicitadoPara='';
+  function solicitarGraficoSemBloquear(){
+    const inicio=document.getElementById('dataInicio')?.value||'';
+    const fim=document.getElementById('dataFim')?.value||'';
+    if(!inicio||!fim)return;
+    const chave=inicio+'|'+fim;
+    if(graficoSolicitadoPara===chave)return;
+    graficoSolicitadoPara=chave;
+    google.script.run
+      .withSuccessHandler(renderGraficoDashboardLeve)
+      .withFailureHandler(function(){
+        const alvo=document.getElementById('graficoMetaMensal');
+        if(alvo)alvo.innerHTML='<div class="vazio">O gráfico será carregado ao abrir Indicadores.</div>';
+      })
+      .obterGraficoMetaDashboardOtimizado(inicio,fim,false);
+  }
+
+  const atualizarOriginal=window.atualizarDashboard;
+  window.atualizarDashboard=function(d){
+    atualizarOriginal(d);
+    setTimeout(solicitarGraficoSemBloquear,800);
+  };
+
+  const abrirOriginal=window.abrirAba;
+  window.abrirAba=function(id,botao){
+    abrirOriginal(id,botao);
+    if(id==='dashboard')setTimeout(solicitarGraficoSemBloquear,200);
+  };
+
+  document.addEventListener('DOMContentLoaded',function(){
+    const info1=document.getElementById('infoVersao');if(info1)info1.remove();
+    const info2=document.getElementById('infoSincronizacaoAgenda');if(info2)info2.remove();
+  });
+})();
+</script>
