@@ -1,5 +1,5 @@
 /**
- * Portal de ASOS - SESMT HRC - Versão 12.0
+ * Portal de ASOS - SESMT HRC - Versão 13.0
  * Arquivo: Code.gs
  */
 
@@ -10,7 +10,7 @@ const CONFIG = {
   PASTA_PDFS_ID: "1nLiYb9RTPB_0mq9rNPC8it5kUxaCL6nV",
   TIMEZONE: Session.getScriptTimeZone(),
   CACHE_SEGUNDOS: 1800,
-  CACHE_PREFIXO: "PAINEL_ASOS_HRC_V12_PERFORMANCE"
+  CACHE_PREFIXO: "PAINEL_ASOS_HRC_V13_MODULAR"
 };
 
 const COL = {
