@@ -1,56 +1,83 @@
 <style>
-/* Barra superior compacta: no máximo duas linhas */
-.layout-topbar{height:82px!important;padding:14px 24px!important}
-body.layout-sesmt{padding-top:82px!important}
+/* Cabeçalho e filtros em uma única linha */
+.layout-topbar{height:76px!important;padding:10px 22px!important}
+body.layout-sesmt{padding-top:76px!important}
 .layout-topbar-acoes{display:flex;align-items:center;gap:8px;margin-left:auto}
-.layout-topbar-atualizar{height:38px!important;padding:0 14px!important;border-radius:8px!important;background:#1d4ed8!important;color:#fff!important;font-size:12px!important;font-weight:700!important;white-space:nowrap}
+.layout-topbar-atualizar{height:34px!important;padding:0 12px!important;border-radius:8px!important;background:#1d4ed8!important;color:#fff!important;font-size:11px!important;font-weight:700!important;white-space:nowrap}
 
 .filtros{
-  top:94px!important;
-  display:grid!important;
-  grid-template-columns:150px 150px auto auto minmax(0,1fr)!important;
-  grid-template-rows:auto auto!important;
-  gap:8px 10px!important;
-  align-items:end!important;
-  padding:14px 16px!important;
+  top:86px!important;
+  display:flex!important;
+  flex-direction:row!important;
+  flex-wrap:nowrap!important;
+  align-items:flex-end!important;
+  gap:7px!important;
+  padding:10px 12px!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  min-height:64px!important;
 }
-.filtros>div:not(#filtrosModuloTopo):not(#filtroSituacaoGlobal){min-width:0!important}
-.filtros label{font-size:11px!important;margin-bottom:4px!important}
-.filtros input,.filtros select{height:38px!important;padding:7px 10px!important;font-size:12px!important;border-radius:8px!important}
-.filtros>button{height:38px!important;padding:0 13px!important;font-size:12px!important;white-space:nowrap!important}
-#filtrosModuloTopo{grid-column:1/-1!important;grid-row:2!important;display:block!important;min-width:0!important;width:100%!important}
-#filtroSituacaoGlobal{grid-column:1/-1!important;grid-row:3!important}
+.filtros>div:not(#filtrosModuloTopo):not(#filtroSituacaoGlobal){flex:0 0 122px!important;min-width:122px!important}
+.filtros label{font-size:9px!important;line-height:1!important;margin-bottom:3px!important;white-space:nowrap!important}
+.filtros input,.filtros select{height:34px!important;padding:5px 8px!important;font-size:11px!important;border-radius:7px!important}
+.filtros>button{height:34px!important;padding:0 10px!important;font-size:10px!important;white-space:nowrap!important;flex:0 0 auto!important}
+#loading{font-size:10px!important;white-space:nowrap!important;align-self:center!important;margin:0 2px!important}
+
+#filtrosModuloTopo{
+  display:flex!important;
+  flex:1 1 auto!important;
+  min-width:0!important;
+  width:auto!important;
+}
 #filtrosModuloTopo:empty{display:none!important}
 #filtrosModuloTopo .linha-filtros{
-  display:grid!important;
-  grid-template-columns:170px minmax(240px,1fr) auto!important;
-  gap:8px 10px!important;
-  align-items:end!important;
-  width:100%!important;
-  margin:0!important;
+  display:flex!important;
+  flex-direction:row!important;
   flex-wrap:nowrap!important;
+  align-items:flex-end!important;
+  gap:7px!important;
+  width:auto!important;
+  min-width:0!important;
+  margin:0!important;
 }
-#filtrosModuloTopo .campo-pesquisa{min-width:0!important;width:auto!important}
+#filtrosModuloTopo .linha-filtros>div{flex:0 0 auto!important;min-width:0!important}
+#filtrosModuloTopo .linha-filtros>div:first-child{width:118px!important}
+#filtrosModuloTopo .campo-pesquisa{width:210px!important;min-width:210px!important}
+#filtrosModuloTopo .email-gestor{width:190px!important;min-width:190px!important}
 #filtrosModuloTopo .acoes-lote,
 #filtrosModuloTopo .prioridade-acoes{
   display:flex!important;
+  flex-direction:row!important;
   flex-wrap:nowrap!important;
-  gap:7px!important;
-  align-items:end!important;
+  align-items:flex-end!important;
+  gap:5px!important;
   min-width:0!important;
 }
-#filtrosModuloTopo .email-gestor{width:230px!important;min-width:230px!important}
-#filtrosModuloTopo button{height:38px!important;padding:0 11px!important;font-size:11px!important;white-space:nowrap!important}
-.info-copia-fixa{font-size:9px!important;line-height:1.15!important;margin-top:2px!important}
-#loading{font-size:12px!important;align-self:center!important}
+#filtrosModuloTopo button{height:34px!important;padding:0 8px!important;font-size:9px!important;white-space:nowrap!important}
+.info-copia-fixa{display:none!important}
 
-/* A caixa de situações, quando usada, permanece compacta na segunda linha visual */
-#filtroSituacaoGlobal{padding:5px 8px!important;gap:5px!important;max-height:38px!important;overflow-x:auto!important;flex-wrap:nowrap!important}
+#filtroSituacaoGlobal{
+  display:flex!important;
+  flex:0 0 auto!important;
+  flex-wrap:nowrap!important;
+  align-items:center!important;
+  gap:4px!important;
+  height:34px!important;
+  padding:4px 7px!important;
+  max-width:340px!important;
+  overflow-x:auto!important;
+  white-space:nowrap!important;
+}
+#filtroSituacaoGlobal:empty{display:none!important}
+#filtroSituacaoGlobal strong,#filtroSituacaoGlobal label{font-size:9px!important;margin:0!important}
+#filtroSituacaoGlobal input{width:12px!important;height:12px!important;padding:0!important}
 
-@media(max-width:1250px){
-  #filtrosModuloTopo .linha-filtros{grid-template-columns:145px minmax(200px,1fr) auto!important}
-  #filtrosModuloTopo .email-gestor{width:190px!important;min-width:190px!important}
-  #filtrosModuloTopo button{padding:0 8px!important;font-size:10px!important}
+@media(max-width:1100px){
+  .filtros{padding:8px!important;gap:5px!important}
+  .filtros>div:not(#filtrosModuloTopo):not(#filtroSituacaoGlobal){flex-basis:110px!important;min-width:110px!important}
+  #filtrosModuloTopo .campo-pesquisa{width:170px!important;min-width:170px!important}
+  #filtrosModuloTopo .email-gestor{width:155px!important;min-width:155px!important}
+  #filtrosModuloTopo button{padding:0 6px!important;font-size:8px!important}
 }
 </style>
 <script>
@@ -69,6 +96,7 @@ body.layout-sesmt{padding-top:82px!important}
     if(limpar)limpar.textContent='Limpar';
   }
   document.addEventListener('DOMContentLoaded',compactarCabecalho);
-  setTimeout(compactarCabecalho,150);
+  setTimeout(compactarCabecalho,100);
+  setTimeout(compactarCabecalho,500);
 })();
 </script>
