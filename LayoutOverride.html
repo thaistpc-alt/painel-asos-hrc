@@ -1,0 +1,52 @@
+<style>
+:root{--menu:#0f172a;--menu2:#1e293b;--fundo-app:#f4f7fb;--borda-app:#dce4ee}
+body{padding:0!important;background:var(--fundo-app)!important;min-height:100vh}
+body.layout-sesmt{padding-left:250px!important;padding-top:88px!important;transition:.25s}
+body.layout-sesmt.menu-recolhido{padding-left:76px!important}
+.layout-sidebar{position:fixed;left:0;top:0;bottom:0;width:250px;background:linear-gradient(180deg,var(--menu),var(--menu2));color:#fff;z-index:999;display:flex;flex-direction:column;transition:.25s}
+body.menu-recolhido .layout-sidebar{width:76px}
+.layout-brand{height:88px;padding:20px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.1)}
+.layout-logo{width:40px;height:40px;border-radius:10px;background:#fff;color:#0f766e;display:grid;place-items:center;font-weight:800;flex:0 0 40px}
+.layout-brand-texto strong{display:block;font-size:16px}.layout-brand-texto span{font-size:12px;color:#cbd5e1}
+body.menu-recolhido .layout-brand-texto,body.menu-recolhido .layout-sidebar .aba-texto,body.menu-recolhido .layout-toggle-texto{display:none}
+.layout-sidebar .abas{position:static!important;display:flex!important;flex-direction:column;flex-wrap:nowrap!important;gap:5px!important;margin:0!important;padding:14px 10px!important;background:transparent!important;backdrop-filter:none!important;overflow:auto;flex:1}
+.layout-sidebar .aba{width:100%;background:transparent!important;color:#dbeafe!important;text-align:left;display:flex;align-items:center;gap:11px;padding:12px!important;border-radius:10px!important;box-shadow:none!important;transform:none!important}
+.layout-sidebar .aba:hover,.layout-sidebar .aba.ativa{background:rgba(255,255,255,.13)!important;color:#fff!important}
+.layout-icone{width:26px;text-align:center;font-size:16px;flex:0 0 26px}
+.layout-menu-rodape{padding:10px;border-top:1px solid rgba(255,255,255,.1)}
+.layout-menu-toggle{width:100%;background:transparent!important;color:#dbeafe!important;display:flex;gap:11px;align-items:center;text-align:left;box-shadow:none!important;transform:none!important}
+.layout-topbar{position:fixed;left:250px;right:0;top:0;height:88px;background:#fff;border-bottom:1px solid var(--borda-app);z-index:998;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;transition:.25s}
+body.menu-recolhido .layout-topbar{left:76px}
+.layout-topbar h1{font-size:22px;margin:0}.layout-topbar p{font-size:12px;color:#64748b;margin:5px 0 0}
+.topo{display:none!important}
+.filtros,.conteudo{margin:18px 22px 0!important;border-radius:14px!important;box-shadow:0 5px 18px rgba(15,23,42,.05)!important}
+.filtros{position:sticky;top:104px;z-index:30;display:grid!important;grid-template-columns:180px 180px auto auto auto 1fr;align-items:end!important}
+#msgErro,#msgOk{margin:16px 22px 0!important}
+.conteudo{padding:18px!important}
+.tabela-container{max-height:62vh;overflow:auto!important}th{position:sticky;top:0}
+@media(max-width:900px){body.layout-sesmt{padding-left:76px!important}.layout-sidebar{width:76px}.layout-brand-texto,.layout-sidebar .aba-texto,.layout-toggle-texto{display:none}.layout-topbar{left:76px}.filtros{grid-template-columns:1fr 1fr!important;margin:12px!important}.conteudo{margin:12px!important}}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  if(document.body.classList.contains('layout-sesmt'))return;
+  document.body.classList.add('layout-sesmt');
+  const topo=document.querySelector('.topo');
+  const abas=document.querySelector('.abas');
+  if(!abas)return;
+  const icones={abaDashboard:'▦',abaConvocar:'✉',abaFaltosos:'↻',abaPrioridade:'!',abaVencidos:'⚠',abaComplementares:'⌁',abaColaboradores:'⌕',abaIndicadores:'▥'};
+  Array.from(abas.querySelectorAll('.aba')).forEach(btn=>{
+    const texto=btn.textContent;
+    btn.innerHTML='<span class="layout-icone">'+(icones[btn.id]||'•')+'</span><span class="aba-texto">'+texto+'</span>';
+  });
+  const sidebar=document.createElement('aside');sidebar.className='layout-sidebar';
+  sidebar.innerHTML='<div class="layout-brand"><div class="layout-logo">S</div><div class="layout-brand-texto"><strong>SESMT HRC</strong><span>Painel de ASOs</span></div></div>';
+  sidebar.appendChild(abas);
+  const rodape=document.createElement('div');rodape.className='layout-menu-rodape';rodape.innerHTML='<button class="layout-menu-toggle" type="button"><span class="layout-icone">↤</span><span class="layout-toggle-texto">Recolher menu</span></button>';
+  sidebar.appendChild(rodape);document.body.appendChild(sidebar);
+  const topbar=document.createElement('header');topbar.className='layout-topbar';
+  topbar.innerHTML='<div><h1>PAINEL DE ASOS SESMT HRC</h1><p>Gestão de exames ocupacionais e convocações</p></div><div id="layoutVersao"></div>';
+  document.body.appendChild(topbar);
+  rodape.querySelector('button').onclick=function(){document.body.classList.toggle('menu-recolhido');this.querySelector('.layout-icone').textContent=document.body.classList.contains('menu-recolhido')?'↦':'↤'};
+  ['dataInicio','dataFim'].forEach(id=>{const el=document.getElementById(id);if(el)el.removeAttribute('onchange')});
+});
+</script>
