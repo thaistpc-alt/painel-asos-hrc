@@ -1,0 +1,147 @@
+<script>
+/* Carregamento modular: substitui apenas a forma de buscar os dados. */
+let modulosCarregadosPerformance = {};
+let carregamentoPerformanceEmAndamento = false;
+
+function chavePeriodoPerformance() {
+  return (document.getElementById("dataInicio").value || "") + "|" +
+    (document.getElementById("dataFim").value || "");
+}
+
+function atualizarDadosForcado() {
+  dadosPortal = null;
+  periodoCarregadoPortal = "";
+  modulosCarregadosPerformance = {};
+  selecaoConvocacoes.clear();
+  carregarDados(true);
+}
+
+function carregarDados(forcar) {
+  limparMensagens();
+  const dataInicio = document.getElementById("dataInicio").value;
+  const dataFim = document.getElementById("dataFim").value;
+  if (!dataInicio || !dataFim) {
+    mostrarErro("Informe a data inicial e a data final.");
+    return;
+  }
+
+  const chave = chavePeriodoPerformance();
+  if (periodoCarregadoPortal !== chave) {
+    dadosPortal = null;
+    modulosCarregadosPerformance = {};
+    selecaoConvocacoes.clear();
+  }
+
+  mostrarLoading(true);
+  carregamentoPerformanceEmAndamento = true;
+  google.script.run
+    .withSuccessHandler(function(resumo) {
+      dadosPortal = dadosPortal || {};
+      dadosPortal.meta = resumo.meta || {};
+      dadosPortal.dashboard = resumo.dashboard || {};
+      periodoCarregadoPortal = chave;
+      atualizarDashboard(dadosPortal.dashboard);
+      atualizarNomesAbas(dadosPortal.dashboard);
+      atualizarInfoPerformance();
+      mostrarLoading(false);
+      carregamentoPerformanceEmAndamento = false;
+
+      const aba = obterAbaAtiva();
+      if (aba !== "dashboard") carregarModuloPerformance(aba, !!forcar);
+    })
+    .withFailureHandler(function(erro) {
+      mostrarLoading(false);
+      carregamentoPerformanceEmAndamento = false;
+      mostrarErro(erro.message || erro);
+    })
+    .obterResumoPortalOtimizado(dataInicio, dataFim, forcar === true);
+}
+
+function atualizarInfoPerformance() {
+  if (!dadosPortal || !dadosPortal.meta) return;
+  const m = dadosPortal.meta;
+  const infoCache = m.cache === "sim" ? " | Cache" : "";
+  const info = document.getElementById("infoVersao");
+  if (info) info.innerText = "Versão " + (m.versao || "11.4") + " | Atualizado em " + (m.geradoEm || "") + infoCache;
+  const sync = document.getElementById("infoSincronizacaoAgenda");
+  if (sync) sync.innerText = m.sincronizacaoAgenda || "";
+}
+
+function abrirAba(id, botao) {
+  document.querySelectorAll(".conteudo").forEach(div => div.style.display = "none");
+  document.getElementById(id).style.display = "block";
+  document.querySelectorAll(".aba").forEach(b => b.classList.remove("ativa"));
+  if (botao) botao.classList.add("ativa");
+
+  if (id === "dashboard") {
+    if (dadosPortal && dadosPortal.dashboard) atualizarDashboard(dadosPortal.dashboard);
+    return;
+  }
+  carregarModuloPerformance(id, false);
+}
+
+function carregarModuloPerformance(aba, forcar) {
+  if (!dadosPortal || !dadosPortal.dashboard) {
+    carregarDados(forcar);
+    return;
+  }
+
+  const periodo = chavePeriodoPerformance();
+  const chave = periodo + "|" + aba;
+  if (!forcar && modulosCarregadosPerformance[chave]) {
+    renderizarAbaAtiva();
+    return;
+  }
+
+  const mapa = {
+    convocar: "CONVOCAR",
+    faltosos: "PENDENCIAS",
+    prioridade: "PRIORIDADE",
+    vencidos: "VENCIDOS",
+    complementares: "COMPLEMENTARES",
+    colaboradores: "COLABORADORES",
+    indicadores: "INDICADORES"
+  };
+  const modulo = mapa[aba];
+  if (!modulo) return;
+
+  mostrarLoading(true);
+  google.script.run
+    .withSuccessHandler(function(parcial) {
+      parcial = parcial || {};
+      Object.keys(parcial).forEach(chaveDados => {
+        dadosPortal[chaveDados] = parcial[chaveDados];
+      });
+      modulosCarregadosPerformance[chave] = true;
+      mostrarLoading(false);
+
+      if (aba === "convocar") {
+        carregarFiltroSituacao("filtroSituacaoConvocar", dadosPortal.convocar.todos, "");
+      } else if (aba === "complementares") {
+        carregarFiltroGrupoComplementar(dadosPortal.examesComplementares || []);
+      }
+      renderizarAbaAtiva();
+    })
+    .withFailureHandler(function(erro) {
+      mostrarLoading(false);
+      mostrarErro(erro.message || erro);
+    })
+    .obterModuloPortalOtimizado(
+      modulo,
+      document.getElementById("dataInicio").value,
+      document.getElementById("dataFim").value,
+      forcar === true
+    );
+}
+
+function renderizarTudo(dados) {
+  if (!dados) return;
+  if (dados.convocar && dados.convocar.todos) {
+    carregarFiltroSituacao("filtroSituacaoConvocar", dados.convocar.todos, "");
+  }
+  if (dados.examesComplementares) {
+    carregarFiltroGrupoComplementar(dados.examesComplementares);
+  }
+  renderizarAbaAtiva();
+}
+</script>
