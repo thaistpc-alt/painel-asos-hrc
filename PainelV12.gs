@@ -1,39 +1,38 @@
 /* =========================================================
-   PAINEL DE ASOS V12 - API MODULAR E CARREGAMENTO SOB DEMANDA
+   PAINEL DE ASOS V12.1 - API MODULAR E CARREGAMENTO OTIMIZADO
 ========================================================= */
 
 function obterResumoPortalV12(dataInicio, dataFim, forcarAtualizacao) {
   validarPeriodoV12(dataInicio, dataFim);
-  const chave = "V12_RESUMO_" + dataInicio + "_" + dataFim;
+  const chave = "V12_1_RESUMO_" + dataInicio + "_" + dataFim;
   const cacheado = forcarAtualizacao ? null : obterCachePortal(chave);
   if (cacheado) return cacheado;
 
-  const base = prepararBasePortalV12();
-  const lista = base.lista;
-  const convocar = gerarListaConvocar(lista, dataInicio, dataFim)
-    .filter(c => !c.asoRealizadoValido);
+  // O resumo não lê a AGENDA. Usa somente a fonte consolidada.
+  const lista = prepararListaFonteV12();
+  const convocar = gerarListaConvocar(lista, dataInicio, dataFim).filter(c => !c.asoRealizadoValido);
   const exames = gerarExamesComplementaresV12(lista, dataInicio, dataFim);
-  const pendencias = gerarPendencias(lista, base.eventosPorMatricula);
-  const prioridade = lista.filter(c => Number(c.diasParaVencer) >= 0 && Number(c.diasParaVencer) <= 30)
-    .filter(c => !c.asoRealizadoValido);
-  const vencidos = lista.filter(ehVencido).filter(c => !c.asoRealizadoValido);
+  const prioridade = gerarPrioridadesV12(lista);
+  const vencidos = gerarVencidosV12(lista);
   const agendados = lista.filter(c => noPeriodo(c.dataAgendada, dataInicio, dataFim));
+  const pendenciasFonte = lista.filter(c => ehNaoCompareceuOuReagendou(c) && !c.asoRealizadoValido);
 
   const resultado = {
     meta: {
-      versao: "12.0",
+      versao: "12.1",
       geradoEm: Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm:ss"),
       dataInicio: dataInicio,
-      dataFim: dataFim
+      dataFim: dataFim,
+      leituraAgenda: false
     },
     dashboard: {
       totalColaboradores: lista.length,
       totalConvocar: convocar.length,
       totalAgendados: agendados.length,
       totalRealizados: agendados.filter(ehAsoRealizado).length,
-      totalPendencias: pendencias.operacionais.length,
-      totalPrioridade: prioridade.length,
-      totalVencidos: vencidos.length,
+      totalPendencias: pendenciasFonte.length,
+      totalPrioridade: prioridade.todos.length,
+      totalVencidos: vencidos.todos.length,
       totalExamesComplementares: exames.length,
       examesSemAgendamentoAso: exames.filter(c => !c.dataAgendada).length,
       examesAsoAgendado: exames.filter(c => !!c.dataAgendada).length
@@ -47,57 +46,68 @@ function obterResumoPortalV12(dataInicio, dataFim, forcarAtualizacao) {
 function obterModuloPortalV12(modulo, dataInicio, dataFim, forcarAtualizacao) {
   validarPeriodoV12(dataInicio, dataFim);
   modulo = normalizarTexto(modulo || "");
-  const chave = "V12_MOD_" + modulo + "_" + dataInicio + "_" + dataFim;
+  const chave = "V12_1_MOD_" + modulo + "_" + dataInicio + "_" + dataFim;
   const cacheado = forcarAtualizacao ? null : obterCachePortal(chave);
   if (cacheado) return cacheado;
 
-  const base = prepararBasePortalV12();
-  const lista = base.lista;
   let resultado;
 
-  switch (modulo) {
-    case "CONVOCAR":
-      resultado = gerarListaConvocar(lista, dataInicio, dataFim)
-        .filter(c => !c.asoRealizadoValido);
-      break;
-    case "EXAMES":
-    case "EXAMES COMPLEMENTARES":
-      resultado = gerarExamesComplementaresV12(lista, dataInicio, dataFim);
-      break;
-    case "PRIORIDADES":
-    case "PRIORIDADE":
-      resultado = lista.filter(c => Number(c.diasParaVencer) >= 0 && Number(c.diasParaVencer) <= 30)
-        .filter(c => !c.asoRealizadoValido)
-        .sort((a, b) => Number(a.diasParaVencer) - Number(b.diasParaVencer));
-      break;
-    case "VENCIDOS":
-      resultado = lista.filter(ehVencido)
-        .filter(c => !c.asoRealizadoValido)
-        .sort((a, b) => Number(a.diasParaVencer) - Number(b.diasParaVencer));
-      break;
-    case "PENDENCIAS":
-      resultado = gerarPendencias(lista, base.eventosPorMatricula);
-      break;
-    case "COLABORADORES":
-    case "CONSULTA":
-      resultado = gerarColaboradoresPortal(lista);
-      break;
-    case "INDICADORES":
-      resultado = gerarIndicadores(lista);
-      break;
-    default:
-      throw new Error("Módulo inválido: " + modulo);
+  // Somente Pendências precisa percorrer toda a agenda histórica.
+  if (modulo === "PENDENCIAS") {
+    const base = prepararBasePortalV12(true);
+    const pendencias = gerarPendencias(base.lista, base.eventosPorMatricula);
+    resultado = separarPendenciasPorSituacaoV12(pendencias);
+  } else {
+    const lista = prepararListaFonteV12();
+
+    switch (modulo) {
+      case "CONVOCAR":
+        resultado = gerarListaConvocar(lista, dataInicio, dataFim)
+          .filter(c => !c.asoRealizadoValido);
+        break;
+      case "EXAMES":
+      case "EXAMES COMPLEMENTARES":
+        resultado = gerarExamesComplementaresV12(lista, dataInicio, dataFim);
+        break;
+      case "PRIORIDADES":
+      case "PRIORIDADE":
+        resultado = gerarPrioridadesV12(lista);
+        break;
+      case "VENCIDOS":
+        resultado = gerarVencidosV12(lista);
+        break;
+      case "COLABORADORES":
+      case "CONSULTA":
+        resultado = gerarColaboradoresPortal(lista);
+        break;
+      case "INDICADORES":
+        resultado = gerarIndicadores(lista);
+        break;
+      default:
+        throw new Error("Módulo inválido: " + modulo);
+    }
   }
 
   salvarCachePortal(chave, resultado);
   return resultado;
 }
 
-function prepararBasePortalV12() {
+function prepararListaFonteV12() {
   const lista = lerFontePainel();
-  const eventosPorMatricula = montarEventosAgendaPorMatricula();
-  aplicarOcorrenciasAgenda(lista, eventosPorMatricula);
-  aplicarAsoRealizadoAgenda(lista, eventosPorMatricula);
+  prepararFlagsPortal(lista);
+  return lista;
+}
+
+function prepararBasePortalV12(incluirAgenda) {
+  const lista = lerFontePainel();
+  let eventosPorMatricula = new Map();
+
+  if (incluirAgenda) {
+    eventosPorMatricula = montarEventosAgendaPorMatricula();
+    aplicarOcorrenciasAgenda(lista, eventosPorMatricula);
+    aplicarAsoRealizadoAgenda(lista, eventosPorMatricula);
+  }
+
   prepararFlagsPortal(lista);
   return { lista: lista, eventosPorMatricula: eventosPorMatricula };
 }
@@ -105,6 +115,49 @@ function prepararBasePortalV12() {
 function validarPeriodoV12(dataInicio, dataFim) {
   if (!dataInicio || !dataFim) throw new Error("Informe o período inicial e final.");
   if (String(dataInicio) > String(dataFim)) throw new Error("A data inicial não pode ser maior que a data final.");
+}
+
+function situacaoAtivoFeriasV12(c) {
+  const s = normalizarTexto(c && (c.situacaoNorm || c.situacao) ? (c.situacaoNorm || c.situacao) : "");
+  return s === "ATIVO" || s === "FERIAS" || s.includes("FERIAS");
+}
+
+function separarListaPorSituacaoV12(lista) {
+  const todos = lista || [];
+  return {
+    ativosFerias: todos.filter(situacaoAtivoFeriasV12),
+    outrosStatus: todos.filter(c => !situacaoAtivoFeriasV12(c)),
+    todos: todos
+  };
+}
+
+function gerarPrioridadesV12(lista) {
+  const dados = (lista || [])
+    .filter(c => Number(c.diasParaVencer) >= 0 && Number(c.diasParaVencer) <= 30)
+    .filter(c => !c.asoRealizadoValido)
+    .sort((a, b) => Number(a.diasParaVencer) - Number(b.diasParaVencer));
+  return separarListaPorSituacaoV12(dados);
+}
+
+function gerarVencidosV12(lista) {
+  const dados = (lista || [])
+    .filter(ehVencido)
+    .filter(c => !c.asoRealizadoValido)
+    .sort((a, b) => Number(a.diasParaVencer) - Number(b.diasParaVencer));
+  return separarListaPorSituacaoV12(dados);
+}
+
+function separarPendenciasPorSituacaoV12(pendencias) {
+  pendencias = pendencias || {};
+  const operacionais = pendencias.operacionais || pendencias.todos || [];
+  const separados = separarListaPorSituacaoV12(operacionais);
+  return {
+    ativosFerias: separados.ativosFerias,
+    outrosStatus: separados.outrosStatus,
+    todos: separados.todos,
+    necessitaReconvocacao: pendencias.necessitaReconvocacao || [],
+    agendadosReagendados: pendencias.agendadosReagendados || []
+  };
 }
 
 function gerarExamesComplementaresV12(lista, dataInicio, dataFim) {
@@ -132,8 +185,7 @@ function gerarExamesComplementaresV12(lista, dataInicio, dataFim) {
 }
 
 function situacaoOperacionalExamesV12(c) {
-  const s = normalizarTexto(c && c.situacao ? c.situacao : "");
-  return s === "ATIVO" || s === "FERIAS" || s.includes("FERIAS");
+  return situacaoAtivoFeriasV12(c);
 }
 
 function obterGrupoExameComplementarV12(c) {
