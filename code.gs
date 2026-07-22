@@ -1,11 +1,6 @@
 /**
- * Portal de ASOS - SESMT HRC - Versão 11.4
- * Arquivo: Code.gs - completo
- *
- * Orientação:
- * 1. Substitua todo o conteúdo do Code.gs por este código.
- * 2. Mantenha o arquivo HTML com o nome "Index".
- * 3. Publique uma nova versão do aplicativo web após salvar.
+ * Portal de ASOS - SESMT HRC - Versão 12.0
+ * Arquivo: Code.gs
  */
 
 const CONFIG = {
@@ -15,7 +10,7 @@ const CONFIG = {
   PASTA_PDFS_ID: "1nLiYb9RTPB_0mq9rNPC8it5kUxaCL6nV",
   TIMEZONE: Session.getScriptTimeZone(),
   CACHE_SEGUNDOS: 1800,
-  CACHE_PREFIXO: "PAINEL_ASOS_HRC_V11_4_COMPLEMENTARES_LAZY"
+  CACHE_PREFIXO: "PAINEL_ASOS_HRC_V12_PERFORMANCE"
 };
 
 const COL = {
@@ -40,9 +35,19 @@ const COL = {
   CONVOCACAO_BAIXADA: 19
 };
 
+function incluirArquivoHtml(nomeArquivo) {
+  return HtmlService.createHtmlOutputFromFile(nomeArquivo).getContent();
+}
+
 function doGet() {
+  const htmlBase = HtmlService.createHtmlOutputFromFile("Index").getContent();
+  const patch = incluirArquivoHtml("PatchPerformance");
+  const htmlFinal = htmlBase.includes("</body>")
+    ? htmlBase.replace("</body>", patch + "\n</body>")
+    : htmlBase + patch;
+
   return HtmlService
-    .createHtmlOutputFromFile("Index")
+    .createHtmlOutput(htmlFinal)
     .setTitle("PAINEL DE ASOS - SESMT HRC")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
