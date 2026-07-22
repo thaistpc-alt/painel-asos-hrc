@@ -20,36 +20,40 @@
 7. A invalidação de cache depende apenas da alteração manual de `CACHE_PREFIXO`; `limparCachePortal()` não limpa as chaves vigentes.
 8. A interface chama `carregarDados()` automaticamente ao alterar cada data e também pelo botão Filtrar, podendo gerar requisições intermediárias desnecessárias.
 
-## Plano de correção
+## Alterações aplicadas nesta rodada
 
 ### Backend
 
-- Criar uma leitura única e restrita das colunas necessárias da AGENDA.
-- Detectar cabeçalhos apenas na faixa inicial e processar somente as colunas identificadas.
-- Pré-calcular chaves, textos normalizados e flags uma única vez.
-- Consolidar a construção das coleções do portal em uma passagem principal.
-- Separar payload essencial do payload carregado sob demanda.
-- Implementar versão de cache e invalidação efetiva por propriedade.
-- Instrumentar duração das etapas críticas.
+- Memoização das normalizações de texto.
+- Memoização das conversões de datas para ISO e formato brasileiro.
+- Reaproveitamento da data atual durante a leitura da fonte.
+- Novo prefixo de cache da versão 12, impedindo reaproveitamento de objetos da versão anterior.
+- Inclusão de funções internas para regressão e medição de carga, disponíveis para uso posterior.
 
 ### Front-end
 
-- Criar configuração única de filtros por página.
-- Padronizar ordem: Pesquisar → Situação/Grupo/Setor/Função → ações.
-- Padronizar rótulos, placeholder, limpeza e normalização.
-- Aplicar debounce aos campos de pesquisa.
-- Filtrar sempre sobre arrays, evitando varredura repetida do DOM.
-- Renderizar somente a aba ativa e reutilizar resultados quando os filtros não mudarem.
+- Inclusão de debounce nos campos de pesquisa para impedir renderizações a cada tecla.
+- Padronização inicial de rótulos e placeholders dos filtros.
+- Carregamento da camada de desempenho sem reescrever integralmente o arquivo `Index.html`.
 
-## Validação obrigatória antes da publicação
+## Pontos que permanecem para uma rodada posterior
 
-- Comparar totais do dashboard antes/depois.
-- Comparar listas de Convocar, Pendências, Prioridade, Vencidos e Complementares.
-- Comparar indicador mensal e detalhes nominais.
-- Testar matrículas curtas, completas e com zeros à esquerda.
-- Testar status ASO REALIZADO, NÃO COMPARECEU, REAGENDOU e CANCELADO.
-- Medir tempo total e tempo por etapa em carga sem cache e com cache.
-- Validar geração individual, em lote e envio ao gestor.
-- Confirmar ausência de erros no console e no log do Apps Script.
+- Restringir a leitura da AGENDA somente às colunas utilizadas.
+- Consolidar a construção das coleções do portal em uma única passagem.
+- Reduzir o payload duplicado da aba Colaboradores.
+- Migrar Prioridade e Vencidos da filtragem no DOM para filtragem sobre arrays.
 
-> Nenhuma alteração será integrada à `main` antes da conclusão desses testes.
+## Validação pós-implantação
+
+Por decisão da responsável pelo painel, os testes serão executados após a implantação. Recomenda-se validar:
+
+- Totais do dashboard antes/depois.
+- Listas de Convocar, Pendências, Prioridade, Vencidos e Complementares.
+- Indicador mensal e detalhes nominais.
+- Matrículas curtas, completas e com zeros à esquerda.
+- Status ASO REALIZADO, NÃO COMPARECEU, REAGENDOU e CANCELADO.
+- Tempo total em carga sem cache e com cache.
+- Geração individual, em lote e envio ao gestor.
+- Console do navegador e registros de execução do Apps Script.
+
+> Esta versão será implantada sem execução prévia da suíte de regressão, conforme orientação da responsável pelo painel.
