@@ -1,0 +1,58 @@
+<style>
+  .linha-filtros > div { min-width: 180px; }
+  .linha-filtros .campo-pesquisa { order: -20; flex: 1 1 280px; }
+  .linha-filtros select,
+  .linha-filtros input[type="text"] { width: 100%; min-width: 180px; }
+  .filtros > div { min-width: 160px; }
+  .filtros button { min-height: 36px; }
+</style>
+<script>
+(function () {
+  const DEBOUNCE_MS = 280;
+
+  function debounce(fn, espera) {
+    let timer;
+    return function () {
+      const contexto = this;
+      const args = arguments;
+      clearTimeout(timer);
+      timer = setTimeout(function () { fn.apply(contexto, args); }, espera);
+    };
+  }
+
+  function substituirOnInput(id, fn) {
+    const el = document.getElementById(id);
+    if (!el || typeof fn !== "function") return;
+    el.removeAttribute("oninput");
+    el.oninput = debounce(fn, DEBOUNCE_MS);
+  }
+
+  function padronizarRotulos() {
+    document.querySelectorAll('.linha-filtros label').forEach(function (label) {
+      const texto = String(label.textContent || '').trim().toLowerCase();
+      if (texto.indexOf('filtrar situação') === 0) label.textContent = 'Situação';
+      if (texto === 'grupo') label.textContent = 'Grupo de exame';
+    });
+  }
+
+  function aplicarOtimizacoes() {
+    substituirOnInput('pesquisaConvocar', window.filtrarConvocacaoPorSituacao);
+    substituirOnInput('pesquisaFaltosos', window.filtrarPendencias);
+    substituirOnInput('pesquisaPrioridade', function () {
+      window.filtrarTabelaPorTexto('tabelaPrioridade', 'pesquisaPrioridade');
+    });
+    substituirOnInput('pesquisaVencidos', function () {
+      window.filtrarTabelaPorTexto('tabelaVencidos', 'pesquisaVencidos');
+    });
+    substituirOnInput('pesquisaComplementares', window.filtrarComplementares);
+    substituirOnInput('pesquisaColaboradores', window.filtrarColaboradores);
+    padronizarRotulos();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', aplicarOtimizacoes, { once: true });
+  } else {
+    aplicarOtimizacoes();
+  }
+})();
+</script>
