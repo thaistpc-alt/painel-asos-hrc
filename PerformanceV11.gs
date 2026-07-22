@@ -1,37 +1,53 @@
 /* =========================================================
-   OTIMIZACAO DE DESEMPENHO V11.4
+   OTIMIZACAO DE DESEMPENHO V11.5
    Mantem todas as regras e geradores originais.
+   Cacheia somente estruturas serializaveis e nao usa LockService.
 ========================================================= */
 
-const PERF_CACHE_PREFIXO = "PERF_V11_4_2_";
+const PERF_CACHE_PREFIXO = "PERF_V11_5_";
 const PERF_CACHE_SEGUNDOS = 1800;
 const PERF_CACHE_PARTE = 80000;
 
 function obterResumoPortalOtimizado(dataInicio, dataFim, forcarAtualizacao) {
   validarPeriodoPerformance_(dataInicio, dataFim);
+  const chaveResumo = "RESUMO_" + dataInicio + "_" + dataFim;
+
+  if (!forcarAtualizacao) {
+    const cacheado = obterCacheComprimidoPerformance_(chaveResumo);
+    if (cacheado) {
+      cacheado.meta = cacheado.meta || {};
+      cacheado.meta.cache = "sim";
+      return cacheado;
+    }
+  }
+
   const base = obterBaseProcessadaPerformance_(dataInicio, dataFim, !!forcarAtualizacao);
   const lista = base.lista || [];
-  const eventosPorMatricula = base.eventosPorMatricula || {};
 
   const convocarTodos = gerarListaConvocar(lista, dataInicio, dataFim)
     .filter(c => !c.asoRealizadoValido)
     .filter(c => !ehNaoCompareceuAso(c));
+
   const examesComplementares = gerarExamesComplementares(lista, dataInicio, dataFim)
     .filter(c => !c.asoRealizadoValido);
+
   const agendadosPeriodo = lista
     .filter(c => noPeriodo(c.dataAgendada, dataInicio, dataFim))
     .sort(ordenarPorDataAgendada);
-  const pendencias = gerarPendencias(lista, eventosPorMatricula);
-  aplicarHistoricoEnviosPendencias({ pendencias: pendencias, faltosos: pendencias.operacionais });
+
+  const pendencias = obterPendenciasPerformance_(lista, dataInicio, dataFim, !!forcarAtualizacao);
 
   const prioridade = lista
     .filter(c => Number(c.diasParaVencer) <= 30 && Number(c.diasParaVencer) >= 0)
     .filter(c => !c.asoRealizadoAgendaAtual)
-    .filter(c => !c.asoRealizadoValido);
+    .filter(c => !c.asoRealizadoValido)
+    .sort((a, b) => Number(a.diasParaVencer) - Number(b.diasParaVencer));
+
   const vencidos = lista
     .filter(ehVencido)
     .filter(c => !c.asoRealizadoAgendaAtual)
-    .filter(c => !c.asoRealizadoValido);
+    .filter(c => !c.asoRealizadoValido)
+    .sort((a, b) => Number(a.diasParaVencer) - Number(b.diasParaVencer));
 
   const dashboard = {
     totalColaboradores: lista.length,
@@ -40,7 +56,7 @@ function obterResumoPortalOtimizado(dataInicio, dataFim, forcarAtualizacao) {
     totalConvocarRealizados: convocarTodos.filter(ehAsoRealizado).length,
     totalAgendados: agendadosPeriodo.length,
     totalCompareceram: agendadosPeriodo.filter(ehAsoRealizado).length,
-    totalFaltosos: pendencias.operacionais.length,
+    totalFaltosos: (pendencias.operacionais || []).length,
     totalPrioridade: prioridade.length,
     totalVencidos: vencidos.length,
     totalVencidosAtivos: vencidos.filter(ehAtivo).length,
@@ -48,17 +64,39 @@ function obterResumoPortalOtimizado(dataInicio, dataFim, forcarAtualizacao) {
     totalExamesComplementares: examesComplementares.length
   };
 
-  return {
+  const resumo = {
     meta: {
-      versao: "11.4",
+      versao: "11.5",
       geradoEm: Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm:ss"),
       dataInicio: dataInicio,
       dataFim: dataFim,
       cache: base.cache ? "sim" : "não",
-      sincronizacaoAgenda: obterResumoSincronizacaoAgenda()
+      sincronizacaoAgenda: ""
     },
     dashboard: dashboard
   };
+
+  salvarCacheComprimidoPerformance_(chaveResumo, resumo);
+  salvarCacheComprimidoPerformance_("MOD_CONVOCAR_" + dataInicio + "_" + dataFim, {
+    convocar: {
+      todos: convocarTodos,
+      pendentes: convocarTodos.filter(c => !ehAsoRealizado(c)),
+      realizados: convocarTodos.filter(ehAsoRealizado)
+    }
+  });
+  salvarCacheComprimidoPerformance_("MOD_PRIORIDADE_" + dataInicio + "_" + dataFim, {
+    prioridadeAtivos: prioridade.filter(ehAtivo),
+    prioridadeOutros: prioridade.filter(c => !ehAtivo(c))
+  });
+  salvarCacheComprimidoPerformance_("MOD_VENCIDOS_" + dataInicio + "_" + dataFim, {
+    vencidosAtivos: vencidos.filter(ehAtivo),
+    vencidosOutros: vencidos.filter(c => !ehAtivo(c))
+  });
+  salvarCacheComprimidoPerformance_("MOD_COMPLEMENTARES_" + dataInicio + "_" + dataFim, {
+    examesComplementares: examesComplementares
+  });
+
+  return resumo;
 }
 
 function obterModuloPortalOtimizado(modulo, dataInicio, dataFim, forcarAtualizacao) {
@@ -73,7 +111,6 @@ function obterModuloPortalOtimizado(modulo, dataInicio, dataFim, forcarAtualizac
 
   const base = obterBaseProcessadaPerformance_(dataInicio, dataFim, !!forcarAtualizacao);
   const lista = base.lista || [];
-  const eventosPorMatricula = base.eventosPorMatricula || {};
   let resultado;
 
   switch (nome) {
@@ -92,8 +129,8 @@ function obterModuloPortalOtimizado(modulo, dataInicio, dataFim, forcarAtualizac
     }
     case "FALTOSOS":
     case "PENDENCIAS": {
-      const pendencias = gerarPendencias(lista, eventosPorMatricula);
-      resultado = { pendencias: pendencias, faltosos: pendencias.operacionais };
+      const pendencias = obterPendenciasPerformance_(lista, dataInicio, dataFim, !!forcarAtualizacao);
+      resultado = { pendencias: pendencias, faltosos: pendencias.operacionais || [] };
       aplicarHistoricoEnviosPendencias(resultado);
       break;
     }
@@ -128,16 +165,13 @@ function obterModuloPortalOtimizado(modulo, dataInicio, dataFim, forcarAtualizac
       };
       break;
     case "COLABORADORES": {
-      const ordenada = lista.slice().sort((a, b) => {
-        const atrasoA = ehVencido(a) && !a.asoRealizadoValido ? 0 : 1;
-        const atrasoB = ehVencido(b) && !b.asoRealizadoValido ? 0 : 1;
-        if (atrasoA !== atrasoB) return atrasoA - atrasoB;
-        const diasA = Number(a.diasParaVencer);
-        const diasB = Number(b.diasParaVencer);
-        if (!isNaN(diasA) && !isNaN(diasB) && diasA !== diasB) return diasA - diasB;
+      const colaboradores = gerarColaboradoresPortal(lista).sort((a, b) => {
+        const da = Number(a.diasParaVencer);
+        const db = Number(b.diasParaVencer);
+        if (da !== db) return da - db;
         return String(a.nome || "").localeCompare(String(b.nome || ""));
       });
-      resultado = { colaboradores: gerarColaboradoresPortal(ordenada) };
+      resultado = { colaboradores: colaboradores };
       break;
     }
     case "INDICADORES":
@@ -152,38 +186,39 @@ function obterModuloPortalOtimizado(modulo, dataInicio, dataFim, forcarAtualizac
 }
 
 function obterBaseProcessadaPerformance_(dataInicio, dataFim, forcarAtualizacao) {
-  const chave = "BASE_" + dataInicio + "_" + dataFim;
+  const chave = "LISTA_" + dataInicio + "_" + dataFim;
+
   if (!forcarAtualizacao) {
     const cacheado = obterCacheComprimidoPerformance_(chave);
-    if (cacheado) {
+    if (cacheado && Array.isArray(cacheado.lista)) {
       cacheado.cache = true;
       return cacheado;
     }
   }
 
-  const lock = LockService.getScriptLock();
-  lock.waitLock(30000);
-  try {
-    if (!forcarAtualizacao) {
-      const cacheado = obterCacheComprimidoPerformance_(chave);
-      if (cacheado) {
-        cacheado.cache = true;
-        return cacheado;
-      }
-    }
+  const lista = lerFontePainel();
+  const eventosPorMatricula = montarEventosAgendaPorMatricula();
+  aplicarOcorrenciasAgenda(lista, eventosPorMatricula);
+  aplicarAsoRealizadoAgenda(lista, eventosPorMatricula);
+  prepararFlagsPortal(lista);
 
-    const lista = lerFontePainel();
-    const eventosPorMatricula = montarEventosAgendaPorMatricula();
-    aplicarOcorrenciasAgenda(lista, eventosPorMatricula);
-    aplicarAsoRealizadoAgenda(lista, eventosPorMatricula);
-    prepararFlagsPortal(lista);
+  const base = { lista: lista, cache: false };
+  salvarCacheComprimidoPerformance_(chave, base);
+  return base;
+}
 
-    const base = { lista: lista, eventosPorMatricula: eventosPorMatricula, cache: false };
-    salvarCacheComprimidoPerformance_(chave, base);
-    return base;
-  } finally {
-    lock.releaseLock();
+function obterPendenciasPerformance_(lista, dataInicio, dataFim, forcarAtualizacao) {
+  const chave = "PENDENCIAS_" + dataInicio + "_" + dataFim;
+
+  if (!forcarAtualizacao) {
+    const cacheado = obterCacheComprimidoPerformance_(chave);
+    if (cacheado) return cacheado;
   }
+
+  const eventosPorMatricula = montarEventosAgendaPorMatricula();
+  const pendencias = gerarPendencias(lista, eventosPorMatricula);
+  salvarCacheComprimidoPerformance_(chave, pendencias);
+  return pendencias;
 }
 
 function validarPeriodoPerformance_(dataInicio, dataFim) {
@@ -203,6 +238,7 @@ function salvarCacheComprimidoPerformance_(sufixo, objeto) {
     const gzip = Utilities.gzip(Utilities.newBlob(json, "application/json"));
     const base64 = Utilities.base64Encode(gzip.getBytes());
     const qtd = Math.ceil(base64.length / PERF_CACHE_PARTE);
+    if (qtd > 10) return;
     const itens = {};
     itens[chave + "_M"] = String(qtd);
     for (let i = 0; i < qtd; i++) {
@@ -210,7 +246,7 @@ function salvarCacheComprimidoPerformance_(sufixo, objeto) {
     }
     cache.putAll(itens, PERF_CACHE_SEGUNDOS);
   } catch (e) {
-    // Cache é aceleração; falha de cache não pode impedir o painel.
+    // Cache é aceleração; falha não pode impedir o painel.
   }
 }
 
@@ -219,7 +255,7 @@ function obterCacheComprimidoPerformance_(sufixo) {
     const cache = CacheService.getScriptCache();
     const chave = chaveCachePerformance_(sufixo);
     const qtd = Number(cache.get(chave + "_M"));
-    if (!qtd) return null;
+    if (!qtd || qtd > 10) return null;
     const chaves = [];
     for (let i = 0; i < qtd; i++) chaves.push(chave + "_" + i);
     const partes = cache.getAll(chaves);
