@@ -41,7 +41,11 @@ function doGet() {
   const performance = HtmlService.createHtmlOutputFromFile("PerformanceClient").getContent();
   const ajustes = HtmlService.createHtmlOutputFromFile("UIEnhancements").getContent();
   const correcoesFinais = HtmlService.createHtmlOutputFromFile("ZZ_UIRuntimeFix").getContent();
-  const html = index.replace("</body>", layout + performance + ajustes + correcoesFinais + "</body>");
+  const cabecalhoCompacto = HtmlService.createHtmlOutputFromFile("ZZ_CompactHeader").getContent();
+  const html = index.replace(
+    "</body>",
+    layout + performance + ajustes + correcoesFinais + cabecalhoCompacto + "</body>"
+  );
 
   return HtmlService
     .createHtmlOutput(html)
