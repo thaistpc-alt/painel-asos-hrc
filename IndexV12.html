@@ -5,8 +5,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    :root{--nav:#0f172a;--nav2:#1e293b;--primary:#0f766e;--accent:#2563eb;--bg:#f4f7fb;--card:#fff;--border:#dce4ee;--text:#172033;--muted:#64748b;--danger:#b91c1c;--warning:#b45309;--success:#047857}
-    *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}.app{display:flex;min-height:100vh}.sidebar{width:250px;background:linear-gradient(180deg,var(--nav),var(--nav2));color:#fff;position:fixed;inset:0 auto 0 0;transition:.25s;z-index:30;display:flex;flex-direction:column}.sidebar.recolhida{width:76px}.brand{padding:22px 18px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;gap:12px;align-items:center}.logo{width:38px;height:38px;border-radius:10px;background:#fff;color:var(--primary);display:grid;place-items:center;font-weight:800}.brand-texto strong{display:block}.brand-texto span{font-size:12px;color:#cbd5e1}.sidebar.recolhida .brand-texto,.sidebar.recolhida .nav-texto{display:none}.nav{padding:14px 10px;overflow:auto;flex:1}.nav button,.menu-toggle{width:100%;border:0;background:transparent;color:#dbeafe;padding:12px;border-radius:10px;text-align:left;cursor:pointer;display:flex;gap:12px;align-items:center;margin-bottom:5px;font-size:13px}.nav button:hover,.nav button.ativo,.menu-toggle:hover{background:rgba(255,255,255,.12);color:#fff}.icone{width:26px;text-align:center;font-size:17px}.menu-rodape{padding:10px;border-top:1px solid rgba(255,255,255,.1)}.principal{margin-left:250px;width:calc(100% - 250px);transition:.25s}.principal.expandida{margin-left:76px;width:calc(100% - 76px)}.topbar{height:72px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:20}.topbar h1{margin:0;font-size:20px}.topbar p{margin:4px 0 0;color:var(--muted);font-size:12px}.conteudo{padding:22px}.painel{background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 5px 18px rgba(15,23,42,.05);padding:18px;margin-bottom:16px}.filtros{display:grid;grid-template-columns:180px 180px minmax(220px,1fr) auto auto;gap:10px;align-items:end}.campo label{display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:5px}.campo input,.campo select{width:100%;height:38px;border:1px solid #cbd5e1;border-radius:9px;padding:0 10px;background:#fff}.btn{height:38px;border:0;border-radius:9px;padding:0 14px;font-weight:700;cursor:pointer;background:var(--primary);color:#fff}.btn.sec{background:#475569}.btn.azul{background:var(--accent)}.btn.pequeno{height:30px;padding:0 9px;font-size:11px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}.card{background:#fff;border:1px solid var(--border);border-radius:13px;padding:15px}.card span{font-size:11px;color:var(--muted);font-weight:700}.card strong{display:block;font-size:27px;margin-top:8px;color:var(--primary)}.cabecalho-modulo{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}.cabecalho-modulo h2{margin:0;font-size:18px}.cabecalho-modulo small{color:var(--muted)}.acoes{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.tabela-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;max-height:60vh}table{width:100%;border-collapse:collapse;min-width:1080px;font-size:11px}th{position:sticky;top:0;background:#eef3f8;color:#334155;text-transform:uppercase;font-size:9px;z-index:2}th,td{padding:8px 7px;border-bottom:1px solid #e5eaf0;text-align:left}tr:hover td{background:#f8fafc}.badge{display:inline-block;padding:4px 7px;border-radius:999px;font-size:9px;font-weight:800;background:#dbeafe;color:#1e40af}.badge.critico,.badge.vencido{background:#fee2e2;color:#991b1b}.badge.urgente,.badge.alta{background:#ffedd5;color:#9a3412}.badge.atencao,.badge.media{background:#fef3c7;color:#92400e}.badge.programado,.badge.baixa,.badge.normal{background:#dcfce7;color:#166534}.erro,.loading,.vazio{padding:20px;text-align:center;color:var(--muted)}.erro{color:var(--danger);background:#fef2f2;border-radius:10px}.oculto{display:none!important}.rodape{margin-top:10px;color:var(--muted);font-size:11px}.secao{margin-top:18px}.secao h3{display:flex;justify-content:space-between;margin:0 0 9px}.contador{background:#e2e8f0;border-radius:999px;padding:3px 8px;font-size:11px}.situacoes{display:flex;gap:8px;flex-wrap:wrap;padding:10px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;margin-bottom:12px}.situacoes label{font-size:11px;display:flex;gap:5px;align-items:center}.check{width:15px;height:15px}.email{min-width:280px}.info-cc{font-size:10px;color:var(--muted);margin-top:4px}@media(max-width:900px){.sidebar{width:76px}.brand-texto,.nav-texto{display:none}.principal{margin-left:76px;width:calc(100% - 76px)}.filtros{grid-template-columns:1fr 1fr}.conteudo{padding:12px}}
+    :root{--nav:#0f172a;--nav2:#1e293b;--primary:#0f766e;--accent:#2563eb;--bg:#f4f7fb;--border:#dce4ee;--text:#172033;--muted:#64748b;--danger:#b91c1c;--warning:#b45309;--success:#047857}
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .app{display:flex;min-height:100vh}.sidebar{width:250px;background:linear-gradient(180deg,var(--nav),var(--nav2));color:#fff;position:fixed;inset:0 auto 0 0;z-index:30;display:flex;flex-direction:column;transition:.2s}.sidebar.recolhida{width:76px}
+    .brand{padding:22px 18px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;gap:12px;align-items:center}.logo{width:38px;height:38px;border-radius:10px;background:#fff;color:var(--primary);display:grid;place-items:center;font-weight:800}.brand-texto strong{display:block}.brand-texto span{font-size:12px;color:#cbd5e1}.sidebar.recolhida .brand-texto,.sidebar.recolhida .nav-texto{display:none}
+    .nav{padding:14px 10px;overflow:auto;flex:1}.nav button,.menu-toggle{width:100%;border:0;background:transparent;color:#dbeafe;padding:12px;border-radius:10px;text-align:left;cursor:pointer;display:flex;gap:12px;align-items:center;margin-bottom:5px;font-size:13px}.nav button:hover,.nav button.ativo,.menu-toggle:hover{background:rgba(255,255,255,.12);color:#fff}.icone{width:26px;text-align:center;font-size:17px}.menu-rodape{padding:10px;border-top:1px solid rgba(255,255,255,.1)}
+    .principal{margin-left:250px;width:calc(100% - 250px);transition:.2s}.principal.expandida{margin-left:76px;width:calc(100% - 76px)}.topbar{height:72px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:20}.topbar h1{margin:0;font-size:20px}.topbar p{margin:4px 0 0;color:var(--muted);font-size:12px}
+    .conteudo{padding:22px}.painel{background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 5px 18px rgba(15,23,42,.05);padding:18px;margin-bottom:16px}.filtros{display:grid;grid-template-columns:180px 180px minmax(220px,1fr) auto auto;gap:10px;align-items:end}.campo label{display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:5px}.campo input,.campo select{width:100%;height:38px;border:1px solid #cbd5e1;border-radius:9px;padding:0 10px;background:#fff}
+    .btn{height:38px;border:0;border-radius:9px;padding:0 14px;font-weight:700;cursor:pointer;background:var(--primary);color:#fff}.btn.sec{background:#475569}.btn.azul{background:var(--accent)}.btn.pequeno{height:30px;padding:0 9px;font-size:11px}.btn:disabled{opacity:.55;cursor:not-allowed}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px}.card{background:#fff;border:1px solid var(--border);border-radius:13px;padding:15px}.card span{font-size:11px;color:var(--muted);font-weight:700}.card strong{display:block;font-size:27px;margin-top:8px;color:var(--primary)}
+    .cabecalho-modulo{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}.cabecalho-modulo h2{margin:0;font-size:18px}.cabecalho-modulo small{color:var(--muted)}.acoes{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+    .tabela-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;max-height:62vh}table{width:100%;border-collapse:collapse;min-width:1080px;font-size:11px}th{position:sticky;top:0;background:#eef3f8;color:#334155;text-transform:uppercase;font-size:9px;z-index:2;white-space:nowrap}th,td{padding:8px 7px;border-bottom:1px solid #e5eaf0;text-align:left}tr:hover td{background:#f8fafc}
+    th.ordenavel{cursor:pointer;padding-right:18px;position:sticky}th.ordenavel::after{content:'↕';position:absolute;right:6px;color:#94a3b8;font-size:10px}th.ordenavel.asc::after{content:'↑';color:#2563eb}th.ordenavel.desc::after{content:'↓';color:#2563eb}
+    .badge{display:inline-block;padding:4px 7px;border-radius:999px;font-size:9px;font-weight:800;background:#dbeafe;color:#1e40af}.badge.critico,.badge.vencido{background:#fee2e2;color:#991b1b}.badge.urgente,.badge.alta{background:#ffedd5;color:#9a3412}.badge.atencao,.badge.media{background:#fef3c7;color:#92400e}.badge.programado,.badge.baixa,.badge.normal{background:#dcfce7;color:#166534}
+    .erro,.loading,.vazio{padding:20px;text-align:center;color:var(--muted)}.erro{color:var(--danger);background:#fef2f2;border-radius:10px}.oculto{display:none!important}.rodape{margin-top:10px;color:var(--muted);font-size:11px}.secao{margin-top:18px}.secao h3{display:flex;justify-content:space-between;margin:0 0 9px}.contador{background:#e2e8f0;border-radius:999px;padding:3px 8px;font-size:11px}
+    .situacoes{display:flex;gap:8px;flex-wrap:wrap;padding:10px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;margin-bottom:12px}.situacoes label{font-size:11px;display:flex;gap:5px;align-items:center}.check{width:15px;height:15px}.email{min-width:280px}.info-cc{font-size:10px;color:var(--muted);margin-top:4px}.paginacao{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:10px;font-size:11px}.indicador-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:16px}.indicador-card{border:1px solid var(--border);border-radius:11px;padding:12px}.indicador-card b{display:block;font-size:22px;margin-top:6px}.nota{padding:10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;font-size:12px;color:#1e3a8a;margin-bottom:12px}
+    @media(max-width:900px){.sidebar{width:76px}.brand-texto,.nav-texto{display:none}.principal{margin-left:76px;width:calc(100% - 76px)}.filtros{grid-template-columns:1fr 1fr}.conteudo{padding:12px}}
   </style>
 </head>
 <body>
@@ -28,45 +42,134 @@
   <main id="principal" class="principal">
     <header class="topbar"><div><h1>PAINEL DE ASOS SESMT HRC</h1><p id="subtitulo">Gestão de saúde ocupacional e acompanhamento de vencimentos</p></div><div id="statusAtualizacao" style="font-size:11px;color:#64748b"></div></header>
     <section class="conteudo">
-      <div class="painel filtros"><div class="campo"><label>Data inicial</label><input type="date" id="dataInicio"></div><div class="campo"><label>Data final</label><input type="date" id="dataFim"></div><div class="campo"><label>Pesquisar na listagem</label><input id="pesquisa" placeholder="Nome, matrícula, função ou setor" oninput="aplicarPesquisa()"></div><button class="btn" onclick="atualizarPeriodo(false)">Filtrar</button><button class="btn sec" onclick="atualizarPeriodo(true)">Atualizar</button></div>
-      <div id="mensagemErro" class="erro oculto"></div><div id="areaPrincipal"></div>
+      <div class="painel filtros">
+        <div class="campo"><label>Data inicial</label><input type="date" id="dataInicio"></div>
+        <div class="campo"><label>Data final</label><input type="date" id="dataFim"></div>
+        <div class="campo"><label>Pesquisar na listagem</label><input id="pesquisa" placeholder="Nome, matrícula, função ou setor" oninput="aplicarPesquisa()"></div>
+        <button class="btn" onclick="atualizarPeriodo(false)">Filtrar</button>
+        <button class="btn sec" onclick="atualizarPeriodo(true)">Atualizar</button>
+      </div>
+      <div id="mensagemErro" class="erro oculto"></div>
+      <div id="areaPrincipal"></div>
     </section>
   </main>
 </div>
 <script>
 let moduloAtual='dashboard',dadosModulo=[],cacheTela={},selecao=new Set(),situacoesSelecionadas=new Set();
-const titulos={dashboard:'Visão Geral',convocar:'Convocar colaboradores',exames:'Exames Complementares',prioridades:'Prioridades',vencidos:'ASOs vencidos',pendencias:'Pendências de comparecimento',consulta:'Consulta de ASO',indicadores:'Indicadores'};
-document.addEventListener('DOMContentLoaded',()=>{const h=new Date(),i=new Date(h.getFullYear(),h.getMonth(),1),f=new Date(h.getFullYear(),h.getMonth()+1,0);dataInicio.value=iso(i);dataFim.value=iso(f);carregarResumo(false)});
+let paginaAtual=1;const TAMANHO_PAGINA=100;
+const titulos={dashboard:'Visão Geral',convocar:'Convocar colaboradores',exames:'Exames Complementares',prioridades:'Prioridades',vencidos:'ASOs vencidos',pendencias:'Pendências',consulta:'Consulta de ASO',indicadores:'Indicadores'};
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const h=new Date(),i=new Date(h.getFullYear(),h.getMonth(),1),f=new Date(h.getFullYear(),h.getMonth()+1,0);
+  dataInicio.value=iso(i);dataFim.value=iso(f);carregarResumo(false);
+});
 function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function alternarMenu(){sidebar.classList.toggle('recolhida');principal.classList.toggle('expandida')}
 function periodo(){return{inicio:dataInicio.value,fim:dataFim.value}}
-function atualizarPeriodo(forcar){cacheTela={};selecao.clear();pesquisa.value='';moduloAtual==='dashboard'?carregarResumo(forcar):carregarModulo(moduloAtual,forcar)}
-function abrirModulo(m,el){moduloAtual=m;document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('ativo'));el&&el.classList.add('ativo');subtitulo.textContent=titulos[m];pesquisa.value='';m==='dashboard'?carregarResumo(false):carregarModulo(m,false)}
+function atualizarPeriodo(forcar){cacheTela={};selecao.clear();situacoesSelecionadas.clear();paginaAtual=1;pesquisa.value='';moduloAtual==='dashboard'?carregarResumo(forcar):carregarModulo(moduloAtual,forcar)}
+function abrirModulo(m,el){moduloAtual=m;paginaAtual=1;document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('ativo'));el&&el.classList.add('ativo');subtitulo.textContent=titulos[m];pesquisa.value='';m==='dashboard'?carregarResumo(false):carregarModulo(m,false)}
 function carregando(t){areaPrincipal.innerHTML='<div class="painel loading">'+t+'</div>';mensagemErro.classList.add('oculto')}
 function erro(e){mensagemErro.textContent=e&&e.message?e.message:String(e);mensagemErro.classList.remove('oculto');areaPrincipal.innerHTML=''}
-function carregarResumo(forcar){carregando('Carregando dados consolidados...');const p=periodo();google.script.run.withSuccessHandler(r=>{statusAtualizacao.textContent='Atualizado em '+(r.meta.geradoEm||'');const d=r.dashboard;areaPrincipal.innerHTML='<div class="cards">'+card('Colaboradores',d.totalColaboradores)+card('Para convocar',d.totalConvocar)+card('Agendados',d.totalAgendados)+card('ASOs realizados',d.totalRealizados)+card('Pendências',d.totalPendencias,'warning')+card('Prioridade',d.totalPrioridade,'warning')+card('Vencidos',d.totalVencidos,'danger')+card('Exames complementares',d.totalExamesComplementares)+'</div>'}).withFailureHandler(erro).obterResumoPortalV12(p.inicio,p.fim,!!forcar)}
-function card(t,n,c){return'<div class="card"><span>'+t+'</span><strong style="'+(c==='danger'?'color:#b91c1c':c==='warning'?'color:#b45309':'')+'">'+(n||0)+'</strong></div>'}
-function carregarModulo(m,forcar){const p=periodo(),k=m+'_'+p.inicio+'_'+p.fim;if(cacheTela[k]&&!forcar){renderModulo(m,cacheTela[k]);return}carregando('Carregando '+titulos[m]+'...');google.script.run.withSuccessHandler(d=>{cacheTela[k]=d;renderModulo(m,d)}).withFailureHandler(erro).obterModuloPortalV12(m,p.inicio,p.fim,!!forcar)}
-function renderModulo(m,d){mensagemErro.classList.add('oculto');if(m==='indicadores'){areaPrincipal.innerHTML='<div class="painel"><h2>Indicadores</h2><pre style="white-space:pre-wrap">'+esc(JSON.stringify(d,null,2))+'</pre></div>';return}if(m==='prioridades'||m==='vencidos'||m==='pendencias'){renderSeparado(m,d);return}dadosModulo=Array.isArray(d)?d:[];m==='convocar'?renderConvocar(dadosModulo):renderTabela(m,dadosModulo)}
-function renderSeparado(m,d){const a=d.ativos||[],o=d.outros||[];areaPrincipal.innerHTML='<div class="painel"><div class="cabecalho-modulo"><div><h2>'+titulos[m]+'</h2><small>Regras e classificações preservadas da versão anterior</small></div></div>'+secao('Ativos e férias',a,m)+secao('Outros status',o,m)+'</div>';dadosModulo=a.concat(o)}
-function secao(t,l,m){return'<div class="secao"><h3><span>'+t+'</span><span class="contador">'+l.length+'</span></h3>'+tabelaHtml(l,colunas(m),m)+'</div>'}
-function renderConvocar(lista){dadosModulo=lista;prepararSituacoes(lista);const filtrada=filtrarConvocarLista();areaPrincipal.innerHTML='<div class="painel"><div class="cabecalho-modulo"><div><h2>Convocar colaboradores</h2><small>Selecione as situações e as convocações que deseja enviar.</small></div><div class="acoes"><div class="campo email"><label>E-mail(s) do(s) gestor(es)</label><input id="emailsGestor" placeholder="gestor1@isgh.org.br; gestor2@isgh.org.br"><div class="info-cc">Cópia automática: thais.tpc@isgh.org.br</div></div><button class="btn azul" onclick="enviarSelecionadas()">Enviar selecionadas</button><button class="btn sec" onclick="gerarSelecionadas()">Gerar PDFs</button></div></div><div id="filtroSituacoes" class="situacoes">'+htmlSituacoes(lista)+'</div><div id="tabelaConvocar">'+tabelaConvocarHtml(filtrada)+'</div></div>'}
+
+function carregarResumo(forcar){
+  carregando('Carregando visão geral...');const p=periodo();
+  google.script.run.withSuccessHandler(r=>{
+    statusAtualizacao.textContent='Atualizado em '+(r.meta.geradoEm||'');const d=r.dashboard||{};
+    areaPrincipal.innerHTML='<div class="cards">'+
+      card('Colaboradores',d.totalColaboradores)+card('Para convocar',d.totalConvocar)+card('Agendados',d.totalAgendados)+
+      card('ASOs realizados',d.totalRealizados)+card('Pendências',d.totalPendencias,'warning')+
+      card('Prioridade ≤ 30 dias',d.totalPrioridade,'warning')+card('Vencidos',d.totalVencidos,'danger')+
+      card('Atrasados ativos/férias',d.totalAtrasadosAtivos||d.totalVencidosAtivos,'danger')+
+      card('Exames complementares',d.totalExamesComplementares)+'</div>'+
+      '<div class="painel" style="margin-top:16px"><div class="nota">A visão geral usa uma leitura leve. Os módulos completos estão sendo preparados em segundo plano para acelerar a navegação.</div></div>';
+    google.script.run.withSuccessHandler(()=>{}).withFailureHandler(()=>{}).preaquecerDadosPortalV12(p.inicio,p.fim);
+  }).withFailureHandler(erro).obterResumoPortalV12(p.inicio,p.fim,!!forcar);
+}
+function card(t,n,c){return'<div class="card"><span>'+esc(t)+'</span><strong style="'+(c==='danger'?'color:#b91c1c':c==='warning'?'color:#b45309':'')+'">'+(n||0)+'</strong></div>'}
+
+function carregarModulo(m,forcar){
+  const p=periodo(),k=m+'_'+p.inicio+'_'+p.fim;
+  if(cacheTela[k]&&!forcar){renderModulo(m,cacheTela[k]);return}
+  carregando('Carregando '+titulos[m]+'...');
+  google.script.run.withSuccessHandler(d=>{cacheTela[k]=d;renderModulo(m,d)}).withFailureHandler(erro).obterModuloPortalV12(m,p.inicio,p.fim,!!forcar);
+}
+function renderModulo(m,d){
+  mensagemErro.classList.add('oculto');paginaAtual=1;
+  if(m==='indicadores'){renderIndicadores(d);return}
+  if(m==='prioridades'||m==='vencidos'||m==='pendencias'){renderSeparado(m,d||{});return}
+  dadosModulo=Array.isArray(d)?d:[];
+  m==='convocar'?renderConvocar(dadosModulo):renderTabela(m,dadosModulo);
+}
+function renderSeparado(m,d){
+  const a=d.ativos||[],o=d.outros||[];dadosModulo=a.concat(o);
+  const descricao=m==='pendencias'?'Não compareceu sem novo agendamento ou ainda não possui agendamento.':'Listagens separadas por situação funcional.';
+  areaPrincipal.innerHTML='<div class="painel"><div class="cabecalho-modulo"><div><h2>'+titulos[m]+'</h2><small>'+descricao+'</small></div></div>'+secao('Ativos e férias',a,m,'a')+secao('Outros status',o,m,'o')+'</div>';
+}
+function secao(t,l,m,suf){return'<div class="secao"><h3><span>'+t+'</span><span class="contador">'+l.length+'</span></h3>'+tabelaHtml(l,colunas(m),m,'tbl_'+m+'_'+suf)+'</div>'}
+
+function renderConvocar(lista){
+  dadosModulo=lista;prepararSituacoes(lista);const filtrada=filtrarConvocarLista();
+  areaPrincipal.innerHTML='<div class="painel"><div class="cabecalho-modulo"><div><h2>Convocar colaboradores</h2><small>Ativo, férias e aviso prévio iniciam selecionados.</small></div><div class="acoes"><div class="campo email"><label>E-mail(s) do(s) gestor(es)</label><input id="emailsGestor" placeholder="gestor1@isgh.org.br; gestor2@isgh.org.br"><div class="info-cc">Cópia automática: thais.tpc@isgh.org.br</div></div><button class="btn azul" onclick="enviarSelecionadas()">Enviar selecionadas</button><button class="btn sec" onclick="gerarSelecionadas()">Gerar PDFs</button></div></div><div class="situacoes">'+htmlSituacoes(lista)+'</div><div id="tabelaConvocar">'+tabelaConvocarHtml(filtrada)+'</div></div>';
+}
 function prepararSituacoes(lista){if(situacoesSelecionadas.size)return;[...new Set(lista.map(x=>x.situacao).filter(Boolean))].forEach(s=>{const n=norm(s);if(n==='ATIVO'||n.includes('FERIAS')||n.includes('AVISO'))situacoesSelecionadas.add(s)})}
-function htmlSituacoes(lista){return[...new Set(lista.map(x=>x.situacao).filter(Boolean))].sort().map(s=>'<label><input class="check" type="checkbox" '+(situacoesSelecionadas.has(s)?'checked':'')+' onchange="alterarSituacao(\''+attr(s)+'\',this.checked)">'+esc(s)+'</label>').join('')}
-function alterarSituacao(s,v){v?situacoesSelecionadas.add(s):situacoesSelecionadas.delete(s);document.getElementById('tabelaConvocar').innerHTML=tabelaConvocarHtml(filtrarConvocarLista())}
-function filtrarConvocarLista(){return dadosModulo.filter(x=>situacoesSelecionadas.has(x.situacao))}
-function tabelaConvocarHtml(lista){const c=[{k:'sel',t:'✓'},{k:'mat',t:'Matrícula'},{k:'nome',t:'Nome'},{k:'funcao',t:'Função'},{k:'setor',t:'Setor'},{k:'situacao',t:'Situação'},{k:'dataConvocarBR',t:'Data convocar'},{k:'dataLimiteBR',t:'Data limite'},{k:'dataAgendadaBR',t:'Agendada'},{k:'statusAgenda',t:'Status agenda'},{k:'diasParaVencer',t:'Dias'},{k:'prioridade',t:'Prioridade'},{k:'acaoPdf',t:'PDF'}];return tabelaHtml(lista,c,'convocar')}
-function renderTabela(m,l){areaPrincipal.innerHTML='<div class="painel"><div class="cabecalho-modulo"><div><h2>'+titulos[m]+'</h2><small><span id="contadorReg">'+l.length+'</span> registros</small></div>'+(m==='exames'?'<button class="btn azul" onclick="exportarCSV()">Exportar listagem</button>':'')+'</div>'+tabelaHtml(l,colunas(m),m)+'</div>'}
-function colunas(m){if(m==='exames')return[{k:'prioridadeComplementar',t:'Prioridade'},{k:'mat',t:'Matrícula'},{k:'nome',t:'Nome'},{k:'funcao',t:'Função'},{k:'setor',t:'Setor'},{k:'grupoComplementar',t:'Grupo'},{k:'dataConvocarBR',t:'Convocar'},{k:'dataLimiteBR',t:'Limite'},{k:'proximoVencimentoBR',t:'Vencimento'},{k:'dataAgendadaBR',t:'ASO agendado'},{k:'alertaComplementar',t:'Orientação'}];if(m==='consulta')return[{k:'mat',t:'Matrícula'},{k:'nome',t:'Nome'},{k:'funcao',t:'Função'},{k:'setor',t:'Setor'},{k:'situacao',t:'Situação'},{k:'dataUltimoAsoBR',t:'Último ASO'},{k:'proximoVencimentoBR',t:'Vencimento'},{k:'diasStatusAso',t:'Dias'},{k:'statusAso',t:'Status'}];return[{k:'mat',t:'Matrícula'},{k:'nome',t:'Nome'},{k:'funcao',t:'Função'},{k:'setor',t:'Setor'},{k:'situacao',t:'Situação'},{k:'dataAgendadaBR',t:'Agendada'},{k:'statusAgenda',t:'Status agenda'},{k:'proximoVencimentoBR',t:'Vencimento'},{k:'diasParaVencer',t:'Dias'},{k:'prioridade',t:'Prioridade'}]}
-function tabelaHtml(l,c,m){if(!l.length)return'<div class="vazio">Nenhum registro encontrado.</div>';return'<div class="tabela-wrap"><table><thead><tr>'+c.map(x=>'<th>'+x.t+'</th>').join('')+'</tr></thead><tbody id="corpoTabela">'+l.map(r=>'<tr data-search="'+attr(norm([r.mat,r.nome,r.funcao,r.setor,r.situacao].join(' ')).toLowerCase())+'">'+c.map(x=>'<td>'+celula(r,x.k,m)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'}
-function celula(r,k,m){if(k==='sel')return'<input class="check check-conv" type="checkbox" data-mat="'+attr(r.mat)+'" '+(selecao.has(String(r.mat))?'checked':'')+' onchange="this.checked?selecao.add(this.dataset.mat):selecao.delete(this.dataset.mat)">';if(k==='acaoPdf')return'<button class="btn pequeno" onclick="gerarPdf(\''+attr(r.mat)+'\')">PDF</button>';const v=r[k]??'';if(k.toLowerCase().includes('prioridade')||k==='statusAgenda'||k==='statusAso')return'<span class="badge '+classeBadge(v)+'">'+esc(v||'Pendente')+'</span>';return esc(v)}
-function aplicarPesquisa(){const q=norm(pesquisa.value).toLowerCase();document.querySelectorAll('tr[data-search]').forEach(tr=>tr.style.display=!q||tr.dataset.search.includes(q)?'':'none')}
-function enviarSelecionadas(){const emails=document.getElementById('emailsGestor').value.trim(),mats=[...selecao];if(!emails)return alert('Informe o e-mail do gestor.');if(!mats.length)return alert('Selecione pelo menos uma convocação.');enviarLotes(mats,emails,0)}
-function enviarLotes(mats,emails,i){const lote=mats.slice(i,i+10),p=periodo();if(!lote.length){alert('Envio concluído.');return}google.script.run.withSuccessHandler(()=>enviarLotes(mats,emails,i+10)).withFailureHandler(erro).enviarConvocacoesSelecionadasGestorV12(lote,emails,p.inicio,p.fim)}
-function gerarSelecionadas(){const mats=[...selecao],p=periodo();if(!mats.length)return alert('Selecione pelo menos uma convocação.');google.script.run.withSuccessHandler(r=>alert('PDFs processados: '+(r||[]).length)).withFailureHandler(erro).gerarConvocacoesSelecionadasLote(mats,p.inicio,p.fim)}
+function htmlSituacoes(lista){return[...new Set(lista.map(x=>x.situacao).filter(Boolean))].sort().map(s=>'<label><input class="check" type="checkbox" '+(situacoesSelecionadas.has(s)?'checked':'')+' onchange="mudarSituacao(\''+attr(s)+'\',this.checked)">'+esc(s)+'</label>').join('')}
+function mudarSituacao(s,marcado){marcado?situacoesSelecionadas.add(s):situacoesSelecionadas.delete(s);document.getElementById('tabelaConvocar').innerHTML=tabelaConvocarHtml(filtrarConvocarLista())}
+function filtrarConvocarLista(){const q=norm(pesquisa.value);return dadosModulo.filter(x=>situacoesSelecionadas.has(x.situacao)&&(!q||textoItem(x).includes(q)))}
+function tabelaConvocarHtml(lista){
+  const cols=[{k:'sel',t:'Selecionar'},{k:'mat',t:'Matrícula'},{k:'nome',t:'Nome'},{k:'funcao',t:'Função'},{k:'setor',t:'Setor'},{k:'situacao',t:'Situação'},{k:'dataConvocarBR',t:'Data convocar'},{k:'dataLimiteBR',t:'Data limite'},{k:'dataAgendadaBR',t:'Agendada'},{k:'statusAgenda',t:'Status agenda'},{k:'diasParaVencer',t:'Dias'},{k:'prioridade',t:'Prioridade'},{k:'pdf',t:'PDF'}];
+  return tabelaHtml(lista,cols,'convocar','tbl_convocar');
+}
+
+function renderTabela(m,lista){dadosModulo=lista;areaPrincipal.innerHTML='<div class="painel"><div class="cabecalho-modulo"><div><h2>'+titulos[m]+'</h2><small><span id="contadorLista">'+lista.length+'</span> registros</small></div>'+(m==='exames'?'<button class="btn azul" onclick="exportarCSV()">Exportar listagem</button>':'')+'</div><div id="tabelaGeral">'+tabelaPaginada(lista,colunas(m),m)+'</div></div>'}
+function tabelaPaginada(lista,cols,m){const totalPag=Math.max(1,Math.ceil(lista.length/TAMANHO_PAGINA));paginaAtual=Math.min(paginaAtual,totalPag);const ini=(paginaAtual-1)*TAMANHO_PAGINA;const fatia=lista.slice(ini,ini+TAMANHO_PAGINA);return tabelaHtml(fatia,cols,m,'tbl_geral')+'<div class="paginacao"><span>Página '+paginaAtual+' de '+totalPag+' | '+lista.length+' registros</span><button class="btn pequeno sec" '+(paginaAtual<=1?'disabled':'')+' onclick="mudarPagina(-1)">Anterior</button><button class="btn pequeno" '+(paginaAtual>=totalPag?'disabled':'')+' onclick="mudarPagina(1)">Próxima</button></div>'}
+function mudarPagina(delta){paginaAtual+=delta;document.getElementById('tabelaGeral').innerHTML=tabelaPaginada(dadosModuloFiltrados(),colunas(moduloAtual),moduloAtual)}
+function dadosModuloFiltrados(){const q=norm(pesquisa.value);return !q?dadosModulo:dadosModulo.filter(x=>textoItem(x).includes(q))}
+
+function colunas(m){
+  const base=[{k:'mat',t:'Matrícula'},{k:'nome',t:'Nome'},{k:'funcao',t:'Função'},{k:'setor',t:'Setor'},{k:'situacao',t:'Situação'}];
+  if(m==='exames')return [{k:'prioridadeComplementar',t:'Prioridade'},...base,{k:'grupoComplementar',t:'Grupo'},{k:'dataConvocarBR',t:'Data convocar'},{k:'dataLimiteBR',t:'Data limite'},{k:'proximoVencimentoBR',t:'Vencimento'},{k:'dataAgendadaBR',t:'Agendada'},{k:'statusAgenda',t:'Status agenda'},{k:'alertaComplementar',t:'Orientação'}];
+  if(m==='pendencias')return [...base,{k:'grupoPendencia',t:'Tipo pendência'},{k:'dataUltimaPendenciaBR',t:'Última ocorrência'},{k:'dataAgendadaBR',t:'Agendada'},{k:'statusPendencia',t:'Status'},{k:'acaoPendencia',t:'Ação'}];
+  if(m==='prioridades'||m==='vencidos')return [...base,{k:'dataAgendadaBR',t:'Agendada'},{k:'statusAgenda',t:'Status agenda'},{k:'proximoVencimentoBR',t:'Vencimento'},{k:'diasParaVencer',t:'Dias'},{k:'prioridade',t:'Prioridade'}];
+  return [...base,{k:'dataUltimoAsoBR',t:'Último ASO'},{k:'proximoVencimentoBR',t:'Próximo vencimento'},{k:'diasStatusAso',t:'Dias'},{k:'statusAso',t:'Status ASO'}];
+}
+function tabelaHtml(lista,cols,m,id){
+  if(!lista.length)return'<div class="vazio">Nenhum registro encontrado.</div>';
+  return'<div class="tabela-wrap"><table id="'+id+'"><thead><tr>'+cols.map((c,i)=>'<th class="ordenavel" onclick="ordenarTabela(\''+id+'\','+i+',this)">'+esc(c.t)+'</th>').join('')+'</tr></thead><tbody>'+lista.map(r=>'<tr data-search="'+attr(textoItem(r))+'">'+cols.map(c=>'<td>'+celula(r,c.k,m)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+}
+function celula(r,k,m){
+  if(k==='sel')return'<input class="check" type="checkbox" data-mat="'+attr(r.mat)+'" '+(selecao.has(String(r.mat))?'checked':'')+' onchange="this.checked?selecao.add(String(this.dataset.mat)):selecao.delete(String(this.dataset.mat))">';
+  if(k==='pdf')return'<button class="btn pequeno" onclick="gerarPdf(\''+attr(r.mat)+'\')">PDF</button>';
+  const v=r[k]??'';
+  if(k.toLowerCase().includes('prioridade')||k.includes('status'))return'<span class="badge '+classeBadge(v)+'">'+esc(v||'Pendente')+'</span>';
+  return esc(v);
+}
+
+function ordenarTabela(id,col,th){
+  const tabela=document.getElementById(id),tbody=tabela&&tabela.tBodies[0];if(!tbody)return;
+  const asc=!th.classList.contains('asc');tabela.querySelectorAll('th').forEach(h=>h.classList.remove('asc','desc'));th.classList.add(asc?'asc':'desc');
+  const linhas=[...tbody.rows];linhas.sort((a,b)=>comparar(a.cells[col]?.innerText,b.cells[col]?.innerText)*(asc?1:-1));linhas.forEach(l=>tbody.appendChild(l));
+}
+function comparar(a,b){a=String(a||'').trim();b=String(b||'').trim();const da=dataNumero(a),db=dataNumero(b);if(da!==null&&db!==null)return da-db;const na=numero(a),nb=numero(b);if(na!==null&&nb!==null)return na-nb;return norm(a).localeCompare(norm(b))}
+function dataNumero(v){const m=v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?Number(m[3]+m[2]+m[1]):null}
+function numero(v){return /^-?\d+(?:[.,]\d+)?$/.test(v)?Number(v.replace(',','.')):null}
+
+function aplicarPesquisa(){paginaAtual=1;if(moduloAtual==='convocar'){const d=document.getElementById('tabelaConvocar');if(d)d.innerHTML=tabelaConvocarHtml(filtrarConvocarLista());return}if(['prioridades','vencidos','pendencias'].includes(moduloAtual)){document.querySelectorAll('tbody tr[data-search]').forEach(tr=>tr.style.display=!pesquisa.value||tr.dataset.search.includes(norm(pesquisa.value))?'':'none');return}const d=document.getElementById('tabelaGeral');if(d)d.innerHTML=tabelaPaginada(dadosModuloFiltrados(),colunas(moduloAtual),moduloAtual)}
+
+function renderIndicadores(d){
+  const resumo=d&&d.resumoMensal||[],atrasados=d&&d.atrasadosAtuais||[];if(!d||!d.ano){areaPrincipal.innerHTML='<div class="painel erro">Não foi possível carregar os indicadores.</div>';return}
+  const mes=periodo().inicio.substring(0,7),r=resumo.find(x=>(x.mesAnalise||x.mes)===mes)||resumo[0]||{};
+  const pct=Number(r.totalFazer)>0?Math.round((Number(r.feitos30DiasOuMais)||0)/Number(r.totalFazer)*100):0;
+  areaPrincipal.innerHTML='<div class="painel"><div class="cabecalho-modulo"><div><h2>Indicadores de ASO - '+esc(d.ano)+'</h2><small>Mesma metodologia da versão anterior.</small></div></div><div class="indicador-grid">'+indicador('ASOs na meta',r.totalFazer)+indicador('Realizados ≥ 30 dias',r.feitos30DiasOuMais)+indicador('Realizados < 30 dias',r.feitosMenos30Dias)+indicador('Atrasados no mês',r.atrasados)+indicador('Atrasados atuais',atrasados.length)+indicador('% no prazo',pct+'%')+'</div><h3>Resumo mensal</h3>'+tabelaHtml(resumo,[{k:'mesAnalise',t:'Mês analisado'},{k:'vencimentoAvaliado',t:'Vencimento avaliado'},{k:'totalFazer',t:'ASOs na meta'},{k:'feitos30DiasOuMais',t:'≥ 30 dias'},{k:'feitosMenos30Dias',t:'< 30 dias'},{k:'atrasados',t:'Atrasados'},{k:'pendenteRealizacao',t:'Pendentes'}],'indicadores','tbl_indicadores')+'<h3 style="margin-top:18px">Atrasados atualmente</h3>'+tabelaHtml(atrasados,[{k:'mat',t:'Matrícula'},{k:'nome',t:'Nome'},{k:'funcao',t:'Função'},{k:'setor',t:'Setor'},{k:'situacao',t:'Situação'},{k:'dataVencimentoBR',t:'Vencimento'},{k:'statusAgenda',t:'Status'}],'indicadores','tbl_atrasados_ind')+'</div>';
+}
+function indicador(t,v){return'<div class="indicador-card"><span>'+esc(t)+'</span><b>'+(v||0)+'</b></div>'}
+
 function gerarPdf(mat){google.script.run.withSuccessHandler(r=>r&&r.url&&window.open(r.url,'_blank')).withFailureHandler(erro).gerarConvocacaoIndividual(mat)}
-function exportarCSV(){const c=colunas('exames'),arr=[c.map(x=>x.t)];dadosModulo.forEach(r=>arr.push(c.map(x=>String(r[x.k]??'').replace(/;/g,','))));const b=new Blob(['\ufeff'+arr.map(x=>x.join(';')).join('\n')],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='exames_complementares.csv';a.click()}
-function classeBadge(v){v=norm(v);if(v.includes('VENCID')||v.includes('CRITIC')||v.includes('ATRAS'))return'vencido';if(v.includes('ALTA')||v.includes('URGENT'))return'alta';if(v.includes('MEDIA')||v.includes('ATENCAO')||v.includes('PRIOR'))return'media';if(v.includes('BAIXA'))return'baixa';return'normal'}
+function gerarSelecionadas(){const mats=[...selecao],p=periodo();if(!mats.length)return alert('Selecione pelo menos uma convocação.');google.script.run.withSuccessHandler(r=>alert('Processamento concluído: '+(r||[]).length+' registro(s).')).withFailureHandler(erro).gerarConvocacoesSelecionadasLote(mats,p.inicio,p.fim)}
+function enviarSelecionadas(){const mats=[...selecao],emails=document.getElementById('emailsGestor')?.value||'',p=periodo();if(!mats.length)return alert('Selecione pelo menos uma convocação.');if(!emails.trim())return alert('Informe o e-mail do gestor.');const lotes=[];for(let i=0;i<mats.length;i+=10)lotes.push(mats.slice(i,i+10));enviarLote(lotes,0,emails,p)}
+function enviarLote(lotes,i,emails,p){if(i>=lotes.length)return alert('Convocações enviadas.');google.script.run.withSuccessHandler(()=>enviarLote(lotes,i+1,emails,p)).withFailureHandler(erro).enviarConvocacoesSelecionadasGestorV12(lotes[i],emails,p.inicio,p.fim)}
+function exportarCSV(){const cols=colunas('exames'),rows=[cols.map(c=>c.t),...dadosModulo.map(r=>cols.map(c=>String(r[c.k]??'').replace(/;/g,',')))];const blob=new Blob(['\ufeff'+rows.map(x=>x.join(';')).join('\n')],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='exames_complementares_'+dataInicio.value+'_'+dataFim.value+'.csv';a.click();URL.revokeObjectURL(a.href)}
+function classeBadge(v){const n=norm(v);if(n.includes('CRIT')||n.includes('VENC')||n.includes('ATRAS'))return'critico';if(n.includes('URG')||n.includes('ALTA'))return'urgente';if(n.includes('ATEN')||n.includes('MEDIA')||n.includes('PRIOR'))return'atencao';return'programado'}
+function textoItem(x){return norm([x.mat,x.matricula,x.nome,x.funcao,x.setor,x.situacao,x.statusAgenda,x.grupoPendencia,x.grupoComplementar].join(' '))}
 function norm(v){return String(v||'').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
 function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function attr(v){return esc(v).replace(/`/g,'&#96;')}
