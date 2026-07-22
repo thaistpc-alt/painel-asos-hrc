@@ -1,0 +1,2510 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+
+  <style>
+    :root {
+      --azul: #1d4ed8;
+      --verde: #047857;
+      --vermelho: #b91c1c;
+      --amarelo: #b45309;
+      --borda: #dbe3ee;
+      --texto: #0f172a;
+      --cinza: #64748b;
+      --fundo: #f4f6f8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef2f6;
+      margin: 0;
+      padding: 12px;
+      color: var(--texto);
+    }
+
+    .topo {
+      background: linear-gradient(135deg, #0f766e, #1d4ed8);
+      color: white;
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 10px;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, .14);
+    }
+
+    .topo h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .topo p {
+      margin: 8px 0 0;
+      font-size: 14px;
+      opacity: .92;
+    }
+
+    .filtros, .conteudo {
+      background: white;
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, .06);
+      border: 1px solid var(--borda);
+    }
+
+    .filtros {
+      display: flex;
+      gap: 10px;
+      align-items: end;
+      flex-wrap: wrap;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+      color: #334155;
+    }
+
+    input, select {
+      padding: 9px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      min-width: 140px;
+      background: white;
+      font-size: 12px;
+    }
+
+    button {
+      background: var(--verde);
+      color: white;
+      border: none;
+      padding: 9px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 12px;
+      transition: .2s;
+    }
+
+    button:hover {
+      filter: brightness(.92);
+      transform: translateY(-1px);
+    }
+
+    button.azul {
+      background: var(--azul);
+    }
+
+    button.cinza {
+      background: #475569;
+    }
+
+    .abas {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      padding: 8px 0;
+      background: rgba(244, 246, 248, .92);
+      backdrop-filter: blur(6px);
+    }
+
+    .aba {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .aba.ativa {
+      background: var(--azul);
+      color: white;
+      box-shadow: 0 4px 12px rgba(29, 78, 216, .25);
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--borda);
+      box-shadow: 0 4px 10px rgba(15, 23, 42, .05);
+    }
+
+    .card .titulo {
+      font-size: 12px;
+      font-weight: bold;
+      color: #475569;
+      min-height: 32px;
+    }
+
+    .numero {
+      font-size: 30px;
+      font-weight: bold;
+      color: var(--verde);
+      margin-top: 8px;
+    }
+
+    .numero.vermelho {
+      color: var(--vermelho);
+    }
+
+    .numero.amarelo {
+      color: var(--amarelo);
+    }
+
+    .linha-filtros {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: end;
+      margin-bottom: 12px;
+    }
+
+    .tabela-container {
+      overflow-x: auto;
+      overflow-y: visible;
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      width: 100%;
+      background: white;
+    }
+
+    table {
+      width: 100%;
+      min-width: 920px;
+      table-layout: fixed;
+      border-collapse: collapse;
+      font-size: 10.2px;
+      background: white;
+    }
+
+    th, td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 5px 4px;
+      text-align: left;
+      vertical-align: middle;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      line-height: 1.22;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 8.8px;
+      text-transform: uppercase;
+      letter-spacing: .01em;
+      z-index: 5;
+      box-shadow: 0 1px 0 #dbe3ee;
+    }
+
+    tr:hover td {
+      background: #f8fafc;
+    }
+
+    td button {
+      padding: 5px 6px;
+      font-size: 9.5px;
+      white-space: normal;
+      width: 100%;
+    }
+
+    .loading {
+      display: none;
+      font-weight: bold;
+      color: #334155;
+    }
+
+    .erro {
+      display: none;
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #fecaca;
+      font-size: 13px;
+    }
+
+    .ok {
+      display: none;
+      background: #dcfce7;
+      color: #166534;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #bbf7d0;
+      font-size: 13px;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 21px;
+    }
+
+    h3 {
+      margin-top: 22px;
+      color: #0f172a;
+      border-left: 5px solid var(--azul);
+      padding-left: 10px;
+      font-size: 17px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 6px;
+      border-radius: 999px;
+      font-size: 9.5px;
+      font-weight: bold;
+      background: #e0f2fe;
+      color: #075985;
+    }
+
+    .badge.alta {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .badge.media {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .badge.baixa {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .badge.vencido {
+      background: #fecaca;
+      color: #7f1d1d;
+    }
+
+    .pendente-agendamento {
+      color: var(--amarelo);
+      font-weight: bold;
+    }
+
+    .acoes-lote {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: end;
+      margin-left: auto;
+    }
+
+    .acoes-lote button {
+      white-space: nowrap;
+      padding: 8px 10px;
+      font-size: 11px;
+      height: 36px;
+      min-width: auto;
+    }
+
+    .email-gestor {
+      min-width: 230px;
+    }
+
+    .email-gestor input {
+      width: 100%;
+      min-width: 210px;
+      height: 36px;
+    }
+
+    .acoes-pendencia {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(42px, 1fr));
+      gap: 4px;
+    }
+
+    .acoes-pendencia button {
+      width: 100%;
+      min-width: 42px;
+      font-size: 9px;
+      padding: 5px 4px;
+    }
+
+    .botao-secundario {
+      background: #334155;
+    }
+
+    .botao-alerta {
+      background: #b45309;
+    }
+
+    .check-coluna {
+      width: 32px !important;
+      max-width: 32px !important;
+      text-align: center;
+      padding-left: 3px !important;
+      padding-right: 3px !important;
+    }
+
+    .check-coluna input,
+    .check-lote {
+      min-width: auto;
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+    }
+
+    .status-lote {
+      display: inline-block;
+      min-width: 18px;
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .status-lote.ok-lote {
+      color: var(--verde);
+    }
+
+    .status-lote.erro-lote {
+      color: var(--vermelho);
+    }
+
+    .status-lote.aguardando-lote {
+      color: var(--amarelo);
+    }
+
+    .progresso-lote {
+      display: none;
+      margin: 12px 0;
+      padding: 12px;
+      border: 1px solid var(--borda);
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+
+    .barra-progresso {
+      width: 100%;
+      height: 12px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .barra-progresso > div {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(135deg, #0f766e, #1d4ed8);
+      transition: width .25s ease;
+    }
+
+
+    .vazio {
+      padding: 14px;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    .secao {
+      margin-top: 12px;
+    }
+
+    .secao h3 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .contador-secao {
+      background: #e2e8f0;
+      color: #334155;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: bold;
+      border: 1px solid #cbd5e1;
+    }
+
+    .linha-realizado td {
+      background: #f8fafc;
+      color: #475569;
+    }
+
+    .rodape-info {
+      color: var(--cinza);
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    .select-justificativa {
+      min-width: 100%;
+      width: 100%;
+      font-size: 10px;
+      padding: 5px 4px;
+    }
+
+    /* Ajustes V8.1 - tabela Convocar compacta para notebooks */
+    #tabelaConvocar table {
+      table-layout: fixed;
+      font-size: 9.4px;
+      min-width: 1320px;
+    }
+
+    #tabelaConvocar table th,
+    #tabelaConvocar table td {
+      padding: 4px 4px;
+      line-height: 1.15;
+    }
+
+    #tabelaConvocar table th:nth-child(1),
+    #tabelaConvocar table td:nth-child(1) { width: 2.3%; }
+
+    #tabelaConvocar table th:nth-child(2),
+    #tabelaConvocar table td:nth-child(2) { width: 4.2%; }
+
+    #tabelaConvocar table th:nth-child(3),
+    #tabelaConvocar table td:nth-child(3) { width: 15%; }
+
+    #tabelaConvocar table th:nth-child(4),
+    #tabelaConvocar table td:nth-child(4) { width: 11%; }
+
+    #tabelaConvocar table th:nth-child(5),
+    #tabelaConvocar table td:nth-child(5) { width: 13%; }
+
+    #tabelaConvocar table th:nth-child(6),
+    #tabelaConvocar table td:nth-child(6) { width: 6.2%; }
+
+    #tabelaConvocar table th:nth-child(7),
+    #tabelaConvocar table td:nth-child(7) { width: 7%; }
+
+    #tabelaConvocar table th:nth-child(8),
+    #tabelaConvocar table td:nth-child(8) { width: 7%; }
+
+    #tabelaConvocar table th:nth-child(9),
+    #tabelaConvocar table td:nth-child(9) { width: 9.5%; }
+
+    #tabelaConvocar table th:nth-child(10),
+    #tabelaConvocar table td:nth-child(10) { width: 7.5%; }
+
+    #tabelaConvocar table th:nth-child(11),
+    #tabelaConvocar table td:nth-child(11) { width: 4.2%; text-align:center; }
+
+    #tabelaConvocar table th:nth-child(12),
+    #tabelaConvocar table td:nth-child(12) { width: 5.2%; text-align:center; }
+
+    #tabelaConvocar table th:nth-child(13),
+    #tabelaConvocar table td:nth-child(13) { width: 4.2%; text-align:center; }
+
+    #tabelaConvocar table th:nth-child(14),
+    #tabelaConvocar table td:nth-child(14) { width: 3.7%; text-align:center; }
+
+    #tabelaConvocar table td:nth-child(5),
+    #tabelaConvocar table td:nth-child(10) {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #tabelaConvocar td button {
+      width: 32px;
+      min-width: 32px;
+      height: 30px;
+      padding: 4px;
+      font-size: 0;
+      border-radius: 8px;
+      position: relative;
+    }
+
+    #tabelaConvocar td button::after {
+      content: "PDF";
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 1200px) {
+      body {
+        padding: 10px;
+      }
+
+      table {
+        font-size: 9.3px;
+      }
+
+      th {
+        font-size: 8.2px;
+      }
+
+      th, td {
+        padding: 4px 3px;
+      }
+
+      button {
+        font-size: 9.5px;
+        padding: 6px 7px;
+      }
+
+      .badge {
+        font-size: 8.5px;
+        padding: 3px 5px;
+      }
+    }
+
+    .campo-pesquisa {
+      min-width: 260px;
+      flex: 1;
+    }
+
+    .campo-pesquisa input {
+      width: 100%;
+      min-width: 220px;
+    }
+
+    th.ordenavel {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    th.ordenavel::after {
+      content: " \2195";
+      color: #64748b;
+      font-size: 9px;
+    }
+
+    th.ordenavel.asc::after {
+      content: " \2191";
+      color: #1d4ed8;
+    }
+
+    th.ordenavel.desc::after {
+      content: " \2193";
+      color: #1d4ed8;
+    }
+
+    .info-tabela {
+      color: #64748b;
+      font-size: 11px;
+      margin-top: 6px;
+    }
+
+
+
+    .grafico-meta {
+      display: grid;
+      gap: 8px;
+      margin: 10px 0 14px;
+      padding: 12px;
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .linha-grafico {
+      display: grid;
+      grid-template-columns: 82px 1fr 58px;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+    }
+
+    .barra-externa {
+      height: 16px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+    }
+
+    .barra-interna {
+      height: 100%;
+      background: linear-gradient(90deg, #0f766e, #1d4ed8);
+      border-radius: 999px;
+      min-width: 0;
+    }
+
+    .grafico-legenda {
+      font-size: 12px;
+      color: var(--cinza);
+      margin-bottom: 8px;
+    }
+
+    .painel-indicador-topo {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+      margin: 6px 0 12px;
+      padding: 12px;
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .painel-indicador-topo select {
+      min-width: 210px;
+      height: 38px;
+    }
+
+    .indicador-resumo-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin: 10px 0 14px;
+    }
+
+    .indicador-card {
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      padding: 12px;
+      background: #ffffff;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, .04);
+    }
+
+    .indicador-card .titulo {
+      color: #475569;
+      font-size: 11px;
+      font-weight: bold;
+      min-height: 28px;
+    }
+
+    .indicador-card .valor {
+      font-size: 28px;
+      font-weight: bold;
+      color: var(--azul);
+      margin-top: 6px;
+    }
+
+    .indicador-card.alerta .valor {
+      color: var(--amarelo);
+    }
+
+    .indicador-card.ruim .valor {
+      color: var(--vermelho);
+    }
+
+    .linha-grafico.selecionado {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 6px;
+      margin: -6px;
+    }
+
+    .analise-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .analise-bloco {
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      background: #ffffff;
+      overflow: hidden;
+    }
+
+    .analise-bloco h3 {
+      margin: 0;
+      padding: 10px 12px;
+      border-left: 0;
+      border-bottom: 1px solid var(--borda);
+      background: #f8fafc;
+      font-size: 14px;
+    }
+
+    .analise-bloco .vazio {
+      margin: 10px;
+    }
+
+    #analiseIndicadorMensal table {
+      min-width: 0;
+      table-layout: fixed;
+      font-size: 10.5px;
+    }
+
+    #analiseIndicadorMensal th,
+    #analiseIndicadorMensal td {
+      padding: 7px 6px;
+    }
+
+    .tabela-complementares table {
+      min-width: 1180px;
+      font-size: 10px;
+    }
+
+    .tabela-complementares th,
+    .tabela-complementares td {
+      padding: 6px 5px;
+    }
+
+    .tabela-complementares th:nth-child(1),
+    .tabela-complementares td:nth-child(1) { width: 10%; }
+    .tabela-complementares th:nth-child(2),
+    .tabela-complementares td:nth-child(2) { width: 6%; }
+    .tabela-complementares th:nth-child(3),
+    .tabela-complementares td:nth-child(3) { width: 15%; }
+    .tabela-complementares th:nth-child(4),
+    .tabela-complementares td:nth-child(4) { width: 12%; }
+    .tabela-complementares th:nth-child(5),
+    .tabela-complementares td:nth-child(5) { width: 14%; }
+
+  </style>
+</head>
+
+<body>
+  <div class="topo">
+    <h1>PAINEL DE ASOS - SESMT HRC</h1>
+    <p>Versão 11.4 - leitura rápida, exames complementares e indicadores revisados.</p>
+  </div>
+
+  <div class="filtros">
+    <div>
+      <label>Data inicial</label>
+      <input type="date" id="dataInicio" onchange="carregarDados()">
+    </div>
+
+    <div>
+      <label>Data final</label>
+      <input type="date" id="dataFim" onchange="carregarDados()">
+    </div>
+
+    <button onclick="carregarDados()">Filtrar</button>
+    <button class="azul" onclick="atualizarDadosForcado()">Atualizar dados</button>
+    <button class="cinza" onclick="limparFiltrosLocais()">Limpar filtros locais</button>
+    <span class="loading" id="loading">Carregando...</span>
+  </div>
+
+  <div id="msgErro" class="erro"></div>
+  <div id="msgOk" class="ok"></div>
+
+  <div class="abas">
+    <button class="aba ativa" id="abaDashboard" onclick="abrirAba('dashboard', this)">Dashboard</button>
+    <button class="aba" id="abaConvocar" onclick="abrirAba('convocar', this)">Convocar</button>
+    <button class="aba" id="abaFaltosos" onclick="abrirAba('faltosos', this)">Pendências</button>
+    <button class="aba" id="abaPrioridade" onclick="abrirAba('prioridade', this)">Prioridade</button>
+    <button class="aba" id="abaVencidos" onclick="abrirAba('vencidos', this)">Vencidos</button>
+    <button class="aba" id="abaComplementares" onclick="abrirAba('complementares', this)">Complementares</button>
+    <button class="aba" id="abaColaboradores" onclick="abrirAba('colaboradores', this)">Colaboradores</button>
+    <button class="aba" id="abaIndicadores" onclick="abrirAba('indicadores', this)">Indicadores</button>
+  </div>
+
+  <div class="conteudo" id="dashboard">
+    <h2>Dashboard</h2>
+
+    <div class="cards">
+      <div class="card">
+        <div class="titulo">Total para convocar</div>
+        <div class="numero" id="totalConvocar">0</div>
+      </div>
+
+      <div class="card">
+        <div class="titulo">Total agendados</div>
+        <div class="numero" id="totalAgendados">0</div>
+      </div>
+
+      <div class="card">
+        <div class="titulo">Total já realizados</div>
+        <div class="numero" id="totalCompareceram">0</div>
+      </div>
+
+      <div class="card">
+        <div class="titulo">Total de pendências</div>
+        <div class="numero amarelo" id="totalFaltosos">0</div>
+      </div>
+
+      <div class="card">
+        <div class="titulo">Total com prioridade</div>
+        <div class="numero amarelo" id="totalPrioridade">0</div>
+      </div>
+
+      <div class="card">
+        <div class="titulo">Exames complementares</div>
+        <div class="numero amarelo" id="totalComplementares">0</div>
+      </div>
+
+      <div class="card">
+        <div class="titulo">Total de vencidos</div>
+        <div class="numero vermelho" id="totalVencidos">0</div>
+      </div>
+
+      <div class="card">
+        <div class="titulo">Total de vencidos - ativos</div>
+        <div class="numero vermelho" id="totalVencidosAtivos">0</div>
+      </div>
+    </div>
+
+    <div class="rodape-info" id="infoVersao"></div>
+    <div class="rodape-info" id="infoSincronizacaoAgenda"></div>
+  </div>
+
+  <div class="conteudo" id="convocar" style="display:none;">
+    <h2>Convocar</h2>
+
+    <div class="linha-filtros">
+      <div>
+        <label>Filtrar situação atual</label>
+        <select id="filtroSituacaoConvocar" onchange="filtrarConvocacaoPorSituacao()">
+          <option value="">Todas</option>
+        </select>
+      </div>
+
+      <div class="campo-pesquisa">
+        <label>Pesquisar</label>
+        <input type="text" id="pesquisaConvocar" placeholder="Nome, matrícula, função ou setor" oninput="filtrarConvocacaoPorSituacao()">
+      </div>
+
+      <div class="acoes-lote">
+        <div class="email-gestor">
+          <label>E-mail do gestor</label>
+          <input type="text" id="emailGestorConvocacao" placeholder="gestor@isgh.org.br; outro@isgh.org.br">
+        </div>
+        <button class="botao-secundario" onclick="marcarConvocacoesVisiveis(true)">Marcar</button>
+        <button class="botao-secundario" onclick="marcarConvocacoesVisiveis(false)">Limpar</button>
+        <button class="azul" onclick="gerarSelecionadosEmLote()">Gerar selecionados</button>
+        <button class="azul" onclick="enviarSelecionadosGestor()">Enviar gestor</button>
+        <button class="botao-alerta" onclick="gerarTodosVisiveisEmLote()">Gerar lote</button>
+      </div>
+    </div>
+
+    <div id="progressoLote" class="progresso-lote">
+      <div id="textoProgressoLote">Preparando geração...</div>
+      <div class="barra-progresso"><div id="barraProgressoLote"></div></div>
+    </div>
+
+    <div id="tabelaConvocar"></div>
+  </div>
+
+  <div class="conteudo" id="faltosos" style="display:none;">
+    <h2>Pendências</h2>
+    <div class="rodape-info">Esta aba é operacional e mostra apenas as pendências que ainda exigem ação do SESMT. Quem já realizou o ASO posteriormente deixa de aparecer nesta aba.</div>
+
+
+    <div class="linha-filtros">
+      <div class="email-gestor">
+        <label>E-mail do gestor</label>
+        <input type="text" id="emailGestorPendencia" placeholder="gestor@isgh.org.br; outro@isgh.org.br">
+      </div>
+
+      <div class="campo-pesquisa">
+        <label>Pesquisar</label>
+        <input type="text" id="pesquisaFaltosos" placeholder="Nome, matrícula, função ou setor" oninput="filtrarPendencias()">
+      </div>
+    </div>
+
+    <div id="tabelaFaltosos"></div>
+  </div>
+
+  <div class="conteudo" id="prioridade" style="display:none;">
+    <h2>Prioridade - ASO a vencer em até 30 dias</h2>
+    <div class="linha-filtros">
+      <div class="campo-pesquisa">
+        <label>Pesquisar</label>
+        <input type="text" id="pesquisaPrioridade" placeholder="Nome, matrícula, função ou setor" oninput="filtrarTabelaPorTexto('tabelaPrioridade', 'pesquisaPrioridade')">
+      </div>
+    </div>
+    <div id="tabelaPrioridade"></div>
+  </div>
+
+  <div class="conteudo" id="vencidos" style="display:none;">
+    <h2>ASOs vencidos</h2>
+    <div class="linha-filtros">
+      <div class="campo-pesquisa">
+        <label>Pesquisar</label>
+        <input type="text" id="pesquisaVencidos" placeholder="Nome, matrícula, função ou setor" oninput="filtrarTabelaPorTexto('tabelaVencidos', 'pesquisaVencidos')">
+      </div>
+    </div>
+    <div id="tabelaVencidos"></div>
+  </div>
+
+  <div class="conteudo" id="complementares" style="display:none;">
+    <h2>Exames complementares</h2>
+    <div class="rodape-info">Lista de colaboradores que exigem exame complementar antes do ASO no período selecionado.</div>
+
+    <div class="linha-filtros">
+      <div>
+        <label>Grupo</label>
+        <select id="filtroGrupoComplementar" onchange="filtrarComplementares()">
+          <option value="">Todos</option>
+        </select>
+      </div>
+
+      <div class="campo-pesquisa">
+        <label>Pesquisar</label>
+        <input type="text" id="pesquisaComplementares" placeholder="Nome, matrícula, função, setor ou grupo" oninput="filtrarComplementares()">
+      </div>
+    </div>
+
+    <div id="cardsComplementares" class="indicador-resumo-cards"></div>
+    <div id="tabelaComplementares"></div>
+  </div>
+
+
+  <div class="conteudo" id="colaboradores" style="display:none;">
+    <h2>Colaboradores</h2>
+    <div class="rodape-info">Consulta geral dos colaboradores, com data do último ASO e sinalização do vencimento.</div>
+
+    <div class="linha-filtros">
+      <div class="campo-pesquisa">
+        <label>Pesquisar</label>
+        <input type="text" id="pesquisaColaboradores" placeholder="Nome, matrícula, função ou setor" oninput="filtrarColaboradores()">
+      </div>
+    </div>
+
+    <div id="tabelaColaboradores"></div>
+  </div>
+
+  <div class="conteudo" id="indicadores" style="display:none;">
+    <h2>Indicadores do ano vigente</h2>
+    <div class="painel-indicador-topo">
+      <div>
+        <div id="infoAnoIndicador"></div>
+        <div class="grafico-legenda">Meta: manter 100% dos ASOs periódicos dos colaboradores ativos, em férias ou aviso prévio com 30 dias de antecedência em dias. Técnicos de Radiologia não entram na meta de 30 dias; entram somente nos atrasados.</div>
+      </div>
+      <div>
+        <label>Mês da análise</label>
+        <select id="mesIndicador" onchange="renderizarIndicadores(dadosPortal && dadosPortal.indicadores ? dadosPortal.indicadores : null)"></select>
+      </div>
+    </div>
+
+    <h3>Análise do mês selecionado</h3>
+    <div id="analiseIndicadorMensal"></div>
+
+    <h3>Desempenho mensal da meta</h3>
+    <div id="graficoMetaMensal"></div>
+
+    <h3>Resumo mensal</h3>
+    <div id="tabelaIndicadoresMensal"></div>
+  </div>
+
+  <script>
+    let dadosPortal = null;
+    let periodoCarregadoPortal = "";
+    let selecaoConvocacoes = new Set();
+    let loteEmProcessamento = false;
+
+    window.onload = function() {
+      const hoje = new Date();
+      const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+      const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+
+      document.getElementById("dataInicio").value = formatarDataInput(primeiroDia);
+      document.getElementById("dataFim").value = formatarDataInput(ultimoDia);
+
+      carregarDados();
+    };
+
+    function abrirAba(id, botao) {
+      document.querySelectorAll(".conteudo").forEach(div => div.style.display = "none");
+      document.getElementById(id).style.display = "block";
+
+      document.querySelectorAll(".aba").forEach(b => b.classList.remove("ativa"));
+      botao.classList.add("ativa");
+
+      renderizarAbaAtiva();
+    }
+
+    function formatarDataInput(data) {
+      const ano = data.getFullYear();
+      const mes = String(data.getMonth() + 1).padStart(2, "0");
+      const dia = String(data.getDate()).padStart(2, "0");
+      return `${ano}-${mes}-${dia}`;
+    }
+
+    function mostrarLoading(exibir) {
+      document.getElementById("loading").style.display = exibir ? "inline" : "none";
+    }
+
+    function mostrarErro(texto) {
+      document.getElementById("msgErro").innerText = texto;
+      document.getElementById("msgErro").style.display = "block";
+      document.getElementById("msgOk").style.display = "none";
+    }
+
+    function mostrarOk(texto) {
+      document.getElementById("msgOk").innerText = texto;
+      document.getElementById("msgOk").style.display = "block";
+      document.getElementById("msgErro").style.display = "none";
+    }
+
+    function limparMensagens() {
+      document.getElementById("msgErro").style.display = "none";
+      document.getElementById("msgOk").style.display = "none";
+    }
+
+
+    function atualizarDadosForcado() {
+  dadosPortal = null;
+  periodoCarregadoPortal = "";
+  carregarDados(true);
+}
+
+    function carregarDados(forcar) {
+      limparMensagens();
+
+      const dataInicio = document.getElementById("dataInicio").value;
+      const dataFim = document.getElementById("dataFim").value;
+
+      if (!dataInicio || !dataFim) {
+        mostrarErro("Informe a data inicial e a data final.");
+        return;
+      }
+
+      const chavePeriodo = dataInicio + "|" + dataFim;
+
+      // Otimização V7.3: evita recarregar os dados se o usuário clicar em Filtrar
+      // sem alterar o período. Os filtros locais continuam funcionando no navegador.
+      if (!forcar && dadosPortal && periodoCarregadoPortal === chavePeriodo) {
+        renderizarTudo(dadosPortal);
+        return;
+      }
+
+      mostrarLoading(true);
+
+      google.script.run
+        .withSuccessHandler(function(dados) {
+          dadosPortal = dados;
+          periodoCarregadoPortal = chavePeriodo;
+          atualizarDashboard(dados.dashboard);
+          atualizarNomesAbas(dados.dashboard);
+          renderizarTudo(dados);
+          mostrarLoading(false);
+
+          if (dados.meta) {
+            const infoCache = dados.meta.cache === "sim" ? " | Cache" : "";
+            document.getElementById("infoVersao").innerText =
+              "Versão " + dados.meta.versao + " | Atualizado em " + dados.meta.geradoEm + infoCache;
+
+            const sync = document.getElementById("infoSincronizacaoAgenda");
+            if (sync) {
+              sync.innerText = dados.meta.sincronizacaoAgenda || "";
+            }
+          }
+        })
+        .withFailureHandler(function(erro) {
+          mostrarLoading(false);
+          mostrarErro(erro.message || erro);
+        })
+        .obterDadosPortal(dataInicio, dataFim, forcar === true);
+    }
+
+    function atualizarDashboard(d) {
+      setTexto("totalConvocar", d.totalConvocar);
+      setTexto("totalAgendados", d.totalAgendados);
+      setTexto("totalCompareceram", d.totalCompareceram);
+      setTexto("totalFaltosos", d.totalFaltosos);
+      setTexto("totalPrioridade", d.totalPrioridade);
+      setTexto("totalComplementares", d.totalExamesComplementares);
+      setTexto("totalVencidos", d.totalVencidos);
+      setTexto("totalVencidosAtivos", d.totalVencidosAtivos);
+    }
+
+    function atualizarNomesAbas(d) {
+      document.getElementById("abaConvocar").innerText = "Convocar (" + d.totalConvocar + ")";
+      document.getElementById("abaFaltosos").innerText = "Pendências (" + d.totalFaltosos + ")";
+      document.getElementById("abaPrioridade").innerText = "Prioridade (" + d.totalPrioridade + ")";
+      document.getElementById("abaVencidos").innerText = "Vencidos (" + d.totalVencidos + ")";
+      if (document.getElementById("abaComplementares")) document.getElementById("abaComplementares").innerText = "Complementares (" + (d.totalExamesComplementares || 0) + ")";
+      if (document.getElementById("abaColaboradores")) document.getElementById("abaColaboradores").innerText = "Colaboradores (" + (d.totalColaboradores || 0) + ")";
+    }
+
+    function setTexto(id, valor) {
+      const el = document.getElementById(id);
+      if (el) el.innerText = valor || 0;
+    }
+
+    function renderizarTudo(dados) {
+      carregarFiltroSituacao("filtroSituacaoConvocar", dados.convocar.todos, "");
+      carregarFiltroGrupoComplementar(dados.examesComplementares || []);
+      renderizarAbaAtiva();
+    }
+
+    function obterAbaAtiva() {
+      const ativa = Array.from(document.querySelectorAll(".conteudo"))
+        .find(div => div.style.display !== "none");
+      return ativa ? ativa.id : "dashboard";
+    }
+
+    function renderizarAbaAtiva() {
+      if (!dadosPortal) return;
+
+      const aba = obterAbaAtiva();
+
+      if (aba === "convocar") {
+        filtrarConvocacaoPorSituacao();
+      } else if (aba === "faltosos") {
+        filtrarPendencias();
+      } else if (aba === "prioridade") {
+        renderizarTabelaSeparada(
+          "tabelaPrioridade",
+          dadosPortal.prioridadeAtivos,
+          dadosPortal.prioridadeOutros,
+          "Colaboradores ativos",
+          "Colaboradores em outras situações",
+          true
+        );
+      } else if (aba === "vencidos") {
+        renderizarTabelaSeparada(
+          "tabelaVencidos",
+          dadosPortal.vencidosAtivos,
+          dadosPortal.vencidosOutros,
+          "Colaboradores ativos",
+          "Colaboradores em outras situações"
+        );
+      } else if (aba === "complementares") {
+        filtrarComplementares();
+      } else if (aba === "colaboradores") {
+        filtrarColaboradores();
+      } else if (aba === "indicadores") {
+        renderizarIndicadores(dadosPortal.indicadores);
+      }
+    }
+
+    function carregarFiltroSituacao(idSelect, lista, valorPadrao) {
+      const select = document.getElementById(idSelect);
+      const valorAtual = select.value || valorPadrao || "";
+
+      const situacoes = [...new Set((lista || []).map(i => i.situacao).filter(Boolean))].sort();
+
+      select.innerHTML = `<option value="">Todas</option>`;
+
+      situacoes.forEach(s => {
+        select.innerHTML += `<option value="${escaparHtml(s)}">${escaparHtml(s)}</option>`;
+      });
+
+      select.value = situacoes.includes(valorAtual) ? valorAtual : "";
+    }
+
+    function limparFiltrosLocais() {
+      ["filtroSituacaoConvocar", "pesquisaConvocar", "pesquisaFaltosos", "pesquisaPrioridade", "pesquisaVencidos", "filtroGrupoComplementar", "pesquisaComplementares", "pesquisaColaboradores"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+
+      if (dadosPortal) {
+        renderizarAbaAtiva();
+      }
+    }
+
+    function filtrarConvocacaoPorSituacao() {
+      if (!dadosPortal) return;
+
+      const situacao = document.getElementById("filtroSituacaoConvocar").value;
+      const termo = obterTermoPesquisa("pesquisaConvocar");
+
+      const lista = dadosPortal.convocar.todos.filter(item =>
+        (!situacao || item.situacao === situacao) && correspondePesquisa(item, termo)
+      );
+
+      renderizarConvocar(lista);
+    }
+
+    function filtrarPendencias() {
+      if (!dadosPortal) return;
+
+      const termo = obterTermoPesquisa("pesquisaFaltosos");
+      const pendencias = dadosPortal.pendencias || {
+        necessitaReconvocacao: dadosPortal.faltosos || [],
+        agendadosReagendados: [],
+        resolvidos: [],
+        reincidentes: []
+      };
+
+      const filtrar = lista => (lista || []).filter(item => correspondePesquisa(item, termo));
+
+      const dados = {
+        necessitaReconvocacao: filtrar(pendencias.necessitaReconvocacao),
+        agendadosReagendados: filtrar(pendencias.agendadosReagendados),
+        resolvidos: filtrar(pendencias.resolvidos),
+        reincidentes: filtrar(pendencias.reincidentes)
+      };
+
+      renderizarPendencias(dados);
+    }
+
+    function filtrarFaltososPorSituacao() {
+      filtrarPendencias();
+    }
+
+    function carregarFiltroGrupoComplementar(lista) {
+      const select = document.getElementById("filtroGrupoComplementar");
+      if (!select) return;
+
+      const valorAtual = select.value || "";
+      const grupos = [...new Set((lista || []).map(i => i.grupoComplementar).filter(Boolean))].sort();
+
+      select.innerHTML = `<option value="">Todos</option>`;
+      grupos.forEach(grupo => {
+        select.innerHTML += `<option value="${escaparHtml(grupo)}">${escaparHtml(grupo)}</option>`;
+      });
+
+      select.value = grupos.includes(valorAtual) ? valorAtual : "";
+    }
+
+    function filtrarComplementares() {
+      if (!dadosPortal) return;
+
+      const grupo = document.getElementById("filtroGrupoComplementar")?.value || "";
+      const termo = obterTermoPesquisa("pesquisaComplementares");
+
+      const lista = (dadosPortal.examesComplementares || []).filter(item =>
+        (!grupo || item.grupoComplementar === grupo) &&
+        (!termo || correspondePesquisaComplementar(item, termo))
+      );
+
+      renderizarComplementares(lista);
+    }
+
+    function correspondePesquisaComplementar(item, termo) {
+      if (!termo) return true;
+
+      const texto = normalizarTextoPortal([
+        item.mat,
+        item.matricula,
+        item.matriculaCompleta,
+        item.nome,
+        item.funcao,
+        item.setor,
+        item.grupoComplementar,
+        item.prioridadeComplementar
+      ].join(" "));
+
+      return texto.includes(termo);
+    }
+
+    function obterTermoPesquisa(idInput) {
+      const el = document.getElementById(idInput);
+      return normalizarTextoPortal(el ? el.value : "");
+    }
+
+    function correspondePesquisa(item, termo) {
+      if (!termo) return true;
+
+      const texto = normalizarTextoPortal([
+        item.mat,
+        item.matricula,
+        item.matriculaCompleta,
+        item.nome,
+        item.funcao,
+        item.setor
+      ].join(" "));
+
+      return texto.includes(termo);
+    }
+
+    function filtrarTabelaPorTexto(idContainer, idInput) {
+      const termo = obterTermoPesquisa(idInput);
+      const container = document.getElementById(idContainer);
+      if (!container) return;
+
+      container.querySelectorAll("tbody tr").forEach(tr => {
+        const texto = normalizarTextoPortal(tr.innerText || tr.textContent || "");
+        tr.style.display = !termo || texto.includes(termo) ? "" : "none";
+      });
+    }
+
+    function ativarOrdenacaoTabelas(idContainer) {
+      const container = document.getElementById(idContainer);
+      if (!container) return;
+
+      container.querySelectorAll("table").forEach((tabela, indiceTabela) => {
+        const cabecalhos = tabela.querySelectorAll("thead th");
+
+        cabecalhos.forEach((th, indiceColuna) => {
+          if (th.dataset.ordenacaoAtiva === "1") return;
+
+          th.dataset.ordenacaoAtiva = "1";
+          th.classList.add("ordenavel");
+          th.title = "Clique para ordenar";
+
+          th.addEventListener("click", function() {
+            ordenarTabela(tabela, indiceColuna, th, idContainer + "_" + indiceTabela);
+          });
+        });
+      });
+    }
+
+    function ordenarTabela(tabela, indiceColuna, th, chaveTabela) {
+      const tbody = tabela.querySelector("tbody");
+      if (!tbody) return;
+
+      const direcaoAtual = th.dataset.direcao || "";
+      const novaDirecao = direcaoAtual === "asc" ? "desc" : "asc";
+
+      tabela.querySelectorAll("thead th").forEach(cab => {
+        cab.classList.remove("asc", "desc");
+        cab.dataset.direcao = "";
+      });
+
+      th.dataset.direcao = novaDirecao;
+      th.classList.add(novaDirecao);
+
+      const linhas = Array.from(tbody.querySelectorAll("tr"));
+
+      linhas.sort((a, b) => {
+        const valorA = obterValorCelula(a, indiceColuna);
+        const valorB = obterValorCelula(b, indiceColuna);
+        const comparacao = compararValoresTabela(valorA, valorB);
+        return novaDirecao === "asc" ? comparacao : -comparacao;
+      });
+
+      linhas.forEach(linha => tbody.appendChild(linha));
+    }
+
+    function obterValorCelula(linha, indiceColuna) {
+      const celula = linha.children[indiceColuna];
+      return celula ? String(celula.innerText || celula.textContent || "").trim() : "";
+    }
+
+    function compararValoresTabela(a, b) {
+      const dataA = converterDataBRParaNumero(a);
+      const dataB = converterDataBRParaNumero(b);
+
+      if (dataA !== null && dataB !== null) {
+        return dataA - dataB;
+      }
+
+      const numA = converterNumero(a);
+      const numB = converterNumero(b);
+
+      if (numA !== null && numB !== null) {
+        return numA - numB;
+      }
+
+      return normalizarTextoPortal(a).localeCompare(normalizarTextoPortal(b));
+    }
+
+    function converterDataBRParaNumero(valor) {
+      const m = String(valor || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (!m) return null;
+      return Number(m[3] + m[2] + m[1]);
+    }
+
+    function converterNumero(valor) {
+      const texto = String(valor || "").trim().replace(/\./g, "").replace(",", ".");
+      if (!texto || !/^-?\d+(\.\d+)?$/.test(texto)) return null;
+      return Number(texto);
+    }
+
+    function renderizarConvocar(lista) {
+      const div = document.getElementById("tabelaConvocar");
+
+      if (!lista || lista.length === 0) {
+        div.innerHTML = `<div class="vazio">Nenhum colaborador para convocar no período selecionado.</div>`;
+        return;
+      }
+
+      div.innerHTML = montarTabelaConvocar(lista);
+      ativarOrdenacaoTabelas("tabelaConvocar");
+      atualizarTextoSelecaoLote();
+    }
+
+    function ehAsoRealizadoNoPortal(item) {
+      const status = normalizarTextoPortal(item.statusAgenda || item.statusAgendaNorm || "");
+      return status.includes("ASO REALIZADO");
+    }
+
+    function normalizarTextoPortal(valor) {
+      return String(valor || "")
+        .trim()
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function montarTabelaConvocar(lista) {
+      let html = `
+        <div class="tabela-container">
+        <table>
+          <thead>
+            <tr>
+              <th class="check-coluna"><input type="checkbox" onclick="alternarSelecaoTodasVisiveis(this)"></th>
+              <th>Matrícula</th>
+              <th>Nome</th>
+              <th>Função</th>
+              <th>Setor</th>
+              <th>Situação</th>
+              <th>Data convocar</th>
+              <th>Data limite</th>
+              <th>Data agendada</th>
+              <th>Status agenda</th>
+              <th>Dias</th>
+              <th>Prior.</th>
+              <th>PDF</th>
+              <th>OK</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      lista.forEach(item => {
+        const realizado = ehAsoRealizadoNoPortal(item);
+        const dataAgendadaPortal = formatarDataAgendadaConvocar(item);
+        const statusAgendaPortal = formatarStatusAgendaConvocar(item);
+        const matEsc = escaparAtributo(item.mat);
+        const idStatus = idSeguroPortal(item.mat);
+        const checked = selecaoConvocacoes.has(String(item.mat)) ? "checked" : "";
+
+        html += `
+          <tr class="${realizado ? "linha-realizado" : ""}" data-mat="${matEsc}">
+            <td class="check-coluna"><input type="checkbox" class="check-lote" data-mat="${matEsc}" ${checked} onchange="atualizarSelecaoConvocacao(this)"></td>
+            <td>${escaparHtml(item.mat)}</td>
+            <td>${escaparHtml(item.nome)}</td>
+            <td>${escaparHtml(item.funcao)}</td>
+            <td>${escaparHtml(item.setor)}</td>
+            <td>${escaparHtml(item.situacao)}</td>
+            <td>${escaparHtml(item.dataConvocarBR)}</td>
+            <td>${escaparHtml(item.dataLimiteBR)}</td>
+            <td>${dataAgendadaPortal}</td>
+            <td>${statusAgendaPortal}</td>
+            <td>${escaparHtml(item.diasParaVencer)}</td>
+            <td>${badgePrioridade(item.prioridade)}</td>
+            <td>
+              <button title="Gerar PDF" onclick="gerarIndividual('${escaparAtributo(item.mat)}')">
+                PDF
+              </button>
+            </td>
+            <td><span class="status-lote" id="statusLote_${idStatus}"></span></td>
+          </tr>
+        `;
+      });
+
+      html += "</tbody></table></div>";
+      return html;
+    }
+
+    function dataISOEstaNoPeriodoPortal(dataISO) {
+      const inicio = document.getElementById("dataInicio")?.value || "";
+      const fim = document.getElementById("dataFim")?.value || "";
+      if (!dataISO || !inicio || !fim) return false;
+      return dataISO >= inicio && dataISO <= fim;
+    }
+
+    function formatarDataAgendadaConvocar(item) {
+      if (dataISOEstaNoPeriodoPortal(item.dataAgendada)) {
+        return escaparHtml(item.dataAgendadaBR);
+      }
+
+      return `<span class="pendente-agendamento">Pendente agendamento</span>`;
+    }
+
+    function formatarStatusAgendaConvocar(item) {
+      if (!dataISOEstaNoPeriodoPortal(item.dataAgendada)) return "";
+
+      const statusNorm = normalizarTextoPortal(item.statusAgenda || item.statusAgendaNorm || "");
+
+      if (statusNorm.includes("ASO REALIZADO")) {
+        return escaparHtml("ASO Realizado");
+      }
+
+      if (statusNorm.includes("NAO COMPARECEU ASO")) {
+        return escaparHtml("Não compareceu ASO");
+      }
+
+      return "";
+    }
+
+    function badgePrioridade(valor) {
+      const texto = valor || "Normal";
+      const classe = normalizarClasse(texto);
+      return `<span class="badge ${classe}">${escaparHtml(texto)}</span>`;
+    }
+
+    function normalizarClasse(texto) {
+      texto = String(texto || "").toLowerCase();
+
+      if (texto.includes("alta")) return "alta";
+      if (texto.includes("média") || texto.includes("media")) return "media";
+      if (texto.includes("baixa")) return "baixa";
+      if (texto.includes("vencido")) return "vencido";
+
+      return "";
+    }
+
+    function renderizarTabela(idDiv, lista, mostrarAgenda, mostrarStatusAgenda, mostrarBotaoReconvocacao) {
+      const div = document.getElementById(idDiv);
+      div.innerHTML = montarTabelaHTML(lista, mostrarAgenda, mostrarStatusAgenda, mostrarBotaoReconvocacao);
+      ativarOrdenacaoTabelas(idDiv);
+    }
+
+    function renderizarTabelaSeparada(idDiv, ativos, outros, tituloAtivos, tituloOutros, mostrarOcorrencias) {
+      const div = document.getElementById(idDiv);
+
+      div.innerHTML = `
+        <div class="secao">
+          <h3>
+            <span>${tituloAtivos}</span>
+            <span class="contador-secao">${ativos ? ativos.length : 0}</span>
+          </h3>
+          ${montarTabelaHTML(ativos, true, false, false, mostrarOcorrencias)}
+        </div>
+
+        <div class="secao">
+          <h3>
+            <span>${tituloOutros}</span>
+            <span class="contador-secao">${outros ? outros.length : 0}</span>
+          </h3>
+          ${montarTabelaHTML(outros, true, false, false, mostrarOcorrencias)}
+        </div>
+      `;
+
+      ativarOrdenacaoTabelas(idDiv);
+    }
+
+    function renderizarPendencias(p) {
+      p = p || {};
+      const necessita = p.necessitaReconvocacao || [];
+      const agendados = p.agendadosReagendados || [];
+
+
+      const div = document.getElementById("tabelaFaltosos");
+      div.innerHTML = `
+        ${montarSecaoPendencia("Necessita reconvocação", necessita, "reconvocar")}
+        ${montarSecaoPendencia("Agendados/Reagendados", agendados, "agendado")}
+      `;
+      ativarOrdenacaoTabelas("tabelaFaltosos");
+    }
+
+    function montarSecaoPendencia(titulo, lista, tipo) {
+      const total = lista ? lista.length : 0;
+      let html = `
+        <div class="secao">
+          <h3>
+            <span>${escaparHtml(titulo)}</span>
+            <span class="contador-secao">${total}</span>
+          </h3>
+      `;
+
+      if (!lista || lista.length === 0) {
+        html += `<div class="vazio">Nenhum registro encontrado.</div></div>`;
+        return html;
+      }
+
+      html += `
+        <div class="tabela-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Matrícula</th>
+                <th>Nome</th>
+                <th>Função</th>
+                <th>Setor</th>
+                <th>Situação</th>
+                <th>Última pendência</th>
+                <th>Status</th>
+                <th>Nova data</th>
+                <th>Ocorr.</th>
+                <th>Enviadas</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      lista.forEach(item => {
+        const podeBaixar = tipo === "reconvocar" || tipo === "agendado";
+        const novaData = item.novaDataAgendadaBR || item.dataAgendadaBR || "";
+        const totalEnviadas = Number(item.totalConvocacoesEnviadas) || 0;
+        const acao = podeBaixar
+          ? `<div class="acoes-pendencia">
+               <button title="Baixar nova convocação" onclick="gerarIndividual('${escaparAtributo(item.mat)}')">PDF</button>
+               <button title="Enviar nova convocação ao gestor" onclick="enviarPendenciaGestor('${escaparAtributo(item.mat)}', '${escaparAtributo(item.dataUltimaPendenciaBR || item.dataAgendadaBR || "")}')">Enviar</button>
+             </div>`
+          : `<span class="badge">${escaparHtml(item.grupoPendencia || "")}</span>`;
+
+        html += `
+          <tr>
+            <td>${escaparHtml(item.mat)}</td>
+            <td>${escaparHtml(item.nome)}</td>
+            <td>${escaparHtml(item.funcao)}</td>
+            <td>${escaparHtml(item.setor)}</td>
+            <td>${escaparHtml(item.situacao)}</td>
+            <td>${escaparHtml(item.dataUltimaPendenciaBR || item.dataAgendadaBR || "")}</td>
+            <td>${escaparHtml(item.statusPendencia || item.statusAgenda || "")}</td>
+            <td>${escaparHtml(novaData)}</td>
+            <td>${escaparHtml(item.qtdOcorrencias ?? item.ocorrencias ?? 0)}</td>
+            <td title="${escaparAtributo(item.ultimoEnvioConvocacao || "")}">${escaparHtml(totalEnviadas)}</td>
+            <td>${acao}</td>
+          </tr>
+        `;
+      });
+
+      html += `</tbody></table></div></div>`;
+      return html;
+    }
+
+    function montarTabelaHTML(lista, mostrarAgenda, mostrarStatusAgenda, mostrarBotaoReconvocacao, mostrarOcorrencias) {
+      if (!lista || lista.length === 0) {
+        return `<div class="vazio">Nenhum registro encontrado.</div>`;
+      }
+
+      let html = `
+        <div class="tabela-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Matrícula</th>
+              <th>Nome</th>
+              <th>Função</th>
+              <th>Setor</th>
+              <th>Situação</th>
+              <th>Próx. venc.</th>
+              <th>Dias</th>
+              ${mostrarOcorrencias ? "<th>Ocorr.</th>" : ""}
+              ${mostrarAgenda ? "<th>Data agendada</th>" : ""}
+              ${mostrarStatusAgenda ? "<th>OK</th>" : ""}
+              ${mostrarBotaoReconvocacao ? "<th>Tipo</th>" : ""}
+              ${mostrarBotaoReconvocacao ? "<th>Nova convocação</th>" : ""}
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      lista.forEach(item => {
+        html += `
+          <tr>
+            <td>${escaparHtml(item.mat)}</td>
+            <td>${escaparHtml(item.nome)}</td>
+            <td>${escaparHtml(item.funcao)}</td>
+            <td>${escaparHtml(item.setor)}</td>
+            <td>${escaparHtml(item.situacao)}</td>
+            <td>${escaparHtml(item.proximoVencimentoBR)}</td>
+            <td>${escaparHtml(item.diasParaVencer)}</td>
+            ${mostrarOcorrencias ? `<td>${escaparHtml(item.qtdOcorrencias ?? item.ocorrencias ?? 0)}</td>` : ""}
+            ${mostrarAgenda ? `<td>${escaparHtml(item.dataAgendadaBR)}</td>` : ""}
+            ${mostrarStatusAgenda ? `<td>${escaparHtml(item.statusAgenda)}</td>` : ""}
+            ${mostrarBotaoReconvocacao ? `<td>${escaparHtml(item.tipoRegistroFaltoso || "")}</td>` : ""}
+            ${mostrarBotaoReconvocacao ? `<td><button onclick="gerarIndividual('${escaparAtributo(item.mat)}')">Baixar</button></td>` : ""}
+          </tr>
+        `;
+      });
+
+      html += "</tbody></table></div>";
+      return html;
+    }
+
+    function renderizarComplementares(lista) {
+      const cards = document.getElementById("cardsComplementares");
+      const div = document.getElementById("tabelaComplementares");
+      if (!cards || !div) return;
+
+      const grupos = {};
+      (lista || []).forEach(item => {
+        const grupo = item.grupoComplementar || "Outros";
+        grupos[grupo] = (grupos[grupo] || 0) + 1;
+      });
+
+      cards.innerHTML = `
+        <div class="indicador-card"><div class="titulo">Total no período</div><div class="valor">${escaparHtml((lista || []).length)}</div></div>
+        <div class="indicador-card ruim"><div class="titulo">Atrasados</div><div class="valor">${escaparHtml((lista || []).filter(i => Number(i.diasParaVencer) < 0).length)}</div></div>
+        <div class="indicador-card alerta"><div class="titulo">Até 7 dias</div><div class="valor">${escaparHtml((lista || []).filter(i => Number(i.diasParaVencer) >= 0 && Number(i.diasParaVencer) <= 7).length)}</div></div>
+        <div class="indicador-card"><div class="titulo">Com agendamento</div><div class="valor">${escaparHtml((lista || []).filter(i => dataISOEstaNoPeriodoPortal(i.dataAgendada)).length)}</div></div>
+      `;
+
+      if (!lista || lista.length === 0) {
+        div.innerHTML = `<div class="vazio">Nenhum colaborador com necessidade de exame complementar no período selecionado.</div>`;
+        return;
+      }
+
+      let html = `
+        <div class="tabela-container tabela-complementares">
+        <table>
+          <thead>
+            <tr>
+              <th>Grupo</th>
+              <th>Matrícula</th>
+              <th>Nome</th>
+              <th>Função</th>
+              <th>Setor</th>
+              <th>Data convocar</th>
+              <th>Data limite</th>
+              <th>Vencimento</th>
+              <th>Data agendada</th>
+              <th>Status agenda</th>
+              <th>Dias</th>
+              <th>Prioridade</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      lista.forEach(item => {
+        const agendada = dataISOEstaNoPeriodoPortal(item.dataAgendada)
+          ? item.dataAgendadaBR
+          : "Pendente";
+        const status = dataISOEstaNoPeriodoPortal(item.dataAgendada)
+          ? item.statusAgenda
+          : "";
+
+        html += `
+          <tr>
+            <td>${escaparHtml(item.grupoComplementar)}</td>
+            <td>${escaparHtml(item.mat)}</td>
+            <td>${escaparHtml(item.nome)}</td>
+            <td>${escaparHtml(item.funcao)}</td>
+            <td>${escaparHtml(item.setor)}</td>
+            <td>${escaparHtml(item.dataConvocarBR)}</td>
+            <td>${escaparHtml(item.dataLimiteBR)}</td>
+            <td>${escaparHtml(item.proximoVencimentoBR)}</td>
+            <td>${escaparHtml(agendada)}</td>
+            <td>${escaparHtml(status)}</td>
+            <td>${escaparHtml(item.diasParaVencer)}</td>
+            <td>${badgePrioridadeComplementar(item.prioridadeComplementar)}</td>
+          </tr>
+        `;
+      });
+
+      html += "</tbody></table></div>";
+      div.innerHTML = html;
+      ativarOrdenacaoTabelas("tabelaComplementares");
+    }
+
+    function badgePrioridadeComplementar(valor) {
+      const texto = valor || "Programado";
+      const normalizado = normalizarTextoPortal(texto);
+      let classe = "baixa";
+      if (normalizado.includes("ATRASADO")) classe = "vencido";
+      else if (normalizado.includes("AGENDAR")) classe = "alta";
+      else if (normalizado.includes("PRIORIT")) classe = "media";
+      return `<span class="badge ${classe}">${escaparHtml(texto)}</span>`;
+    }
+
+
+    function filtrarColaboradores() {
+      if (!dadosPortal) return;
+      const termo = obterTermoPesquisa("pesquisaColaboradores");
+      const lista = (dadosPortal.colaboradores || []).filter(item => correspondePesquisa(item, termo));
+      renderizarColaboradores(lista);
+    }
+
+    function renderizarColaboradores(lista) {
+      const div = document.getElementById("tabelaColaboradores");
+      if (!div) return;
+
+      if (!lista || lista.length === 0) {
+        div.innerHTML = `<div class="vazio">Nenhum colaborador encontrado.</div>`;
+        return;
+      }
+
+      let html = `
+        <div class="tabela-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Matrícula</th>
+              <th>Nome</th>
+              <th>Função</th>
+              <th>Setor</th>
+              <th>Situação</th>
+              <th>Último ASO</th>
+              <th>Próx. venc.</th>
+              <th>Dias</th>
+              <th>Status ASO</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      lista.forEach(item => {
+        html += `
+          <tr>
+            <td>${escaparHtml(item.mat)}</td>
+            <td>${escaparHtml(item.nome)}</td>
+            <td>${escaparHtml(item.funcao)}</td>
+            <td>${escaparHtml(item.setor)}</td>
+            <td>${escaparHtml(item.situacao)}</td>
+            <td>${escaparHtml(item.dataUltimoAsoBR)}</td>
+            <td>${escaparHtml(item.proximoVencimentoBR)}</td>
+            <td>${escaparHtml(item.diasStatusAso)}</td>
+            <td>${badgeStatusAso(item.statusAso, item.statusAsoClasse)}</td>
+          </tr>
+        `;
+      });
+
+      html += `</tbody></table></div>`;
+      div.innerHTML = html;
+      ativarOrdenacaoTabelas("tabelaColaboradores");
+    }
+
+    function badgeStatusAso(texto, classe) {
+      const c = classe || "baixa";
+      return `<span class="badge ${c}">${escaparHtml(texto || "Em dias")}</span>`;
+    }
+
+    function renderizarIndicadores(indicadores) {
+      if (!indicadores) return;
+
+      document.getElementById("infoAnoIndicador").innerHTML =
+        `<span class="badge">Ano vigente: ${indicadores.ano}</span>`;
+
+      prepararSeletorMesIndicador(indicadores);
+      renderizarGraficoMetaMensal(indicadores.resumoMensal);
+      renderizarResumoMensalIndicadores(indicadores.resumoMensal);
+      renderizarAnaliseIndicadorMensal(indicadores);
+    }
+
+    function prepararSeletorMesIndicador(indicadores) {
+      const select = document.getElementById("mesIndicador");
+      if (!select || select.dataset.preparadoAno === String(indicadores.ano)) return;
+
+      const mesAtual = obterMesIndicadorSelecionado(indicadores);
+      select.innerHTML = "";
+
+      (indicadores.resumoMensal || []).forEach(i => {
+        const mes = i.mesAnalise || i.mes;
+        const opt = document.createElement("option");
+        opt.value = mes;
+        opt.textContent = `${mes} | vencimento ${i.vencimentoAvaliado || ""}`;
+        select.appendChild(opt);
+      });
+
+      select.value = Array.from(select.options).some(opt => opt.value === mesAtual)
+        ? mesAtual
+        : (select.options[0]?.value || "");
+      select.dataset.preparadoAno = String(indicadores.ano);
+    }
+
+    function renderizarGraficoMetaMensal(lista) {
+      const div = document.getElementById("graficoMetaMensal");
+
+      if (!div) return;
+
+      if (!lista || lista.length === 0) {
+        div.innerHTML = `<div class="vazio">Nenhum dado encontrado para o gráfico.</div>`;
+        return;
+      }
+
+      let html = `<div class="grafico-meta">`;
+      const mesSelecionado = obterMesIndicadorSelecionado(dadosPortal && dadosPortal.indicadores ? dadosPortal.indicadores : null);
+
+      lista.forEach(i => {
+        const mes = i.mesAnalise || i.mes;
+        const total = Number(i.totalFazer) || 0;
+        const feitosMeta = Number(i.feitos30DiasOuMais) || 0;
+        const percentual = total > 0 ? Math.round((feitosMeta / total) * 100) : 0;
+        const largura = Math.max(0, Math.min(100, percentual));
+
+        html += `
+          <div class="linha-grafico ${mes === mesSelecionado ? "selecionado" : ""}">
+            <div><strong>${escaparHtml(mes)}</strong></div>
+            <div class="barra-externa" title="${feitosMeta} de ${total} ASOs elegíveis à meta de 30 dias. Radiologia é considerada somente em atrasados.">
+              <div class="barra-interna" style="width:${largura}%"></div>
+            </div>
+            <div><strong>${percentual}%</strong></div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      div.innerHTML = html;
+    }
+
+    function renderizarResumoMensalIndicadores(lista) {
+      const div = document.getElementById("tabelaIndicadoresMensal");
+
+      if (!lista || lista.length === 0) {
+        div.innerHTML = `<div class="vazio">Nenhum indicador encontrado.</div>`;
+        return;
+      }
+
+      let html = `
+        <div class="tabela-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Mês analisado</th>
+              <th>Vencimento avaliado</th>
+              <th>ASOs na meta</th>
+              <th>Feitos 30 dias ou mais</th>
+              <th>Feitos menos de 30 dias</th>
+              <th>Conferência</th>
+              <th>Atrasados</th>
+              <th>% no prazo</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      lista.forEach(i => {
+        html += `
+          <tr>
+            <td>${escaparHtml(i.mesAnalise || i.mes)}</td>
+            <td>${escaparHtml(i.vencimentoAvaliado || "")}</td>
+            <td>${escaparHtml(numeroSeguro(i.totalFazer))}</td>
+            <td>${escaparHtml(numeroSeguro(i.feitos30DiasOuMais))}</td>
+            <td>${escaparHtml(numeroSeguro(i.feitosMenos30Dias))}</td>
+            <td>${escaparHtml(numeroSeguro(i.feitos30DiasOuMais) + numeroSeguro(i.feitosMenos30Dias))}</td>
+            <td>${escaparHtml(numeroSeguro(i.atrasados))}</td>
+            <td>${escaparHtml(totalIndicadorPercentual(i))}%</td>
+          </tr>
+        `;
+      });
+
+      html += "</tbody></table></div>";
+      div.innerHTML = html;
+      ativarOrdenacaoTabelas("tabelaIndicadoresMensal");
+    }
+
+    function renderizarAnaliseIndicadorMensal(indicadores) {
+      const div = document.getElementById("analiseIndicadorMensal");
+      if (!div) return;
+
+      const mesSelecionado = obterMesIndicadorSelecionado(indicadores);
+      const resumo = (indicadores.resumoMensal || []).find(i => (i.mesAnalise || i.mes) === mesSelecionado) || {};
+      const analise = (indicadores.analisePorMes || {})[mesSelecionado] || {
+        mesAnalise: mesSelecionado,
+        vencimentoAvaliado: "",
+        menos30: [],
+        atrasadosRealizadosMes: []
+      };
+      const atrasadosAtuais = indicadores.atrasadosAtuais || [];
+
+      let html = `
+        <div class="rodape-info">
+          Mês selecionado: <strong>${escaparHtml(mesSelecionado)}</strong>
+          ${analise.vencimentoAvaliado ? ` | Vencimento avaliado: <strong>${escaparHtml(analise.vencimentoAvaliado)}</strong>` : ""}
+        </div>
+        <div class="indicador-resumo-cards">
+          <div class="indicador-card"><div class="titulo">ASOs na meta</div><div class="valor">${escaparHtml(numeroSeguro(resumo.totalFazer))}</div></div>
+          <div class="indicador-card"><div class="titulo">No prazo</div><div class="valor">${escaparHtml(numeroSeguro(resumo.feitos30DiasOuMais))}</div></div>
+          <div class="indicador-card alerta"><div class="titulo">Menos de 30 dias</div><div class="valor">${escaparHtml(numeroSeguro(resumo.feitosMenos30Dias))}</div></div>
+          <div class="indicador-card ruim"><div class="titulo">Atrasados no vencimento</div><div class="valor">${escaparHtml(numeroSeguro(resumo.atrasados))}</div></div>
+          <div class="indicador-card ruim"><div class="titulo">Atrasados atuais</div><div class="valor">${escaparHtml(atrasadosAtuais.length)}</div></div>
+          <div class="indicador-card"><div class="titulo">% no prazo</div><div class="valor">${escaparHtml(totalIndicadorPercentual(resumo))}%</div></div>
+        </div>
+        <div class="analise-grid">
+      `;
+
+      html += montarSecaoAnaliseIndicador(
+        "ASOs realizados com menos de 30 dias de antecedência",
+        analise.menos30 || [],
+        "Data limite para realizar",
+        true
+      );
+
+      html += montarSecaoAnaliseIndicador(
+        "ASOs atrasados realizados no mês da análise",
+        analise.atrasadosRealizadosMes || [],
+        "Data limite para realizar",
+        true
+      );
+
+      html += montarSecaoAnaliseIndicador(
+        "ASOs atrasados atualmente",
+        atrasadosAtuais,
+        "Data que venceu",
+        false
+      );
+
+      html += `</div>`;
+      div.innerHTML = html;
+      ativarOrdenacaoTabelas("analiseIndicadorMensal");
+    }
+
+    function obterMesIndicadorSelecionado(indicadores) {
+      const selectMes = document.getElementById("mesIndicador")?.value || "";
+      if (/^\d{4}-\d{2}$/.test(selectMes)) return selectMes;
+
+      const dataInicio = document.getElementById("dataInicio")?.value || "";
+      const ano = indicadores && indicadores.ano ? indicadores.ano : new Date().getFullYear();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dataInicio)) return dataInicio.substring(0, 7);
+      return `${ano}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+    }
+
+    function montarSecaoAnaliseIndicador(titulo, lista, tituloDataReferencia, mostrarRealizacao) {
+      const total = (lista || []).length;
+      return `
+        <div class="analise-bloco">
+          <h3>
+            <span>${escaparHtml(titulo)}</span>
+            <span class="contador-secao">${total}</span>
+          </h3>
+          ${total ? montarTabelaIndicadorDetalhado(lista, tituloDataReferencia, mostrarRealizacao) : `<div class="vazio">Nenhum registro encontrado.</div>`}
+        </div>
+      `;
+    }
+
+    function montarTabelaIndicadorDetalhado(lista, tituloDataReferencia, mostrarRealizacao) {
+      let html = `
+        <div class="tabela-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Matrícula</th>
+              <th>Nome</th>
+              <th>Função</th>
+              <th>Setor</th>
+              <th>${tituloDataReferencia}</th>
+              ${mostrarRealizacao ? "<th>Data realizada</th>" : ""}
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      lista.forEach(i => {
+        html += `
+          <tr>
+            <td>${escaparHtml(i.mat)}</td>
+            <td>${escaparHtml(i.nome)}</td>
+            <td>${escaparHtml(i.funcao)}</td>
+            <td>${escaparHtml(i.setor)}</td>
+            <td>${escaparHtml(mostrarRealizacao ? (i.dataLimiteIndicadorBR || i.dataVencimentoBR) : i.dataVencimentoBR)}</td>
+            ${mostrarRealizacao ? `<td>${escaparHtml(i.dataRealizadaBR || "")}</td>` : ""}
+          </tr>
+        `;
+      });
+
+      html += "</tbody></table></div>";
+      return html;
+    }
+
+
+    function idSeguroPortal(valor) {
+      return String(valor ?? "").replace(/[^a-zA-Z0-9_-]/g, "_");
+    }
+
+    function atualizarSelecaoConvocacao(checkbox) {
+      const mat = String(checkbox.dataset.mat || "");
+      if (!mat) return;
+
+      if (checkbox.checked) {
+        selecaoConvocacoes.add(mat);
+      } else {
+        selecaoConvocacoes.delete(mat);
+      }
+
+      atualizarTextoSelecaoLote();
+    }
+
+    function alternarSelecaoTodasVisiveis(master) {
+      marcarConvocacoesVisiveis(master.checked);
+    }
+
+    function marcarConvocacoesVisiveis(marcar) {
+      document.querySelectorAll("#tabelaConvocar .check-lote").forEach(chk => {
+        chk.checked = marcar;
+        const mat = String(chk.dataset.mat || "");
+        if (!mat) return;
+        if (marcar) {
+          selecaoConvocacoes.add(mat);
+        } else {
+          selecaoConvocacoes.delete(mat);
+        }
+      });
+      atualizarTextoSelecaoLote();
+    }
+
+    function obterMatriculasVisiveisConvocar() {
+      return Array.from(document.querySelectorAll("#tabelaConvocar .check-lote"))
+        .map(chk => String(chk.dataset.mat || ""))
+        .filter(Boolean);
+    }
+
+    function obterMatriculasSelecionadasVisiveis() {
+      return Array.from(document.querySelectorAll("#tabelaConvocar .check-lote:checked"))
+        .map(chk => String(chk.dataset.mat || ""))
+        .filter(Boolean);
+    }
+
+    function atualizarTextoSelecaoLote() {
+      // Mantém a seleção persistida mesmo quando a tabela é filtrada/renderizada novamente.
+      const selecionadosVisiveis = obterMatriculasSelecionadasVisiveis().length;
+      const textoSelecionados = selecionadosVisiveis > 0
+        ? `Gerar selecionados (${selecionadosVisiveis})`
+        : "Gerar selecionados";
+      const textoEmail = selecionadosVisiveis > 0
+        ? `Enviar gestor (${selecionadosVisiveis})`
+        : "Enviar gestor";
+
+      const botao = document.querySelector("button[onclick='gerarSelecionadosEmLote()']");
+      if (botao) botao.innerText = textoSelecionados;
+
+      const botaoEmail = document.querySelector("button[onclick='enviarSelecionadosGestor()']");
+      if (botaoEmail) botaoEmail.innerText = textoEmail;
+    }
+
+    function limparStatusLote() {
+      document.querySelectorAll("#tabelaConvocar .status-lote").forEach(el => {
+        el.innerText = "";
+        el.title = "";
+        el.className = "status-lote";
+      });
+    }
+
+    function definirStatusLote(mat, tipo, texto, titulo) {
+      const el = document.getElementById("statusLote_" + idSeguroPortal(mat));
+      if (!el) return;
+      el.innerText = texto || "";
+      el.title = titulo || "";
+      el.className = "status-lote" + (tipo ? " " + tipo : "");
+    }
+
+    function atualizarProgressoLote(processados, total, textoExtra) {
+      const box = document.getElementById("progressoLote");
+      const texto = document.getElementById("textoProgressoLote");
+      const barra = document.getElementById("barraProgressoLote");
+      if (!box || !texto || !barra) return;
+
+      box.style.display = "block";
+      const pct = total ? Math.round((processados / total) * 100) : 0;
+      texto.innerText = (textoExtra || "Gerando convocações") + `  ${processados}/${total}`;
+      barra.style.width = pct + "%";
+    }
+
+    function esconderProgressoLote() {
+      const box = document.getElementById("progressoLote");
+      if (box) box.style.display = "none";
+    }
+
+    function gerarTodosVisiveisEmLote() {
+      const matriculas = obterMatriculasVisiveisConvocar();
+      if (matriculas.length === 0) {
+        mostrarErro("Nenhum colaborador visível para gerar convocação.");
+        return;
+      }
+
+      marcarConvocacoesVisiveis(true);
+      gerarLoteConvocacoes(matriculas);
+    }
+
+    function gerarSelecionadosEmLote() {
+      const matriculas = obterMatriculasSelecionadasVisiveis();
+      if (matriculas.length === 0) {
+        mostrarErro("Selecione pelo menos um colaborador na aba Convocar.");
+        return;
+      }
+
+      gerarLoteConvocacoes(matriculas);
+    }
+
+    function enviarSelecionadosGestor() {
+      const matriculas = obterMatriculasSelecionadasVisiveis();
+      if (matriculas.length === 0) {
+        mostrarErro("Selecione pelo menos um colaborador na aba Convocar.");
+        return;
+      }
+
+      const emails = obterEmailsGestor();
+      if (emails.length === 0) {
+        mostrarErro("Informe pelo menos um e-mail do gestor.");
+        return;
+      }
+
+      const invalidos = emails.filter(email => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+      if (invalidos.length > 0) {
+        mostrarErro("E-mail(s) inválido(s): " + invalidos.join(", "));
+        return;
+      }
+
+      enviarLoteGestor(matriculas, emails.join("; "));
+    }
+
+    function obterEmailsGestor() {
+      const emailConvocar = String(document.getElementById("emailGestorConvocacao")?.value || "");
+      const emailPendencia = String(document.getElementById("emailGestorPendencia")?.value || "");
+      return (emailConvocar + ";" + emailPendencia)
+        .split(/[;,]/)
+        .map(email => email.trim())
+        .filter(Boolean);
+    }
+
+    function enviarPendenciaGestor(mat, dataAnteriorBR) {
+      if (loteEmProcessamento) {
+        mostrarErro("Já existe uma geração/envio em lote em andamento. Aguarde finalizar.");
+        return;
+      }
+
+      const emails = obterEmailsGestor();
+      if (emails.length === 0) {
+        mostrarErro("Informe o e-mail do gestor antes de enviar a pendência.");
+        return;
+      }
+
+      const invalidos = emails.filter(email => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+      if (invalidos.length > 0) {
+        mostrarErro("E-mail(s) inválido(s): " + invalidos.join(", "));
+        return;
+      }
+
+      const dataInicio = document.getElementById("dataInicio").value;
+      const dataFim = document.getElementById("dataFim").value;
+
+      if (!dataInicio || !dataFim) {
+        mostrarErro("Informe a data inicial e a data final.");
+        return;
+      }
+
+      limparMensagens();
+      mostrarLoading(true);
+      loteEmProcessamento = true;
+
+      google.script.run
+        .withSuccessHandler(function(resultados) {
+          loteEmProcessamento = false;
+          mostrarLoading(false);
+
+          const r = (resultados || [])[0] || {};
+          if (r.sucesso) {
+            mostrarOk("Nova convocação enviada ao gestor. Quando havia e-mail anterior registrado, a resposta foi enviada na mesma conversa.");
+            carregarDados(true);
+          } else if (r.ignorado) {
+            mostrarErro(r.motivo || "Convocação ignorada.");
+          } else {
+            mostrarErro(r.erro || "Falha ao enviar nova convocação.");
+          }
+        })
+        .withFailureHandler(function(erro) {
+          loteEmProcessamento = false;
+          mostrarLoading(false);
+          mostrarErro(erro.message || erro);
+        })
+        .enviarReconvocacaoPendenciaGestor(mat, emails.join("; "), dataInicio, dataFim, dataAnteriorBR);
+    }
+
+    function enviarLoteGestor(matriculas, emailGestor) {
+      if (loteEmProcessamento) {
+        mostrarErro("Já existe uma geração/envio em lote em andamento. Aguarde finalizar.");
+        return;
+      }
+
+      limparMensagens();
+      limparStatusLote();
+
+      const dataInicio = document.getElementById("dataInicio").value;
+      const dataFim = document.getElementById("dataFim").value;
+
+      if (!dataInicio || !dataFim) {
+        mostrarErro("Informe a data inicial e a data final.");
+        return;
+      }
+
+      const lista = [...new Set((matriculas || []).map(String).filter(Boolean))];
+      if (lista.length === 0) {
+        mostrarErro("Nenhuma matrícula válida para enviar.");
+        return;
+      }
+
+      const tamanhoLote = 10;
+      let indice = 0;
+      let sucesso = 0;
+      let ignorados = 0;
+      let falhas = 0;
+      const motivos = {};
+
+      loteEmProcessamento = true;
+      mostrarLoading(true);
+      atualizarProgressoLote(0, lista.length, "Enviando convocações ao gestor");
+
+      lista.forEach(mat => definirStatusLote(mat, "aguardando-lote", "...", "Aguardando envio"));
+
+      function processarProximoEnvio() {
+        const lote = lista.slice(indice, indice + tamanhoLote);
+        if (lote.length === 0) {
+          loteEmProcessamento = false;
+          mostrarLoading(false);
+          atualizarProgressoLote(lista.length, lista.length, "Envio concluído");
+
+          const resumoMotivos = Object.keys(motivos)
+            .map(m => m + ": " + motivos[m])
+            .join(" | ");
+
+          let texto = sucesso + " convocação(ões) enviada(s) para " + emailGestor + ". " +
+                      ignorados + " ignorado(s). " +
+                      falhas + " falha(s).";
+
+          if (resumoMotivos) texto += " Motivos: " + resumoMotivos + ".";
+          mostrarOk(texto);
+          return;
+        }
+
+        google.script.run
+          .withSuccessHandler(function(resultados) {
+            (resultados || []).forEach(r => {
+              const mat = String(r.matricula || "");
+
+              if (r.sucesso) {
+                sucesso++;
+                definirStatusLote(mat, "ok-lote", "@", r.arquivo || "Convocação enviada");
+              } else if (r.ignorado) {
+                ignorados++;
+                const motivo = r.motivo || "Ignorado";
+                motivos[motivo] = (motivos[motivo] || 0) + 1;
+                definirStatusLote(mat, "erro-lote", "!", motivo);
+              } else {
+                falhas++;
+                definirStatusLote(mat, "erro-lote", "X", r.erro || "Falha ao enviar");
+              }
+            });
+
+            indice += lote.length;
+            atualizarProgressoLote(Math.min(indice, lista.length), lista.length, "Enviando convocações ao gestor");
+            setTimeout(processarProximoEnvio, 300);
+          })
+          .withFailureHandler(function(erro) {
+            lote.forEach(mat => definirStatusLote(mat, "erro-lote", "X", erro.message || erro));
+            falhas += lote.length;
+            indice += lote.length;
+            atualizarProgressoLote(Math.min(indice, lista.length), lista.length, "Continuando após falha do lote");
+            setTimeout(processarProximoEnvio, 600);
+          })
+          .enviarConvocacoesSelecionadasGestor(lote, emailGestor, dataInicio, dataFim);
+      }
+
+      processarProximoEnvio();
+    }
+
+    function gerarLoteConvocacoes(matriculas) {
+      if (loteEmProcessamento) {
+        mostrarErro("Já existe uma geração em lote em andamento. Aguarde finalizar.");
+        return;
+      }
+
+      limparMensagens();
+      limparStatusLote();
+
+      const dataInicio = document.getElementById("dataInicio").value;
+      const dataFim = document.getElementById("dataFim").value;
+
+      if (!dataInicio || !dataFim) {
+        mostrarErro("Informe a data inicial e a data final.");
+        return;
+      }
+
+      const lista = [...new Set((matriculas || []).map(String).filter(Boolean))];
+      if (lista.length === 0) {
+        mostrarErro("Nenhuma matrícula válida para gerar.");
+        return;
+      }
+
+      const tamanhoLote = 10;
+      let indice = 0;
+      let sucesso = 0;
+      let ignorados = 0;
+      let falhas = 0;
+      const motivos = {};
+
+      loteEmProcessamento = true;
+      mostrarLoading(true);
+      atualizarProgressoLote(0, lista.length, "Gerando convocações em lotes");
+
+      lista.forEach(mat => definirStatusLote(mat, "aguardando-lote", "?", "Aguardando geração"));
+
+      function processarProximoLote() {
+        const lote = lista.slice(indice, indice + tamanhoLote);
+        if (lote.length === 0) {
+          loteEmProcessamento = false;
+          mostrarLoading(false);
+          atualizarProgressoLote(lista.length, lista.length, "Geração concluída");
+
+          const resumoMotivos = Object.keys(motivos)
+            .map(m => m + ": " + motivos[m])
+            .join(" | ");
+
+          let texto = sucesso + " convocação(ões) gerada(s). " +
+                      ignorados + " ignorado(s). " +
+                      falhas + " falha(s).";
+
+          if (resumoMotivos) texto += " Motivos: " + resumoMotivos + ".";
+          mostrarOk(texto);
+          return;
+        }
+
+        google.script.run
+          .withSuccessHandler(function(resultados) {
+            (resultados || []).forEach(r => {
+              const mat = String(r.matricula || "");
+
+              if (r.sucesso) {
+                sucesso++;
+                definirStatusLote(mat, "ok-lote", "?", r.arquivo || "Convocação gerada");
+              } else if (r.ignorado) {
+                ignorados++;
+                const motivo = r.motivo || "Ignorado";
+                motivos[motivo] = (motivos[motivo] || 0) + 1;
+                definirStatusLote(mat, "erro-lote", "!", motivo);
+              } else {
+                falhas++;
+                definirStatusLote(mat, "erro-lote", "?", r.erro || "Falha ao gerar");
+              }
+            });
+
+            indice += lote.length;
+            atualizarProgressoLote(Math.min(indice, lista.length), lista.length, "Gerando convocações em lotes");
+            setTimeout(processarProximoLote, 250);
+          })
+          .withFailureHandler(function(erro) {
+            lote.forEach(mat => definirStatusLote(mat, "erro-lote", "?", erro.message || erro));
+            falhas += lote.length;
+            indice += lote.length;
+            atualizarProgressoLote(Math.min(indice, lista.length), lista.length, "Continuando após falha do lote");
+            setTimeout(processarProximoLote, 500);
+          })
+          .gerarConvocacoesSelecionadasLote(lote, dataInicio, dataFim);
+      }
+
+      processarProximoLote();
+    }
+
+    function gerarIndividual(mat) {
+      limparMensagens();
+      mostrarLoading(true);
+
+      google.script.run
+        .withSuccessHandler(function(resultado) {
+          mostrarLoading(false);
+          mostrarOk("Convocação gerada: " + resultado.arquivo);
+          window.open(resultado.url, "_blank");
+        })
+        .withFailureHandler(function(erro) {
+          mostrarLoading(false);
+          mostrarErro(erro.message || erro);
+        })
+        .gerarConvocacaoIndividual(mat);
+    }
+
+    function gerarTodos() {
+      gerarTodosVisiveisEmLote();
+    }
+
+    function totalIndicadorPercentual(i) {
+      const total = Number(i && i.totalFazer) || 0;
+      const feitosMeta = Number(i && i.feitos30DiasOuMais) || 0;
+      return total > 0 ? Math.round((feitosMeta / total) * 100) : 0;
+    }
+
+    function numeroSeguro(valor) {
+      const n = Number(valor);
+      return isNaN(n) ? 0 : n;
+    }
+
+    function escaparHtml(valor) {
+      return String(valor ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escaparAtributo(valor) {
+      return String(valor ?? "")
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, "&quot;");
+    }
+  </script>
+</body>
+</html>
