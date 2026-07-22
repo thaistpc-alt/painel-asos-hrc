@@ -1,11 +1,10 @@
 /**
  * Portal de ASOS - SESMT HRC - Versão 11.4
- * Arquivo: Code.gs - completo
+ * Arquivo: Code.gs
  *
- * Orientação:
- * 1. Substitua todo o conteúdo do Code.gs por este código.
- * 2. Mantenha o arquivo HTML com o nome "Index".
- * 3. Publique uma nova versão do aplicativo web após salvar.
+ * A interface utiliza o Index original, preservando todas as regras,
+ * funções e funcionalidades. O arquivo LayoutOverride contém apenas
+ * ajustes visuais e de interação.
  */
 
 const CONFIG = {
@@ -41,8 +40,12 @@ const COL = {
 };
 
 function doGet() {
+  const index = HtmlService.createHtmlOutputFromFile("Index").getContent();
+  const layout = HtmlService.createHtmlOutputFromFile("LayoutOverride").getContent();
+  const html = index.replace("</body>", layout + "</body>");
+
   return HtmlService
-    .createHtmlOutputFromFile("Index")
+    .createHtmlOutput(html)
     .setTitle("PAINEL DE ASOS - SESMT HRC")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
