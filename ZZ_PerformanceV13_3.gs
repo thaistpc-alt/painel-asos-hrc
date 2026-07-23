@@ -1,17 +1,16 @@
 /* =========================================================
-   V13.3 - CACHE CONSOLIDADO E TELEMETRIA
-   - CacheService é a camada principal;
-   - PropertiesService é apenas contingência;
-   - nenhuma escrita em planilha no caminho normal;
-   - correção nativa da leitura gzip no Apps Script.
+   V13.4 - CONTEXTO GLOBAL COMPARTILHADO
+   Fonte + Agenda não dependem do período selecionado.
+   Os módulos continuam armazenados por período.
 ========================================================= */
 
-const PERF133_PREFIXO = "ASOS_V13_3_";
+const PERF133_PREFIXO = "ASOS_V13_4_";
 const PERF133_PARTE_PROPRIEDADE = 8000;
 const PERF133_MAX_PARTES = 55;
 const PERF133_TTL_MS = 30 * 60 * 1000;
+const PERF133_CHAVE_CONTEXTO = "CONTEXTO_GLOBAL";
 
-/* Substitui a versão incompatível do Apps Script. */
+/* Compatibilidade do Apps Script com gzip. */
 desserializarCacheV13_ = function(base64) {
   const bytes = Utilities.base64Decode(base64);
   const blobGzip = Utilities.newBlob(bytes, "application/gzip", "cache-v13.gz");
@@ -19,14 +18,14 @@ desserializarCacheV13_ = function(base64) {
   return JSON.parse(json);
 };
 
-function chaveContextoV133_(dataInicio, dataFim) {
-  return PERF133_PREFIXO + "CONTEXTO_" + dataInicio + "_" + dataFim;
+function chaveContextoV133_() {
+  return PERF133_PREFIXO + PERF133_CHAVE_CONTEXTO;
 }
 
-function salvarContextoPropriedadesV133_(dataInicio, dataFim, contexto) {
+function salvarContextoPropriedadesV133_(contexto) {
   try {
     const propriedades = PropertiesService.getScriptProperties();
-    const chave = chaveContextoV133_(dataInicio, dataFim);
+    const chave = chaveContextoV133_();
     const base64 = serializarCacheV13_(contexto);
     const total = Math.ceil(base64.length / PERF133_PARTE_PROPRIEDADE);
     if (total < 1 || total > PERF133_MAX_PARTES) return false;
@@ -53,10 +52,10 @@ function salvarContextoPropriedadesV133_(dataInicio, dataFim, contexto) {
   }
 }
 
-function obterContextoPropriedadesV133_(dataInicio, dataFim) {
+function obterContextoPropriedadesV133_() {
   try {
     const propriedades = PropertiesService.getScriptProperties();
-    const chave = chaveContextoV133_(dataInicio, dataFim);
+    const chave = chaveContextoV133_();
     const manifestoTexto = propriedades.getProperty(chave + "_M");
     if (!manifestoTexto) return null;
 
@@ -84,7 +83,7 @@ function obterContextoPropriedadesV133_(dataInicio, dataFim) {
 
 function construirContextoV13_(dataInicio, dataFim, forcarAtualizacao) {
   validarPeriodoV13_(dataInicio, dataFim);
-  const chave = "CONTEXTO_" + dataInicio + "_" + dataFim;
+  const chave = PERF133_CHAVE_CONTEXTO;
 
   if (!forcarAtualizacao) {
     const cacheado = obterCacheV13_(chave);
@@ -93,7 +92,7 @@ function construirContextoV13_(dataInicio, dataFim, forcarAtualizacao) {
       return cacheado;
     }
 
-    const propriedades = obterContextoPropriedadesV133_(dataInicio, dataFim);
+    const propriedades = obterContextoPropriedadesV133_();
     if (propriedades && Array.isArray(propriedades.lista) && propriedades.pendencias) {
       salvarCacheV13_(chave, propriedades);
       return propriedades;
@@ -116,35 +115,26 @@ function construirContextoV13_(dataInicio, dataFim, forcarAtualizacao) {
     duracaoProcessamentoMs: Date.now() - inicio
   };
 
-  /* O CacheService comprovadamente comporta o contexto em três partes.
-     Só usamos PropertiesService quando essa gravação falhar. */
   const salvoNoCache = salvarCacheV13_(chave, contexto);
-  if (!salvoNoCache) {
-    salvarContextoPropriedadesV133_(dataInicio, dataFim, contexto);
-  }
-
+  if (!salvoNoCache) salvarContextoPropriedadesV133_(contexto);
   return contexto;
 }
 
 function diagnosticarCacheV13(dataInicio, dataFim) {
   const periodo = periodoPadraoTesteV13_(dataInicio, dataFim);
-  dataInicio = periodo.inicio;
-  dataFim = periodo.fim;
-
   PERF13_MEMORIA = {};
   const inicio = Date.now();
-  const contexto = construirContextoV13_(dataInicio, dataFim, false);
+  const contexto = construirContextoV13_(periodo.inicio, periodo.fim, false);
   const base64 = serializarCacheV13_(contexto);
   const resultado = {
     origem: contexto.origemCache || contexto.__origemCacheV13 || "desconhecida",
     duracaoMs: Date.now() - inicio,
     colaboradores: (contexto.lista || []).length,
     pendencias: contexto.pendencias && contexto.pendencias.operacionais
-      ? contexto.pendencias.operacionais.length
-      : 0,
+      ? contexto.pendencias.operacionais.length : 0,
     tamanhoComprimidoCaracteres: base64.length,
     partesCacheService: Math.ceil(base64.length / PERF13_PARTE),
-    chave: chaveContextoV133_(dataInicio, dataFim)
+    chave: chaveContextoV133_()
   };
   console.log(JSON.stringify(resultado, null, 2));
   return resultado;
@@ -168,7 +158,6 @@ function medirPerformanceV13(dataInicio, dataFim) {
   }
 
   const medicoes = [];
-
   const inicioFrio = Date.now();
   PERF13_MEMORIA = {};
   const contextoFrio = construirContextoV13_(dataInicio, dataFim, true);
@@ -179,52 +168,35 @@ function medirPerformanceV13(dataInicio, dataFim) {
     origem: "nova"
   });
 
-  medicoes.push(medir("Contexto - nova requisição", function () {
+  medicoes.push(medir("Contexto - nova requisição", function() {
     const c = construirContextoV13_(dataInicio, dataFim, false);
     return { valor: (c.lista || []).length, origem: c.origemCache || "" };
   }));
 
-  medicoes.push(medir("Resumo Dashboard", function () {
+  medicoes.push(medir("Resumo Dashboard", function() {
     const r = obterResumoPortalV13Leve(dataInicio, dataFim, false);
     return { valor: r.dashboard.totalColaboradores, origem: r.meta ? r.meta.origemCache : "" };
   }));
 
-  medicoes.push(medir("Convocar", function () {
-    const r = obterModuloPortalV13("CONVOCAR", dataInicio, dataFim, false);
-    return {
-      valor: r.convocar.todos.length,
-      origem: r.__cacheV13 ? "cache-modulo" : (r.__contextoV13 || "")
-    };
-  }));
+  [
+    ["Convocar", "CONVOCAR", r => r.convocar.todos.length],
+    ["Pendências", "PENDENCIAS", r => r.pendencias.operacionais.length],
+    ["Indicadores", "INDICADORES", r => r.indicadores.resumoMensal.length]
+  ].forEach(function(item) {
+    medicoes.push(medir(item[0], function() {
+      const r = obterModuloPortalV13(item[1], dataInicio, dataFim, false);
+      return { valor: item[2](r), origem: r.__cacheV13 ? "cache-modulo" : (r.__contextoV13 || "") };
+    }));
+  });
 
-  medicoes.push(medir("Pendências", function () {
-    const r = obterModuloPortalV13("PENDENCIAS", dataInicio, dataFim, false);
-    return {
-      valor: r.pendencias.operacionais.length,
-      origem: r.__cacheV13 ? "cache-modulo" : (r.__contextoV13 || "")
-    };
-  }));
-
-  medicoes.push(medir("Indicadores", function () {
-    const r = obterModuloPortalV13("INDICADORES", dataInicio, dataFim, false);
-    return {
-      valor: r.indicadores.resumoMensal.length,
-      origem: r.__cacheV13 ? "cache-modulo" : (r.__contextoV13 || "")
-    };
-  }));
-
-  medicoes.push(medir("Gráfico Dashboard", function () {
+  medicoes.push(medir("Gráfico Dashboard", function() {
     const r = obterGraficoPortalV13(dataInicio, dataFim);
-    return {
-      valor: r.resumoMensal.length,
-      origem: r.__origemCacheV13 ? "cache-modulo" : (r.origemContexto || "")
-    };
+    return { valor: r.resumoMensal.length, origem: r.__origemCacheV13 ? "cache-modulo" : (r.origemContexto || "") };
   }));
 
-  const diagnostico = diagnosticarCacheV13(dataInicio, dataFim);
   const resumo = {
     periodo: dataInicio + " a " + dataFim,
-    diagnosticoCache: diagnostico,
+    diagnosticoCache: diagnosticarCacheV13(dataInicio, dataFim),
     medicoes: medicoes
   };
   console.log(JSON.stringify(resumo, null, 2));
