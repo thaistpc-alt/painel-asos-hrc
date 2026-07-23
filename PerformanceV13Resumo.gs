@@ -1,7 +1,7 @@
 /* Dashboard leve: não calcula indicadores anuais durante a abertura. */
 function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
   validarPeriodoV13_(dataInicio, dataFim);
-  const chave = "RESUMO_LEVE_" + dataInicio + "_" + dataFim;
+  const chave = "RESUMO_LEVE_V2_" + dataInicio + "_" + dataFim;
   if (!forcarAtualizacao) {
     const cacheado = obterCacheV13_(chave);
     if (cacheado) return cacheado;
@@ -10,9 +10,12 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
   const contexto = construirContextoV13_(dataInicio, dataFim, !!forcarAtualizacao);
   const lista = contexto.lista;
   const pendencias = contexto.pendencias;
+
+  // Preserva exatamente a regra da versão vigente: colaboradores com
+  // NÃO COMPARECEU também permanecem em Convocar, além de Pendências.
   const convocar = gerarListaConvocar(lista, dataInicio, dataFim)
-    .filter(c => !c.asoRealizadoValido)
-    .filter(c => !ehNaoCompareceuAso(c));
+    .filter(c => !c.asoRealizadoValido);
+
   const complementares = gerarExamesComplementares(lista, dataInicio, dataFim)
     .filter(c => !c.asoRealizadoValido);
 
@@ -62,6 +65,17 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
       totalExamesComplementares: complementares.length
     }
   };
+
+  // Sobrescreve o cache do módulo Convocar com a mesma regra da versão vigente.
+  // Isso também invalida qualquer cache anterior que tenha removido faltosos.
+  salvarCacheV13_("MOD_CONVOCAR_" + dataInicio + "_" + dataFim, {
+    convocar: {
+      todos: convocar,
+      pendentes: convocar.filter(c => !ehAsoRealizado(c)),
+      realizados: convocar.filter(ehAsoRealizado)
+    }
+  });
+
   salvarCacheV13_(chave, resumo);
   return resumo;
 }
