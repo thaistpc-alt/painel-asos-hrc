@@ -50,3 +50,56 @@
   document.addEventListener('DOMContentLoaded',()=>{setTimeout(iniciar,0);setTimeout(iniciar,300)});
 })();
 </script>
+
+<style>
+/* Dropdown de Situação em camada fixa, sem alterar a altura da barra de filtros. */
+.filtro-situacao-check-lista{
+  position:fixed!important;
+  top:auto!important;
+  left:auto!important;
+  z-index:30000!important;
+  max-height:min(300px,calc(100vh - 24px))!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+}
+.filtros,.filtros #toolbarModulo,.filtros .linha-filtros{
+  overflow-y:visible!important;
+}
+</style>
+<script>
+(function(){
+  'use strict';
+
+  function posicionarListaSituacao(botao){
+    const bloco=botao&&botao.closest('.filtro-situacao-check');
+    const lista=bloco&&bloco.querySelector('.filtro-situacao-check-lista');
+    if(!bloco||!lista)return;
+
+    const r=botao.getBoundingClientRect();
+    const largura=Math.max(280,Math.round(r.width));
+    const margem=8;
+    let esquerda=r.left;
+    if(esquerda+largura>window.innerWidth-margem){
+      esquerda=Math.max(margem,window.innerWidth-largura-margem);
+    }
+
+    lista.style.width=largura+'px';
+    lista.style.left=Math.round(esquerda)+'px';
+    lista.style.top=Math.round(r.bottom+6)+'px';
+  }
+
+  document.addEventListener('click',function(evento){
+    const botao=evento.target.closest&&evento.target.closest('.filtro-situacao-check-botao');
+    if(!botao)return;
+    setTimeout(function(){posicionarListaSituacao(botao);},0);
+  },true);
+
+  window.addEventListener('resize',function(){
+    document.querySelectorAll('.filtro-situacao-check.aberto .filtro-situacao-check-botao').forEach(posicionarListaSituacao);
+  });
+
+  window.addEventListener('scroll',function(){
+    document.querySelectorAll('.filtro-situacao-check.aberto .filtro-situacao-check-botao').forEach(posicionarListaSituacao);
+  },true);
+})();
+</script>
