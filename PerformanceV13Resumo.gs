@@ -1,18 +1,23 @@
 /* Dashboard leve: não calcula indicadores anuais durante a abertura. */
 function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
   validarPeriodoV13_(dataInicio, dataFim);
-  const chave = "RESUMO_LEVE_V2_" + dataInicio + "_" + dataFim;
+  const chave = "RESUMO_LEVE_V3_" + dataInicio + "_" + dataFim;
+
   if (!forcarAtualizacao) {
     const cacheado = obterCacheV13_(chave);
-    if (cacheado) return cacheado;
+    if (cacheado) {
+      cacheado.meta = cacheado.meta || {};
+      cacheado.meta.origemCache = cacheado.__origemCacheV13 || "cache";
+      return cacheado;
+    }
   }
 
   const contexto = construirContextoV13_(dataInicio, dataFim, !!forcarAtualizacao);
-  const lista = contexto.lista;
-  const pendencias = contexto.pendencias;
+  const lista = contexto.lista || [];
+  const pendencias = contexto.pendencias || { operacionais: [] };
 
-  // Preserva exatamente a regra da versão vigente: colaboradores com
-  // NÃO COMPARECEU também permanecem em Convocar, além de Pendências.
+  /* Preserva exatamente a regra vigente: colaboradores com NÃO COMPARECEU
+     permanecem em Convocar e também aparecem em Pendências. */
   const convocar = gerarListaConvocar(lista, dataInicio, dataFim)
     .filter(c => !c.asoRealizadoValido);
 
@@ -44,8 +49,10 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
 
   const resumo = {
     meta: {
-      versao: "13.0",
-      cache: contexto.cache ? "sim" : "não",
+      versao: "13.2",
+      cache: contexto.origemCache === "nova" ? "não" : "sim",
+      origemCache: contexto.origemCache || "nova",
+      duracaoProcessamentoMs: contexto.duracaoProcessamentoMs || 0,
       geradoEm: Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm:ss"),
       dataInicio: dataInicio,
       dataFim: dataFim
@@ -66,14 +73,13 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
     }
   };
 
-  // Sobrescreve o cache do módulo Convocar com a mesma regra da versão vigente.
-  // Isso também invalida qualquer cache anterior que tenha removido faltosos.
   salvarCacheV13_("MOD_CONVOCAR_" + dataInicio + "_" + dataFim, {
     convocar: {
       todos: convocar,
       pendentes: convocar.filter(c => !ehAsoRealizado(c)),
       realizados: convocar.filter(ehAsoRealizado)
-    }
+    },
+    __contextoV13: contexto.origemCache || "nova"
   });
 
   salvarCacheV13_(chave, resumo);
@@ -82,12 +88,17 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
 
 function obterGraficoPortalV13(dataInicio, dataFim) {
   validarPeriodoV13_(dataInicio, dataFim);
-  const chave = "GRAFICO_" + dataInicio + "_" + dataFim;
+  const chave = "GRAFICO_V3_" + dataInicio + "_" + dataFim;
   const cacheado = obterCacheV13_(chave);
   if (cacheado) return cacheado;
+
   const contexto = construirContextoV13_(dataInicio, dataFim, false);
   const indicadores = gerarIndicadores(contexto.lista || []);
-  const resultado = { ano: indicadores.ano, resumoMensal: indicadores.resumoMensal || [] };
+  const resultado = {
+    ano: indicadores.ano,
+    resumoMensal: indicadores.resumoMensal || [],
+    origemContexto: contexto.origemCache || "nova"
+  };
   salvarCacheV13_(chave, resultado);
   return resultado;
 }
