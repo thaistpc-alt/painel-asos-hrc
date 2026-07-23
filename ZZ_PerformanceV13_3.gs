@@ -1,13 +1,23 @@
 /* =========================================================
-   V13.3 - CACHE PERSISTENTE E TELEMETRIA REAL
-   Arquivo carregado por último para substituir somente a
-   construção do contexto e a medição de desempenho.
+   V13.3 - CACHE CONSOLIDADO E TELEMETRIA
+   - CacheService é a camada principal;
+   - PropertiesService é apenas contingência;
+   - nenhuma escrita em planilha no caminho normal;
+   - correção nativa da leitura gzip no Apps Script.
 ========================================================= */
 
 const PERF133_PREFIXO = "ASOS_V13_3_";
 const PERF133_PARTE_PROPRIEDADE = 8000;
 const PERF133_MAX_PARTES = 55;
 const PERF133_TTL_MS = 30 * 60 * 1000;
+
+/* Substitui a versão incompatível do Apps Script. */
+desserializarCacheV13_ = function(base64) {
+  const bytes = Utilities.base64Decode(base64);
+  const blobGzip = Utilities.newBlob(bytes, "application/gzip", "cache-v13.gz");
+  const json = Utilities.ungzip(blobGzip).getDataAsString("UTF-8");
+  return JSON.parse(json);
+};
 
 function chaveContextoV133_(dataInicio, dataFim) {
   return PERF133_PREFIXO + "CONTEXTO_" + dataInicio + "_" + dataFim;
@@ -38,7 +48,7 @@ function salvarContextoPropriedadesV133_(dataInicio, dataFim, contexto) {
     propriedades.setProperties(valores, false);
     return true;
   } catch (e) {
-    console.log("Falha ao salvar contexto nas propriedades: " + (e.message || e));
+    console.log("Fallback de propriedades não pôde ser salvo: " + (e.message || e));
     return false;
   }
 }
@@ -67,7 +77,7 @@ function obterContextoPropriedadesV133_(dataInicio, dataFim) {
     contexto.origemCache = "propriedades";
     return contexto;
   } catch (e) {
-    console.log("Falha ao ler contexto das propriedades: " + (e.message || e));
+    console.log("Fallback de propriedades inválido: " + (e.message || e));
     return null;
   }
 }
@@ -88,14 +98,6 @@ function construirContextoV13_(dataInicio, dataFim, forcarAtualizacao) {
       salvarCacheV13_(chave, propriedades);
       return propriedades;
     }
-
-    const persistente = obterCachePersistenteV13_(chave);
-    if (persistente && Array.isArray(persistente.lista) && persistente.pendencias) {
-      persistente.origemCache = "persistente";
-      salvarCacheV13_(chave, persistente);
-      salvarContextoPropriedadesV133_(dataInicio, dataFim, persistente);
-      return persistente;
-    }
   }
 
   const inicio = Date.now();
@@ -114,9 +116,13 @@ function construirContextoV13_(dataInicio, dataFim, forcarAtualizacao) {
     duracaoProcessamentoMs: Date.now() - inicio
   };
 
-  salvarCacheV13_(chave, contexto);
-  salvarContextoPropriedadesV133_(dataInicio, dataFim, contexto);
-  salvarCachePersistenteV13_(chave, contexto);
+  /* O CacheService comprovadamente comporta o contexto em três partes.
+     Só usamos PropertiesService quando essa gravação falhar. */
+  const salvoNoCache = salvarCacheV13_(chave, contexto);
+  if (!salvoNoCache) {
+    salvarContextoPropriedadesV133_(dataInicio, dataFim, contexto);
+  }
+
   return contexto;
 }
 
@@ -138,7 +144,6 @@ function diagnosticarCacheV13(dataInicio, dataFim) {
       : 0,
     tamanhoComprimidoCaracteres: base64.length,
     partesCacheService: Math.ceil(base64.length / PERF13_PARTE),
-    partesPropertiesService: Math.ceil(base64.length / PERF133_PARTE_PROPRIEDADE),
     chave: chaveContextoV133_(dataInicio, dataFim)
   };
   console.log(JSON.stringify(resultado, null, 2));
@@ -186,22 +191,34 @@ function medirPerformanceV13(dataInicio, dataFim) {
 
   medicoes.push(medir("Convocar", function () {
     const r = obterModuloPortalV13("CONVOCAR", dataInicio, dataFim, false);
-    return { valor: r.convocar.todos.length, origem: r.__contextoV13 || r.__cacheV13 || "" };
+    return {
+      valor: r.convocar.todos.length,
+      origem: r.__cacheV13 ? "cache-modulo" : (r.__contextoV13 || "")
+    };
   }));
 
   medicoes.push(medir("Pendências", function () {
     const r = obterModuloPortalV13("PENDENCIAS", dataInicio, dataFim, false);
-    return { valor: r.pendencias.operacionais.length, origem: r.__contextoV13 || r.__cacheV13 || "" };
+    return {
+      valor: r.pendencias.operacionais.length,
+      origem: r.__cacheV13 ? "cache-modulo" : (r.__contextoV13 || "")
+    };
   }));
 
   medicoes.push(medir("Indicadores", function () {
     const r = obterModuloPortalV13("INDICADORES", dataInicio, dataFim, false);
-    return { valor: r.indicadores.resumoMensal.length, origem: r.__contextoV13 || r.__cacheV13 || "" };
+    return {
+      valor: r.indicadores.resumoMensal.length,
+      origem: r.__cacheV13 ? "cache-modulo" : (r.__contextoV13 || "")
+    };
   }));
 
   medicoes.push(medir("Gráfico Dashboard", function () {
     const r = obterGraficoPortalV13(dataInicio, dataFim);
-    return { valor: r.resumoMensal.length, origem: r.origemContexto || r.__origemCacheV13 || "" };
+    return {
+      valor: r.resumoMensal.length,
+      origem: r.__origemCacheV13 ? "cache-modulo" : (r.origemContexto || "")
+    };
   }));
 
   const diagnostico = diagnosticarCacheV13(dataInicio, dataFim);
