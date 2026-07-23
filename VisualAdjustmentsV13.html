@@ -1,233 +1,30 @@
 <style>
 /* Ajustes visuais V13: cabeçalho, filtros e tabelas compactas */
-.painel-topbar{gap:18px}
-.painel-topbar-acoes{display:flex;align-items:end;gap:8px;margin-left:auto}
-.painel-topbar-periodo{display:flex;align-items:end;gap:7px}
-.painel-topbar-periodo>div{width:132px}
-.painel-topbar-periodo label{font-size:9px!important;margin-bottom:3px!important;color:#475569}
-.painel-topbar-periodo input{width:132px!important;min-width:132px!important;height:36px!important;padding:5px 7px!important;font-size:10px!important}
-.painel-topbar-periodo button{height:36px!important;padding:0 10px!important;font-size:10px!important;white-space:nowrap}
-.painel-limpar-periodo{background:#475569!important}
-
-/* Compactação global das tabelas. */
-.conteudo .tabela-container{overflow-x:hidden!important}
-.conteudo table{width:100%!important;min-width:0!important;table-layout:fixed!important}
-.conteudo th,.conteudo td{padding:4px 3px!important;font-size:8.5px!important;line-height:1.14!important;white-space:normal!important;word-break:normal!important;overflow-wrap:anywhere!important}
-.conteudo th{font-size:7.6px!important;text-align:left!important;vertical-align:middle!important}
-.conteudo td button{min-width:0!important;padding:4px 3px!important;font-size:8px!important}
-
-/* Pendências */
-#tabelaFaltosos th:nth-child(1),#tabelaFaltosos td:nth-child(1){width:5%}
-#tabelaFaltosos th:nth-child(2),#tabelaFaltosos td:nth-child(2){width:15%}
-#tabelaFaltosos th:nth-child(3),#tabelaFaltosos td:nth-child(3){width:12%}
-#tabelaFaltosos th:nth-child(4),#tabelaFaltosos td:nth-child(4){width:12%}
-#tabelaFaltosos th:nth-child(5),#tabelaFaltosos td:nth-child(5){width:8%}
-#tabelaFaltosos th:nth-child(6),#tabelaFaltosos td:nth-child(6){width:8%}
-#tabelaFaltosos th:nth-child(7),#tabelaFaltosos td:nth-child(7){width:10%}
-#tabelaFaltosos th:nth-child(8),#tabelaFaltosos td:nth-child(8){width:8%}
-#tabelaFaltosos th:nth-child(9),#tabelaFaltosos td:nth-child(9){width:5%;text-align:center!important}
-#tabelaFaltosos th:nth-child(10),#tabelaFaltosos td:nth-child(10){width:5%;text-align:center!important}
-#tabelaFaltosos th:nth-child(11),#tabelaFaltosos td:nth-child(11){width:12%}
-#tabelaFaltosos .acoes-pendencia{grid-template-columns:1fr!important;gap:3px!important}
-
-/* Prioridade e Vencidos */
-#tabelaPrioridade th:nth-child(1),#tabelaPrioridade td:nth-child(1),
-#tabelaVencidos th:nth-child(1),#tabelaVencidos td:nth-child(1){width:6%}
-#tabelaPrioridade th:nth-child(2),#tabelaPrioridade td:nth-child(2),
-#tabelaVencidos th:nth-child(2),#tabelaVencidos td:nth-child(2){width:18%}
-#tabelaPrioridade th:nth-child(3),#tabelaPrioridade td:nth-child(3),
-#tabelaVencidos th:nth-child(3),#tabelaVencidos td:nth-child(3){width:16%}
-#tabelaPrioridade th:nth-child(4),#tabelaPrioridade td:nth-child(4),
-#tabelaVencidos th:nth-child(4),#tabelaVencidos td:nth-child(4){width:17%}
-#tabelaPrioridade th:nth-child(5),#tabelaPrioridade td:nth-child(5),
-#tabelaVencidos th:nth-child(5),#tabelaVencidos td:nth-child(5){width:10%}
-#tabelaPrioridade th:nth-child(6),#tabelaPrioridade td:nth-child(6),
-#tabelaVencidos th:nth-child(6),#tabelaVencidos td:nth-child(6){width:10%}
-#tabelaPrioridade th:nth-child(7),#tabelaPrioridade td:nth-child(7),
-#tabelaVencidos th:nth-child(7),#tabelaVencidos td:nth-child(7){width:6%;text-align:center!important}
-#tabelaPrioridade th:nth-child(8),#tabelaPrioridade td:nth-child(8){width:6%;text-align:center!important}
-#tabelaPrioridade th:nth-child(9),#tabelaPrioridade td:nth-child(9),
-#tabelaVencidos th:nth-child(8),#tabelaVencidos td:nth-child(8){width:11%}
-
-/* Convocar */
-#tabelaConvocar th,#tabelaConvocar td{padding:3px 2px!important;font-size:7.7px!important}
-#tabelaConvocar th{font-size:6.9px!important}
-#tabelaConvocar th:nth-child(1),#tabelaConvocar td:nth-child(1){width:2.5%}
-#tabelaConvocar th:nth-child(2),#tabelaConvocar td:nth-child(2){width:4.5%}
-#tabelaConvocar th:nth-child(3),#tabelaConvocar td:nth-child(3){width:14%}
-#tabelaConvocar th:nth-child(4),#tabelaConvocar td:nth-child(4){width:10%}
-#tabelaConvocar th:nth-child(5),#tabelaConvocar td:nth-child(5){width:11%}
-#tabelaConvocar th:nth-child(6),#tabelaConvocar td:nth-child(6){width:7%}
-#tabelaConvocar th:nth-child(7),#tabelaConvocar td:nth-child(7){width:7%}
-#tabelaConvocar th:nth-child(8),#tabelaConvocar td:nth-child(8){width:7%}
-#tabelaConvocar th:nth-child(9),#tabelaConvocar td:nth-child(9){width:8%}
-#tabelaConvocar th:nth-child(10),#tabelaConvocar td:nth-child(10){width:8%}
-#tabelaConvocar th:nth-child(11),#tabelaConvocar td:nth-child(11){width:4.5%;text-align:center!important}
-#tabelaConvocar th:nth-child(12),#tabelaConvocar td:nth-child(12){width:5.5%;text-align:center!important}
-#tabelaConvocar th:nth-child(13),#tabelaConvocar td:nth-child(13){width:3.5%;text-align:center!important}
-#tabelaConvocar th:nth-child(14),#tabelaConvocar td:nth-child(14){width:3.5%;text-align:center!important}
-#tabelaConvocar td button{width:28px!important;min-width:28px!important}
-
-/* Exames complementares */
-#tabelaComplementares th,#tabelaComplementares td{font-size:7.5px!important;padding:3px 2px!important}
-#tabelaComplementares th:nth-child(1),#tabelaComplementares td:nth-child(1){width:10%}
-#tabelaComplementares th:nth-child(2),#tabelaComplementares td:nth-child(2){width:6%}
-#tabelaComplementares th:nth-child(3),#tabelaComplementares td:nth-child(3){width:15%}
-#tabelaComplementares th:nth-child(4),#tabelaComplementares td:nth-child(4){width:13%}
-#tabelaComplementares th:nth-child(5),#tabelaComplementares td:nth-child(5){width:11%}
-#tabelaComplementares th:nth-child(6),#tabelaComplementares td:nth-child(6){width:9%}
-#tabelaComplementares th:nth-child(7),#tabelaComplementares td:nth-child(7){width:7%}
-#tabelaComplementares th:nth-child(8),#tabelaComplementares td:nth-child(8){width:7%}
-#tabelaComplementares th:nth-child(9),#tabelaComplementares td:nth-child(9){width:7%}
-#tabelaComplementares th:nth-child(10),#tabelaComplementares td:nth-child(10){width:7%}
-#tabelaComplementares th:nth-child(11),#tabelaComplementares td:nth-child(11){width:6%}
-#tabelaComplementares th:nth-child(12),#tabelaComplementares td:nth-child(12){width:4%;text-align:center!important}
-#tabelaComplementares th:nth-child(13),#tabelaComplementares td:nth-child(13){width:8%}
-
-/* Seletor múltiplo de situação */
-.situacao-multipla{position:relative;width:248px}
-.situacao-multipla-botao{width:100%;height:36px!important;background:#fff!important;color:#0f172a!important;border:1px solid #cbd5e1!important;text-align:left!important;padding:0 30px 0 10px!important;font-weight:normal!important;position:relative}
-.situacao-multipla-botao:after{content:'▾';position:absolute;right:10px;top:9px;color:#475569}
-.situacao-multipla-lista{display:none;position:absolute;top:40px;left:0;z-index:1200;width:285px;max-height:300px;overflow:auto;background:#fff;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 10px 24px rgba(15,23,42,.18);padding:8px}
-.situacao-multipla.aberta .situacao-multipla-lista{display:block}
-.situacao-opcao{display:flex!important;align-items:center;gap:8px;padding:6px 5px;margin:0!important;font-size:11px!important;cursor:pointer;color:#0f172a!important}
-.situacao-opcao:hover{background:#f1f5f9;border-radius:6px}
-.situacao-opcao input{width:14px!important;height:14px!important;min-width:14px!important;margin:0!important}
-.situacao-opcao.fixa{font-weight:bold}
-.situacao-opcao.fixa span:after{content:' • fixa';font-size:9px;color:#64748b;font-weight:normal}
-#filtroSituacaoConvocar{display:none!important}
-
-@media(max-width:1150px){
-  .painel-topbar-periodo>div,.painel-topbar-periodo input{width:116px!important;min-width:116px!important}
-  .painel-topbar h1{font-size:18px!important}.painel-topbar p{display:none}
-}
+.painel-topbar{gap:18px}.painel-topbar-acoes{display:flex;align-items:end;gap:8px;margin-left:auto}.painel-topbar-periodo{display:flex;align-items:end;gap:7px}.painel-topbar-periodo>div{width:132px}.painel-topbar-periodo label{font-size:9px!important;margin-bottom:3px!important;color:#475569}.painel-topbar-periodo input{width:132px!important;min-width:132px!important;height:36px!important;padding:5px 7px!important;font-size:10px!important}.painel-topbar-periodo button{height:36px!important;padding:0 10px!important;font-size:10px!important;white-space:nowrap}.painel-limpar-periodo{background:#475569!important}
+.conteudo .tabela-container{overflow-x:hidden!important}.conteudo table{width:100%!important;min-width:0!important;table-layout:fixed!important}.conteudo th,.conteudo td{padding:4px 3px!important;font-size:8.5px!important;line-height:1.14!important;white-space:normal!important;word-break:normal!important;overflow-wrap:anywhere!important}.conteudo th{font-size:7.6px!important;text-align:left!important;vertical-align:middle!important}.conteudo td button{min-width:0!important;padding:4px 3px!important;font-size:8px!important}
+#tabelaFaltosos th:nth-child(1),#tabelaFaltosos td:nth-child(1){width:5%}#tabelaFaltosos th:nth-child(2),#tabelaFaltosos td:nth-child(2){width:15%}#tabelaFaltosos th:nth-child(3),#tabelaFaltosos td:nth-child(3){width:12%}#tabelaFaltosos th:nth-child(4),#tabelaFaltosos td:nth-child(4){width:12%}#tabelaFaltosos th:nth-child(5),#tabelaFaltosos td:nth-child(5){width:8%}#tabelaFaltosos th:nth-child(6),#tabelaFaltosos td:nth-child(6){width:8%}#tabelaFaltosos th:nth-child(7),#tabelaFaltosos td:nth-child(7){width:10%}#tabelaFaltosos th:nth-child(8),#tabelaFaltosos td:nth-child(8){width:8%}#tabelaFaltosos th:nth-child(9),#tabelaFaltosos td:nth-child(9){width:5%;text-align:center!important}#tabelaFaltosos th:nth-child(10),#tabelaFaltosos td:nth-child(10){width:5%;text-align:center!important}#tabelaFaltosos th:nth-child(11),#tabelaFaltosos td:nth-child(11){width:12%}#tabelaFaltosos .acoes-pendencia{grid-template-columns:1fr!important;gap:3px!important}
+#tabelaPrioridade th:nth-child(1),#tabelaPrioridade td:nth-child(1),#tabelaVencidos th:nth-child(1),#tabelaVencidos td:nth-child(1){width:6%}#tabelaPrioridade th:nth-child(2),#tabelaPrioridade td:nth-child(2),#tabelaVencidos th:nth-child(2),#tabelaVencidos td:nth-child(2){width:18%}#tabelaPrioridade th:nth-child(3),#tabelaPrioridade td:nth-child(3),#tabelaVencidos th:nth-child(3),#tabelaVencidos td:nth-child(3){width:16%}#tabelaPrioridade th:nth-child(4),#tabelaPrioridade td:nth-child(4),#tabelaVencidos th:nth-child(4),#tabelaVencidos td:nth-child(4){width:17%}#tabelaPrioridade th:nth-child(5),#tabelaPrioridade td:nth-child(5),#tabelaVencidos th:nth-child(5),#tabelaVencidos td:nth-child(5){width:10%}#tabelaPrioridade th:nth-child(6),#tabelaPrioridade td:nth-child(6),#tabelaVencidos th:nth-child(6),#tabelaVencidos td:nth-child(6){width:10%}#tabelaPrioridade th:nth-child(7),#tabelaPrioridade td:nth-child(7),#tabelaVencidos th:nth-child(7),#tabelaVencidos td:nth-child(7){width:6%;text-align:center!important}#tabelaPrioridade th:nth-child(8),#tabelaPrioridade td:nth-child(8){width:6%;text-align:center!important}#tabelaPrioridade th:nth-child(9),#tabelaPrioridade td:nth-child(9),#tabelaVencidos th:nth-child(8),#tabelaVencidos td:nth-child(8){width:11%}
+#tabelaConvocar th,#tabelaConvocar td{padding:3px 2px!important;font-size:7.7px!important}#tabelaConvocar th{font-size:6.9px!important}#tabelaConvocar th:nth-child(1),#tabelaConvocar td:nth-child(1){width:2.5%}#tabelaConvocar th:nth-child(2),#tabelaConvocar td:nth-child(2){width:4.5%}#tabelaConvocar th:nth-child(3),#tabelaConvocar td:nth-child(3){width:14%}#tabelaConvocar th:nth-child(4),#tabelaConvocar td:nth-child(4){width:10%}#tabelaConvocar th:nth-child(5),#tabelaConvocar td:nth-child(5){width:11%}#tabelaConvocar th:nth-child(6),#tabelaConvocar td:nth-child(6){width:7%}#tabelaConvocar th:nth-child(7),#tabelaConvocar td:nth-child(7){width:7%}#tabelaConvocar th:nth-child(8),#tabelaConvocar td:nth-child(8){width:7%}#tabelaConvocar th:nth-child(9),#tabelaConvocar td:nth-child(9){width:8%}#tabelaConvocar th:nth-child(10),#tabelaConvocar td:nth-child(10){width:8%}#tabelaConvocar th:nth-child(11),#tabelaConvocar td:nth-child(11){width:4.5%;text-align:center!important}#tabelaConvocar th:nth-child(12),#tabelaConvocar td:nth-child(12){width:5.5%;text-align:center!important}#tabelaConvocar th:nth-child(13),#tabelaConvocar td:nth-child(13){width:3.5%;text-align:center!important}#tabelaConvocar th:nth-child(14),#tabelaConvocar td:nth-child(14){width:3.5%;text-align:center!important}#tabelaConvocar td button{width:28px!important;min-width:28px!important}
+#tabelaComplementares th,#tabelaComplementares td{font-size:7.5px!important;padding:3px 2px!important}#tabelaComplementares th:nth-child(1),#tabelaComplementares td:nth-child(1){width:10%}#tabelaComplementares th:nth-child(2),#tabelaComplementares td:nth-child(2){width:6%}#tabelaComplementares th:nth-child(3),#tabelaComplementares td:nth-child(3){width:15%}#tabelaComplementares th:nth-child(4),#tabelaComplementares td:nth-child(4){width:13%}#tabelaComplementares th:nth-child(5),#tabelaComplementares td:nth-child(5){width:11%}#tabelaComplementares th:nth-child(6),#tabelaComplementares td:nth-child(6){width:9%}#tabelaComplementares th:nth-child(7),#tabelaComplementares td:nth-child(7){width:7%}#tabelaComplementares th:nth-child(8),#tabelaComplementares td:nth-child(8){width:7%}#tabelaComplementares th:nth-child(9),#tabelaComplementares td:nth-child(9){width:7%}#tabelaComplementares th:nth-child(10),#tabelaComplementares td:nth-child(10){width:7%}#tabelaComplementares th:nth-child(11),#tabelaComplementares td:nth-child(11){width:6%}#tabelaComplementares th:nth-child(12),#tabelaComplementares td:nth-child(12){width:4%;text-align:center!important}#tabelaComplementares th:nth-child(13),#tabelaComplementares td:nth-child(13){width:8%}
+.situacao-multipla{position:relative;width:248px}.situacao-multipla-botao{width:100%;height:36px!important;background:#fff!important;color:#0f172a!important;border:1px solid #cbd5e1!important;text-align:left!important;padding:0 30px 0 10px!important;font-weight:normal!important;position:relative}.situacao-multipla-botao:after{content:'▾';position:absolute;right:10px;top:9px;color:#475569}.situacao-multipla-lista{display:none;position:absolute;top:40px;left:0;z-index:1200;width:285px;max-height:300px;overflow:auto;background:#fff;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 10px 24px rgba(15,23,42,.18);padding:8px}.situacao-multipla.aberta .situacao-multipla-lista{display:block}.situacao-opcao{display:flex!important;align-items:center;gap:8px;padding:6px 5px;margin:0!important;font-size:11px!important;cursor:pointer;color:#0f172a!important}.situacao-opcao:hover{background:#f1f5f9;border-radius:6px}.situacao-opcao input{width:14px!important;height:14px!important;min-width:14px!important;margin:0!important}.situacao-opcao.fixa{font-weight:bold}.situacao-opcao.fixa span:after{content:' • fixa';font-size:9px;color:#64748b;font-weight:normal}#filtroSituacaoConvocar{display:none!important}
+@media(max-width:1150px){.painel-topbar-periodo>div,.painel-topbar-periodo input{width:116px!important;min-width:116px!important}.painel-topbar h1{font-size:18px!important}.painel-topbar p{display:none}}
 </style>
-
 <script>
 (function(){
-  const SITUACOES_FIXAS=['ATIVO','FERIAS'];
-  let situacoesSelecionadas=new Set(SITUACOES_FIXAS);
-
-  function normalizar(valor){
-    return String(valor||'').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  }
-
-  function moverPeriodoParaCabecalho(){
-    const topbar=document.querySelector('.painel-topbar');
-    const atualizar=topbar&&topbar.querySelector('.painel-atualizar');
-    const filtros=document.querySelector('.filtros');
-    const inicio=document.getElementById('dataInicio');
-    const fim=document.getElementById('dataFim');
-    if(!topbar||!atualizar||!filtros||!inicio||!fim||topbar.querySelector('.painel-topbar-periodo'))return;
-
-    const bloco=document.createElement('div');bloco.className='painel-topbar-acoes';
-    const periodo=document.createElement('div');periodo.className='painel-topbar-periodo';
-    periodo.appendChild(inicio.closest('div'));periodo.appendChild(fim.closest('div'));
-
-    const filtrar=Array.from(filtros.querySelectorAll('button')).find(b=>b.textContent.trim().toLowerCase()==='filtrar');
-    if(filtrar)periodo.appendChild(filtrar);
-
-    const limpar=document.createElement('button');
-    limpar.type='button';limpar.className='painel-limpar-periodo';limpar.textContent='Limpar';
-    limpar.onclick=function(){
-      const hoje=new Date();
-      const ini=new Date(hoje.getFullYear(),hoje.getMonth(),1);
-      const finalMes=new Date(hoje.getFullYear(),hoje.getMonth()+1,0);
-      inicio.value=formatarDataInput(ini);fim.value=formatarDataInput(finalMes);
-      resetarSituacoes();
-      const pesquisas=document.querySelectorAll('.linha-filtros input[type="text"],.linha-filtros input[type="email"]');
-      pesquisas.forEach(el=>el.value='');
-      document.querySelectorAll('.linha-filtros select').forEach(el=>el.value='');
-      carregarDados(false);
-    };
-    periodo.appendChild(limpar);
-
-    bloco.appendChild(periodo);bloco.appendChild(atualizar);topbar.appendChild(bloco);
-  }
-
-  function obterSituacoesLista(){
-    const lista=dadosPortal&&dadosPortal.convocar&&dadosPortal.convocar.todos||[];
-    return [...new Set(lista.map(i=>i.situacao).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-  }
-
-  function atualizarResumoSituacoes(){
-    const botao=document.querySelector('.situacao-multipla-botao');if(!botao)return;
-    const nomes=[];
-    obterSituacoesLista().forEach(s=>{if(situacoesSelecionadas.has(normalizar(s)))nomes.push(s)});
-    botao.textContent=nomes.length<=2?nomes.join(', '):(nomes.slice(0,2).join(', ')+' +'+(nomes.length-2));
-  }
-
-  function aplicarFiltroSituacoes(){
-    if(!dadosPortal||!dadosPortal.convocar)return;
-    const termo=obterTermoPesquisa('pesquisaConvocar');
-    const lista=(dadosPortal.convocar.todos||[]).filter(item=>situacoesSelecionadas.has(normalizar(item.situacao))&&correspondePesquisa(item,termo));
-    renderizarConvocar(lista);quebrarCabecalhos();
-  }
-
-  function resetarSituacoes(){
-    situacoesSelecionadas=new Set(SITUACOES_FIXAS);
-    document.querySelectorAll('.situacao-multipla-lista input[type="checkbox"]').forEach(cb=>{
-      const fixa=SITUACOES_FIXAS.includes(cb.dataset.normalizada);cb.checked=fixa;
-    });
-    atualizarResumoSituacoes();aplicarFiltroSituacoes();
-  }
-
-  function montarFiltroSituacao(){
-    const select=document.getElementById('filtroSituacaoConvocar');
-    if(!select||document.querySelector('.situacao-multipla'))return;
-    const pai=select.closest('div');if(!pai)return;
-    const controle=document.createElement('div');controle.className='situacao-multipla';
-    controle.innerHTML='<button type="button" class="situacao-multipla-botao">Ativo, Férias</button><div class="situacao-multipla-lista"></div>';
-    pai.appendChild(controle);
-    const lista=controle.querySelector('.situacao-multipla-lista');
-    obterSituacoesLista().forEach(s=>{
-      const n=normalizar(s),fixa=SITUACOES_FIXAS.includes(n);
-      const label=document.createElement('label');label.className='situacao-opcao'+(fixa?' fixa':'');
-      label.innerHTML='<input type="checkbox" data-normalizada="'+n.replace(/"/g,'&quot;')+'" '+(fixa?'checked disabled':'')+'><span></span>';
-      label.querySelector('span').textContent=s;
-      const cb=label.querySelector('input');
-      cb.addEventListener('change',function(){if(cb.checked)situacoesSelecionadas.add(n);else situacoesSelecionadas.delete(n);atualizarResumoSituacoes();aplicarFiltroSituacoes()});
-      lista.appendChild(label);
-    });
-    controle.querySelector('.situacao-multipla-botao').onclick=()=>controle.classList.toggle('aberta');
-    document.addEventListener('click',e=>{if(!controle.contains(e.target))controle.classList.remove('aberta')});
-    atualizarResumoSituacoes();
-  }
-
-  window.carregarFiltroSituacao=function(){montarFiltroSituacao();atualizarResumoSituacoes()};
-  window.filtrarConvocacaoPorSituacao=aplicarFiltroSituacoes;
-
-  const limparOriginal=window.limparFiltrosLocais;
-  window.limparFiltrosLocais=function(){
-    if(typeof limparOriginal==='function')limparOriginal();
-    resetarSituacoes();
-  };
-
-  function quebrarCabecalhos(){
-    const mapa={
-      'DATA CONVOCAR':'Data<br>convocar','DATA LIMITE':'Data<br>limite','DATA AGENDADA':'Data<br>agendada',
-      'STATUS AGENDA':'Status<br>agenda','ULTIMA PENDENCIA':'Última<br>pendência','NOVA DATA':'Nova<br>data',
-      'PROX. VENC.':'Próx.<br>venc.','GRUPO DE EXAME':'Grupo de<br>exame','MATRICULA':'Matrícula',
-      'CONVOCACOES ENVIADAS':'Convocações<br>enviadas'
-    };
-    document.querySelectorAll('.conteudo table thead th').forEach(th=>{
-      if(th.querySelector('input'))return;
-      const chave=normalizar(th.textContent).replace(/\s+/g,' ');
-      if(mapa[chave])th.innerHTML=mapa[chave];
-    });
-  }
-
-  window.renderizarComplementares=function(lista){
-    const cards=document.getElementById('cardsComplementares'),div=document.getElementById('tabelaComplementares');if(!cards||!div)return;
-    cards.innerHTML=`<div class="indicador-card"><div class="titulo">Total no período</div><div class="valor">${escaparHtml((lista||[]).length)}</div></div><div class="indicador-card ruim"><div class="titulo">Atrasados</div><div class="valor">${escaparHtml((lista||[]).filter(i=>Number(i.diasParaVencer)<0).length)}</div></div><div class="indicador-card alerta"><div class="titulo">Até 7 dias</div><div class="valor">${escaparHtml((lista||[]).filter(i=>Number(i.diasParaVencer)>=0&&Number(i.diasParaVencer)<=7).length)}</div></div><div class="indicador-card"><div class="titulo">Com agendamento</div><div class="valor">${escaparHtml((lista||[]).filter(i=>dataISOEstaNoPeriodoPortal(i.dataAgendada)).length)}</div></div>`;
-    if(!lista||!lista.length){div.innerHTML='<div class="vazio">Nenhum colaborador com necessidade de exame complementar no período selecionado.</div>';return}
-    let html=`<div class="tabela-container tabela-complementares"><table><thead><tr><th>Grupo</th><th>Matrícula</th><th>Nome</th><th>Função</th><th>Setor</th><th>Situação</th><th>Data convocar</th><th>Data limite</th><th>Vencimento</th><th>Data agendada</th><th>Status agenda</th><th>Dias</th><th>Prioridade</th></tr></thead><tbody>`;
-    lista.forEach(item=>{const agendada=dataISOEstaNoPeriodoPortal(item.dataAgendada)?item.dataAgendadaBR:'Pendente';const status=dataISOEstaNoPeriodoPortal(item.dataAgendada)?item.statusAgenda:'';html+=`<tr><td>${escaparHtml(item.grupoComplementar)}</td><td>${escaparHtml(item.mat)}</td><td>${escaparHtml(item.nome)}</td><td>${escaparHtml(item.funcao)}</td><td>${escaparHtml(item.setor)}</td><td>${escaparHtml(item.situacao)}</td><td>${escaparHtml(item.dataConvocarBR)}</td><td>${escaparHtml(item.dataLimiteBR)}</td><td>${escaparHtml(item.proximoVencimentoBR)}</td><td>${escaparHtml(agendada)}</td><td>${escaparHtml(status)}</td><td>${escaparHtml(item.diasParaVencer)}</td><td>${badgePrioridadeComplementar(item.prioridadeComplementar)}</td></tr>`});
-    html+='</tbody></table></div>';div.innerHTML=html;ativarOrdenacaoTabelas('tabelaComplementares');quebrarCabecalhos();
-  };
-
-  function inicializar(){moverPeriodoParaCabecalho();montarFiltroSituacao();quebrarCabecalhos()}
-  document.addEventListener('DOMContentLoaded',()=>{setTimeout(inicializar,0);setTimeout(inicializar,350)});
-  new MutationObserver(()=>{moverPeriodoParaCabecalho();montarFiltroSituacao();quebrarCabecalhos()}).observe(document.documentElement,{childList:true,subtree:true});
+  const SITUACOES_FIXAS=['ATIVO','FERIAS'];let situacoesSelecionadas=new Set(SITUACOES_FIXAS);
+  function normalizar(v){return String(v||'').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+  function moverPeriodoParaCabecalho(){const top=document.querySelector('.painel-topbar'),atualizar=top&&top.querySelector('.painel-atualizar'),filtros=document.querySelector('.filtros'),inicio=document.getElementById('dataInicio'),fim=document.getElementById('dataFim');if(!top||!atualizar||!filtros||!inicio||!fim||top.querySelector('.painel-topbar-periodo'))return;const bloco=document.createElement('div');bloco.className='painel-topbar-acoes';const periodo=document.createElement('div');periodo.className='painel-topbar-periodo';periodo.appendChild(inicio.closest('div'));periodo.appendChild(fim.closest('div'));const filtrar=Array.from(filtros.querySelectorAll('button')).find(b=>b.textContent.trim().toLowerCase()==='filtrar');if(filtrar)periodo.appendChild(filtrar);const limpar=document.createElement('button');limpar.type='button';limpar.className='painel-limpar-periodo';limpar.textContent='Limpar';limpar.onclick=function(){const h=new Date(),ini=new Date(h.getFullYear(),h.getMonth(),1),fm=new Date(h.getFullYear(),h.getMonth()+1,0);inicio.value=formatarDataInput(ini);fim.value=formatarDataInput(fm);resetarSituacoes();document.querySelectorAll('.linha-filtros input[type="text"],.linha-filtros input[type="email"]').forEach(el=>el.value='');document.querySelectorAll('.linha-filtros select').forEach(el=>el.value='');carregarDados(false)};periodo.appendChild(limpar);bloco.appendChild(periodo);bloco.appendChild(atualizar);top.appendChild(bloco)}
+  function obterSituacoesLista(){const lista=dadosPortal&&dadosPortal.convocar&&dadosPortal.convocar.todos||[];return[...new Set(lista.map(i=>i.situacao).filter(Boolean))].sort((a,b)=>a.localeCompare(b))}
+  function atualizarResumoSituacoes(){const b=document.querySelector('.situacao-multipla-botao');if(!b)return;const nomes=[];obterSituacoesLista().forEach(s=>{if(situacoesSelecionadas.has(normalizar(s)))nomes.push(s)});b.textContent=nomes.length<=2?nomes.join(', '):(nomes.slice(0,2).join(', ')+' +'+(nomes.length-2))}
+  function aplicarFiltroSituacoes(){if(!dadosPortal||!dadosPortal.convocar)return;const termo=obterTermoPesquisa('pesquisaConvocar');const lista=(dadosPortal.convocar.todos||[]).filter(i=>situacoesSelecionadas.has(normalizar(i.situacao))&&correspondePesquisa(i,termo));renderizarConvocar(lista);quebrarCabecalhos()}
+  function resetarSituacoes(){situacoesSelecionadas=new Set(SITUACOES_FIXAS);document.querySelectorAll('.situacao-multipla-lista input[type="checkbox"]').forEach(cb=>cb.checked=SITUACOES_FIXAS.includes(cb.dataset.normalizada));atualizarResumoSituacoes();aplicarFiltroSituacoes()}
+  function montarFiltroSituacao(){const select=document.getElementById('filtroSituacaoConvocar');if(!select||document.querySelector('.situacao-multipla'))return;const pai=select.closest('div');if(!pai)return;const controle=document.createElement('div');controle.className='situacao-multipla';controle.innerHTML='<button type="button" class="situacao-multipla-botao">Ativo, Férias</button><div class="situacao-multipla-lista"></div>';pai.appendChild(controle);const lista=controle.querySelector('.situacao-multipla-lista');obterSituacoesLista().forEach(s=>{const n=normalizar(s),fixa=SITUACOES_FIXAS.includes(n),label=document.createElement('label');label.className='situacao-opcao'+(fixa?' fixa':'');label.innerHTML='<input type="checkbox" data-normalizada="'+n.replace(/"/g,'&quot;')+'" '+(fixa?'checked disabled':'')+'><span></span>';label.querySelector('span').textContent=s;const cb=label.querySelector('input');cb.addEventListener('change',()=>{if(cb.checked)situacoesSelecionadas.add(n);else situacoesSelecionadas.delete(n);atualizarResumoSituacoes();aplicarFiltroSituacoes()});lista.appendChild(label)});controle.querySelector('.situacao-multipla-botao').onclick=()=>controle.classList.toggle('aberta');document.addEventListener('click',e=>{if(!controle.contains(e.target))controle.classList.remove('aberta')});atualizarResumoSituacoes()}
+  window.carregarFiltroSituacao=function(){montarFiltroSituacao();atualizarResumoSituacoes()};window.filtrarConvocacaoPorSituacao=aplicarFiltroSituacoes;const limparOriginal=window.limparFiltrosLocais;window.limparFiltrosLocais=function(){if(typeof limparOriginal==='function')limparOriginal();resetarSituacoes()};
+  function quebrarCabecalhos(){const mapa={'DATA CONVOCAR':'Data<br>convocar','DATA LIMITE':'Data<br>limite','DATA AGENDADA':'Data<br>agendada','STATUS AGENDA':'Status<br>agenda','ULTIMA PENDENCIA':'Última<br>pendência','NOVA DATA':'Nova<br>data','PROX. VENC.':'Próx.<br>venc.','GRUPO DE EXAME':'Grupo de<br>exame','MATRICULA':'Matrícula','CONVOCACOES ENVIADAS':'Convocações<br>enviadas','DATA LIMITE PARA REALIZAR':'Data limite<br>para realizar','DATA REALIZADA':'Data<br>realizada','VENCIMENTO AVALIADO':'Vencimento<br>avaliado','MES ANALISADO':'Mês<br>analisado'};document.querySelectorAll('.conteudo table thead th').forEach(th=>{if(th.querySelector('input'))return;const k=normalizar(th.textContent).replace(/\s+/g,' ');if(mapa[k])th.innerHTML=mapa[k]})}
+  window.renderizarComplementares=function(lista){const cards=document.getElementById('cardsComplementares'),div=document.getElementById('tabelaComplementares');if(!cards||!div)return;cards.innerHTML=`<div class="indicador-card"><div class="titulo">Total no período</div><div class="valor">${escaparHtml((lista||[]).length)}</div></div><div class="indicador-card ruim"><div class="titulo">Atrasados</div><div class="valor">${escaparHtml((lista||[]).filter(i=>Number(i.diasParaVencer)<0).length)}</div></div><div class="indicador-card alerta"><div class="titulo">Até 7 dias</div><div class="valor">${escaparHtml((lista||[]).filter(i=>Number(i.diasParaVencer)>=0&&Number(i.diasParaVencer)<=7).length)}</div></div><div class="indicador-card"><div class="titulo">Com agendamento</div><div class="valor">${escaparHtml((lista||[]).filter(i=>dataISOEstaNoPeriodoPortal(i.dataAgendada)).length)}</div></div>`;if(!lista||!lista.length){div.innerHTML='<div class="vazio">Nenhum colaborador com necessidade de exame complementar no período selecionado.</div>';return}let html='<div class="tabela-container tabela-complementares"><table><thead><tr><th>Grupo</th><th>Matrícula</th><th>Nome</th><th>Função</th><th>Setor</th><th>Situação</th><th>Data convocar</th><th>Data limite</th><th>Vencimento</th><th>Data agendada</th><th>Status agenda</th><th>Dias</th><th>Prioridade</th></tr></thead><tbody>';lista.forEach(i=>{const ag=dataISOEstaNoPeriodoPortal(i.dataAgendada)?i.dataAgendadaBR:'Pendente',st=dataISOEstaNoPeriodoPortal(i.dataAgendada)?i.statusAgenda:'';html+=`<tr><td>${escaparHtml(i.grupoComplementar)}</td><td>${escaparHtml(i.mat)}</td><td>${escaparHtml(i.nome)}</td><td>${escaparHtml(i.funcao)}</td><td>${escaparHtml(i.setor)}</td><td>${escaparHtml(i.situacao)}</td><td>${escaparHtml(i.dataConvocarBR)}</td><td>${escaparHtml(i.dataLimiteBR)}</td><td>${escaparHtml(i.proximoVencimentoBR)}</td><td>${escaparHtml(ag)}</td><td>${escaparHtml(st)}</td><td>${escaparHtml(i.diasParaVencer)}</td><td>${badgePrioridadeComplementar(i.prioridadeComplementar)}</td></tr>`});html+='</tbody></table></div>';div.innerHTML=html;ativarOrdenacaoTabelas('tabelaComplementares');quebrarCabecalhos()};
+  function ajustarIndicadores(){const grafico=document.getElementById('graficoMetaMensal');if(grafico){const anterior=grafico.previousElementSibling;if(anterior&&/^DESEMPENHO MENSAL DA META$/.test(normalizar(anterior.textContent)))anterior.remove();grafico.remove()}document.querySelectorAll('#analiseIndicadorMensal .analise-bloco h3 span:first-child').forEach(span=>{if(normalizar(span.textContent).includes('ASOS ATRASADOS REALIZADOS NO MES DA ANALISE'))span.textContent='Atrasados no vencimento — relação nominal'});quebrarCabecalhos()}
+  const renderIndicadoresOriginal=window.renderizarIndicadores;window.renderizarIndicadores=function(ind){if(typeof renderIndicadoresOriginal==='function')renderIndicadoresOriginal(ind);setTimeout(ajustarIndicadores,0)};
+  function inicializar(){moverPeriodoParaCabecalho();montarFiltroSituacao();quebrarCabecalhos();ajustarIndicadores()}
+  document.addEventListener('DOMContentLoaded',()=>{setTimeout(inicializar,0);setTimeout(inicializar,350)});new MutationObserver(()=>{moverPeriodoParaCabecalho();montarFiltroSituacao();quebrarCabecalhos()}).observe(document.documentElement,{childList:true,subtree:true});
 })();
 </script>
