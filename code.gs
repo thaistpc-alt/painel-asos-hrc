@@ -46,44 +46,93 @@ function doGet() {
   const hotfixComplementares = `
 <script>
 (function(){
+  const FIXAS_COMPLEMENTARES=['ATIVO','FERIAS'];
+  let selecionadasComplementaresSeguro=new Set(FIXAS_COMPLEMENTARES);
+  const normalizarComplementarSeguro=v=>String(v||'').trim().toUpperCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');
+
+  function obterDadosComplementaresSeguro(){
+    return (window.dadosPortal&&Array.isArray(dadosPortal.examesComplementares))
+      ? dadosPortal.examesComplementares
+      : [];
+  }
+
+  function aplicarComplementaresSeguro(){
+    const dados=obterDadosComplementaresSeguro();
+    const grupo=document.getElementById('filtroGrupoComplementar');
+    const grupoValor=grupo?grupo.value||'':'';
+    const termo=typeof obterTermoPesquisa==='function'?obterTermoPesquisa('pesquisaComplementares'):'';
+    const filtrados=dados.filter(i=>
+      selecionadasComplementaresSeguro.has(normalizarComplementarSeguro(i.situacao))&&
+      (!grupoValor||i.grupoComplementar===grupoValor)&&
+      (!termo||correspondePesquisaComplementar(i,termo))
+    );
+    if(typeof renderizarComplementares==='function')renderizarComplementares(filtrados);
+  }
+
   function montarFiltroSituacaoComplementaresSeguro(){
     const grupo=document.getElementById('filtroGrupoComplementar');
-    if(!grupo)return;
+    if(!grupo)return false;
     const linha=grupo.closest('.linha-filtros');
-    if(!linha||linha.querySelector('.situacao-complementares'))return;
-    const dados=(window.dadosPortal&&dadosPortal.examesComplementares)||[];
-    const normalizar=v=>String(v||'').trim().toUpperCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');
-    const fixas=['ATIVO','FERIAS'];
-    const selecionadas=new Set(fixas);
+    if(!linha)return false;
+
+    const dados=obterDadosComplementaresSeguro();
     const situacoes=[...new Set(dados.map(i=>i.situacao).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-    const bloco=document.createElement('div');
-    bloco.className='situacao-multipla situacao-complementares';
-    bloco.innerHTML='<label>Situação</label><button type="button" class="situacao-multipla-botao">Ativo, Férias</button><div class="situacao-multipla-lista"></div>';
-    linha.insertBefore(bloco,grupo.closest('div'));
-    const lista=bloco.querySelector('.situacao-multipla-lista');
-    function aplicar(){
-      const grupoValor=grupo.value||'';
-      const termo=typeof obterTermoPesquisa==='function'?obterTermoPesquisa('pesquisaComplementares'):'';
-      const filtrados=dados.filter(i=>selecionadas.has(normalizar(i.situacao))&&(!grupoValor||i.grupoComplementar===grupoValor)&&(!termo||correspondePesquisaComplementar(i,termo)));
-      if(typeof renderizarComplementares==='function')renderizarComplementares(filtrados);
+    let bloco=linha.querySelector('.situacao-complementares');
+
+    if(!bloco){
+      bloco=document.createElement('div');
+      bloco.className='situacao-multipla situacao-complementares';
+      bloco.innerHTML='<label>Situação</label><button type="button" class="situacao-multipla-botao">Ativo, Férias</button><div class="situacao-multipla-lista"></div>';
+      linha.insertBefore(bloco,grupo.closest('div'));
+      bloco.querySelector('.situacao-multipla-botao').onclick=()=>bloco.classList.toggle('aberta');
     }
+
+    const lista=bloco.querySelector('.situacao-multipla-lista');
+    const assinatura=situacoes.map(normalizarComplementarSeguro).join('|');
+    if(lista.dataset.assinatura===assinatura)return true;
+
+    lista.dataset.assinatura=assinatura;
+    lista.innerHTML='';
     situacoes.forEach(s=>{
-      const n=normalizar(s),fixa=fixas.includes(n),label=document.createElement('label');
+      const n=normalizarComplementarSeguro(s);
+      const fixa=FIXAS_COMPLEMENTARES.includes(n);
+      if(fixa)selecionadasComplementaresSeguro.add(n);
+      const label=document.createElement('label');
       label.className='situacao-opcao'+(fixa?' fixa':'');
-      label.innerHTML='<input type="checkbox" '+(fixa?'checked disabled':'')+'><span></span>';
+      label.innerHTML='<input type="checkbox" data-normalizada="'+n.replace(/"/g,'&quot;')+'" '+((fixa||selecionadasComplementaresSeguro.has(n))?'checked ':'')+(fixa?'disabled':'')+'><span></span>';
       label.querySelector('span').textContent=s;
       const cb=label.querySelector('input');
-      cb.onchange=()=>{cb.checked?selecionadas.add(n):selecionadas.delete(n);aplicar();};
+      cb.onchange=()=>{
+        cb.checked?selecionadasComplementaresSeguro.add(n):selecionadasComplementaresSeguro.delete(n);
+        aplicarComplementaresSeguro();
+      };
       lista.appendChild(label);
     });
-    bloco.querySelector('.situacao-multipla-botao').onclick=()=>bloco.classList.toggle('aberta');
+
+    const nomes=situacoes.filter(s=>selecionadasComplementaresSeguro.has(normalizarComplementarSeguro(s)));
+    bloco.querySelector('.situacao-multipla-botao').textContent=nomes.length<=2?nomes.join(', '):nomes.slice(0,2).join(', ')+' +'+(nomes.length-2);
+    return true;
   }
+
   const abrirAnterior=window.abrirAba;
   window.abrirAba=function(id,botao){
     abrirAnterior(id,botao);
-    if(id==='complementares')setTimeout(montarFiltroSituacaoComplementaresSeguro,50);
+    if(id==='complementares'){
+      setTimeout(montarFiltroSituacaoComplementaresSeguro,50);
+      setTimeout(montarFiltroSituacaoComplementaresSeguro,500);
+    }
   };
-  document.addEventListener('DOMContentLoaded',()=>setTimeout(montarFiltroSituacaoComplementaresSeguro,500));
+
+  const renderAnterior=window.renderizarComplementares;
+  window.renderizarComplementares=function(lista){
+    if(typeof renderAnterior==='function')renderAnterior(lista);
+    setTimeout(montarFiltroSituacaoComplementaresSeguro,0);
+  };
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    setTimeout(montarFiltroSituacaoComplementaresSeguro,500);
+    setTimeout(montarFiltroSituacaoComplementaresSeguro,1500);
+  });
 })();
 </script>`;
   const complementos = patch + "\n" + visual + "\n" + hotfixComplementares;
