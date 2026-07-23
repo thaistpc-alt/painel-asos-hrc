@@ -88,15 +88,21 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
 
 function obterGraficoPortalV13(dataInicio, dataFim) {
   validarPeriodoV13_(dataInicio, dataFim);
-  const chave = "GRAFICO_V3_" + dataInicio + "_" + dataFim;
+  const chave = "GRAFICO_V4_SEM_FUTUROS_" + dataInicio + "_" + dataFim;
   const cacheado = obterCacheV13_(chave);
   if (cacheado) return cacheado;
 
   const contexto = construirContextoV13_(dataInicio, dataFim, false);
   const indicadores = gerarIndicadores(contexto.lista || []);
+  const mesAtual = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "yyyy-MM");
+  const resumoAteMesAtual = (indicadores.resumoMensal || []).filter(function(item) {
+    const mes = String(item.mesAnalise || item.mes || "");
+    return mes && mes <= mesAtual;
+  });
+
   const resultado = {
     ano: indicadores.ano,
-    resumoMensal: indicadores.resumoMensal || [],
+    resumoMensal: resumoAteMesAtual,
     origemContexto: contexto.origemCache || "nova"
   };
   salvarCacheV13_(chave, resultado);
