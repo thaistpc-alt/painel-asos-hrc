@@ -53,7 +53,18 @@ function executarRegressaoV13(dataInicio, dataFim) {
     total: testes.length,
     aprovados: testes.length - falhas.length,
     falhas: falhas.length,
-    resultados: testes
+    testesAprovados: testes.filter(t => t.sucesso).map(t => t.teste),
+    divergencias: falhas.map(t => ({
+      teste: t.teste,
+      esperado: Array.isArray(t.esperado) ? t.esperado.length : t.esperado,
+      obtido: Array.isArray(t.obtido) ? t.obtido.length : t.obtido,
+      faltando: Array.isArray(t.esperado) && Array.isArray(t.obtido)
+        ? t.esperado.filter(x => !t.obtido.includes(x))
+        : [],
+      excedentes: Array.isArray(t.esperado) && Array.isArray(t.obtido)
+        ? t.obtido.filter(x => !t.esperado.includes(x))
+        : []
+    }))
   };
   console.log(JSON.stringify(resumo, null, 2));
   return resumo;
