@@ -6,7 +6,7 @@
    - entrega cada módulo sob demanda.
 ========================================================= */
 
-const PERF13_PREFIXO = "ASOS_V13_";
+const PERF13_PREFIXO = "ASOS_V13_1_";
 const PERF13_TTL = 1800;
 const PERF13_PARTE = 85000;
 
@@ -24,8 +24,7 @@ function obterResumoPortalV13(dataInicio, dataFim, forcarAtualizacao) {
   const pendencias = contexto.pendencias;
 
   const convocar = gerarListaConvocar(lista, dataInicio, dataFim)
-    .filter(c => !c.asoRealizadoValido)
-    .filter(c => !ehNaoCompareceuAso(c));
+    .filter(c => !c.asoRealizadoValido);
 
   const complementares = gerarExamesComplementares(lista, dataInicio, dataFim)
     .filter(c => !c.asoRealizadoValido);
@@ -87,8 +86,7 @@ function obterModuloPortalV13(modulo, dataInicio, dataFim, forcarAtualizacao) {
   switch (nome) {
     case "CONVOCAR": {
       const todos = gerarListaConvocar(lista, dataInicio, dataFim)
-        .filter(c => !c.asoRealizadoValido)
-        .filter(c => !ehNaoCompareceuAso(c));
+        .filter(c => !c.asoRealizadoValido);
       resultado = {
         convocar: {
           todos: todos,
