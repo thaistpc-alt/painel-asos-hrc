@@ -1,0 +1,139 @@
+<style>
+/* Ajustes visuais V13: datas no cabeçalho e tabelas sem rolagem horizontal */
+.painel-topbar{gap:18px}
+.painel-topbar-acoes{display:flex;align-items:end;gap:8px;margin-left:auto}
+.painel-topbar-periodo{display:flex;align-items:end;gap:7px}
+.painel-topbar-periodo>div{width:132px}
+.painel-topbar-periodo label{font-size:9px!important;margin-bottom:3px!important;color:#475569}
+.painel-topbar-periodo input{width:132px!important;min-width:132px!important;height:36px!important;padding:5px 7px!important;font-size:10px!important}
+.painel-topbar-periodo button{height:36px!important;padding:0 10px!important;font-size:10px!important;white-space:nowrap}
+
+/* Removemos a largura mínima global apenas nas tabelas que precisam caber na tela. */
+#tabelaFaltosos .tabela-container,
+#tabelaPrioridade .tabela-container,
+#tabelaConvocar .tabela-container{overflow-x:hidden!important}
+#tabelaFaltosos table,
+#tabelaPrioridade table,
+#tabelaConvocar table{width:100%!important;min-width:0!important;table-layout:fixed!important}
+#tabelaFaltosos th,#tabelaFaltosos td,
+#tabelaPrioridade th,#tabelaPrioridade td,
+#tabelaConvocar th,#tabelaConvocar td{padding:4px 3px!important;font-size:8.5px!important;line-height:1.15!important;word-break:normal!important;overflow-wrap:anywhere!important}
+#tabelaFaltosos th,#tabelaPrioridade th,#tabelaConvocar th{font-size:7.7px!important}
+
+/* Pendências: 11 colunas, priorizando nome, função, setor e ação. */
+#tabelaFaltosos th:nth-child(1),#tabelaFaltosos td:nth-child(1){width:5%}
+#tabelaFaltosos th:nth-child(2),#tabelaFaltosos td:nth-child(2){width:15%}
+#tabelaFaltosos th:nth-child(3),#tabelaFaltosos td:nth-child(3){width:12%}
+#tabelaFaltosos th:nth-child(4),#tabelaFaltosos td:nth-child(4){width:12%}
+#tabelaFaltosos th:nth-child(5),#tabelaFaltosos td:nth-child(5){width:8%}
+#tabelaFaltosos th:nth-child(6),#tabelaFaltosos td:nth-child(6){width:8%}
+#tabelaFaltosos th:nth-child(7),#tabelaFaltosos td:nth-child(7){width:10%}
+#tabelaFaltosos th:nth-child(8),#tabelaFaltosos td:nth-child(8){width:8%}
+#tabelaFaltosos th:nth-child(9),#tabelaFaltosos td:nth-child(9){width:5%;text-align:center}
+#tabelaFaltosos th:nth-child(10),#tabelaFaltosos td:nth-child(10){width:5%;text-align:center}
+#tabelaFaltosos th:nth-child(11),#tabelaFaltosos td:nth-child(11){width:12%}
+#tabelaFaltosos .acoes-pendencia{grid-template-columns:1fr!important;gap:3px!important}
+#tabelaFaltosos .acoes-pendencia button{font-size:8px!important;padding:4px 2px!important}
+
+/* Prioridade: distribuição proporcional sem largura mínima. */
+#tabelaPrioridade th:nth-child(1),#tabelaPrioridade td:nth-child(1){width:6%}
+#tabelaPrioridade th:nth-child(2),#tabelaPrioridade td:nth-child(2){width:18%}
+#tabelaPrioridade th:nth-child(3),#tabelaPrioridade td:nth-child(3){width:16%}
+#tabelaPrioridade th:nth-child(4),#tabelaPrioridade td:nth-child(4){width:17%}
+#tabelaPrioridade th:nth-child(5),#tabelaPrioridade td:nth-child(5){width:10%}
+#tabelaPrioridade th:nth-child(6),#tabelaPrioridade td:nth-child(6){width:10%}
+#tabelaPrioridade th:nth-child(7),#tabelaPrioridade td:nth-child(7){width:6%;text-align:center}
+#tabelaPrioridade th:nth-child(8),#tabelaPrioridade td:nth-child(8){width:6%;text-align:center}
+#tabelaPrioridade th:nth-child(9),#tabelaPrioridade td:nth-child(9){width:11%}
+
+/* Convocar: mantém as 14 colunas, mas elimina a largura fixa de 1320px. */
+#tabelaConvocar table{font-size:8.1px!important}
+#tabelaConvocar th,#tabelaConvocar td{padding:3px 2px!important;font-size:7.8px!important}
+#tabelaConvocar th{font-size:7px!important}
+#tabelaConvocar th:nth-child(1),#tabelaConvocar td:nth-child(1){width:2.5%}
+#tabelaConvocar th:nth-child(2),#tabelaConvocar td:nth-child(2){width:4.5%}
+#tabelaConvocar th:nth-child(3),#tabelaConvocar td:nth-child(3){width:14%}
+#tabelaConvocar th:nth-child(4),#tabelaConvocar td:nth-child(4){width:10%}
+#tabelaConvocar th:nth-child(5),#tabelaConvocar td:nth-child(5){width:11%}
+#tabelaConvocar th:nth-child(6),#tabelaConvocar td:nth-child(6){width:7%}
+#tabelaConvocar th:nth-child(7),#tabelaConvocar td:nth-child(7){width:7%}
+#tabelaConvocar th:nth-child(8),#tabelaConvocar td:nth-child(8){width:7%}
+#tabelaConvocar th:nth-child(9),#tabelaConvocar td:nth-child(9){width:8%}
+#tabelaConvocar th:nth-child(10),#tabelaConvocar td:nth-child(10){width:8%}
+#tabelaConvocar th:nth-child(11),#tabelaConvocar td:nth-child(11){width:4.5%;text-align:center}
+#tabelaConvocar th:nth-child(12),#tabelaConvocar td:nth-child(12){width:5.5%;text-align:center}
+#tabelaConvocar th:nth-child(13),#tabelaConvocar td:nth-child(13){width:3.5%;text-align:center}
+#tabelaConvocar th:nth-child(14),#tabelaConvocar td:nth-child(14){width:3.5%;text-align:center}
+#tabelaConvocar td button{width:28px!important;min-width:28px!important;padding:4px 2px!important;font-size:7px!important}
+
+@media(max-width:1150px){
+  .painel-topbar-periodo>div,.painel-topbar-periodo input{width:116px!important;min-width:116px!important}
+  .painel-topbar h1{font-size:18px!important}
+  .painel-topbar p{display:none}
+}
+</style>
+
+<script>
+(function(){
+  function moverPeriodoParaCabecalho(){
+    const topbar=document.querySelector('.painel-topbar');
+    const atualizar=topbar&&topbar.querySelector('.painel-atualizar');
+    const filtros=document.querySelector('.filtros');
+    const inicio=document.getElementById('dataInicio');
+    const fim=document.getElementById('dataFim');
+    if(!topbar||!atualizar||!filtros||!inicio||!fim||topbar.querySelector('.painel-topbar-periodo'))return;
+
+    const bloco=document.createElement('div');
+    bloco.className='painel-topbar-acoes';
+    const periodo=document.createElement('div');
+    periodo.className='painel-topbar-periodo';
+    periodo.appendChild(inicio.closest('div'));
+    periodo.appendChild(fim.closest('div'));
+
+    const filtrar=Array.from(filtros.querySelectorAll('button')).find(function(b){
+      return b.textContent.trim().toLowerCase()==='filtrar';
+    });
+    if(filtrar)periodo.appendChild(filtrar);
+
+    bloco.appendChild(periodo);
+    bloco.appendChild(atualizar);
+    topbar.appendChild(bloco);
+  }
+
+  /* Acrescenta Situação à tabela de Exames Complementares. */
+  window.renderizarComplementares=function(lista){
+    const cards=document.getElementById('cardsComplementares');
+    const div=document.getElementById('tabelaComplementares');
+    if(!cards||!div)return;
+    cards.innerHTML=`
+      <div class="indicador-card"><div class="titulo">Total no período</div><div class="valor">${escaparHtml((lista||[]).length)}</div></div>
+      <div class="indicador-card ruim"><div class="titulo">Atrasados</div><div class="valor">${escaparHtml((lista||[]).filter(i=>Number(i.diasParaVencer)<0).length)}</div></div>
+      <div class="indicador-card alerta"><div class="titulo">Até 7 dias</div><div class="valor">${escaparHtml((lista||[]).filter(i=>Number(i.diasParaVencer)>=0&&Number(i.diasParaVencer)<=7).length)}</div></div>
+      <div class="indicador-card"><div class="titulo">Com agendamento</div><div class="valor">${escaparHtml((lista||[]).filter(i=>dataISOEstaNoPeriodoPortal(i.dataAgendada)).length)}</div></div>`;
+    if(!lista||!lista.length){div.innerHTML='<div class="vazio">Nenhum colaborador com necessidade de exame complementar no período selecionado.</div>';return}
+    let html=`<div class="tabela-container tabela-complementares"><table><thead><tr>
+      <th>Grupo</th><th>Matrícula</th><th>Nome</th><th>Função</th><th>Setor</th><th>Situação</th>
+      <th>Data convocar</th><th>Data limite</th><th>Vencimento</th><th>Data agendada</th>
+      <th>Status agenda</th><th>Dias</th><th>Prioridade</th>
+    </tr></thead><tbody>`;
+    lista.forEach(function(item){
+      const agendada=dataISOEstaNoPeriodoPortal(item.dataAgendada)?item.dataAgendadaBR:'Pendente';
+      const status=dataISOEstaNoPeriodoPortal(item.dataAgendada)?item.statusAgenda:'';
+      html+=`<tr>
+        <td>${escaparHtml(item.grupoComplementar)}</td><td>${escaparHtml(item.mat)}</td>
+        <td>${escaparHtml(item.nome)}</td><td>${escaparHtml(item.funcao)}</td>
+        <td>${escaparHtml(item.setor)}</td><td>${escaparHtml(item.situacao)}</td>
+        <td>${escaparHtml(item.dataConvocarBR)}</td><td>${escaparHtml(item.dataLimiteBR)}</td>
+        <td>${escaparHtml(item.proximoVencimentoBR)}</td><td>${escaparHtml(agendada)}</td>
+        <td>${escaparHtml(status)}</td><td>${escaparHtml(item.diasParaVencer)}</td>
+        <td>${badgePrioridadeComplementar(item.prioridadeComplementar)}</td></tr>`;
+    });
+    html+='</tbody></table></div>';
+    div.innerHTML=html;
+    ativarOrdenacaoTabelas('tabelaComplementares');
+  };
+
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(moverPeriodoParaCabecalho,0);setTimeout(moverPeriodoParaCabecalho,300)});
+  new MutationObserver(moverPeriodoParaCabecalho).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
