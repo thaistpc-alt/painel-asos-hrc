@@ -43,7 +43,50 @@ function doGet() {
   const htmlBase = HtmlService.createHtmlOutputFromFile("Index").getContent();
   const patch = incluirArquivoHtml("PatchPerformance");
   const visual = incluirArquivoHtml("VisualAdjustmentsV13");
-  const complementos = patch + "\n" + visual;
+  const hotfixComplementares = `
+<script>
+(function(){
+  function montarFiltroSituacaoComplementaresSeguro(){
+    const grupo=document.getElementById('filtroGrupoComplementar');
+    if(!grupo)return;
+    const linha=grupo.closest('.linha-filtros');
+    if(!linha||linha.querySelector('.situacao-complementares'))return;
+    const dados=(window.dadosPortal&&dadosPortal.examesComplementares)||[];
+    const normalizar=v=>String(v||'').trim().toUpperCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');
+    const fixas=['ATIVO','FERIAS'];
+    const selecionadas=new Set(fixas);
+    const situacoes=[...new Set(dados.map(i=>i.situacao).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    const bloco=document.createElement('div');
+    bloco.className='situacao-multipla situacao-complementares';
+    bloco.innerHTML='<label>Situação</label><button type="button" class="situacao-multipla-botao">Ativo, Férias</button><div class="situacao-multipla-lista"></div>';
+    linha.insertBefore(bloco,grupo.closest('div'));
+    const lista=bloco.querySelector('.situacao-multipla-lista');
+    function aplicar(){
+      const grupoValor=grupo.value||'';
+      const termo=typeof obterTermoPesquisa==='function'?obterTermoPesquisa('pesquisaComplementares'):'';
+      const filtrados=dados.filter(i=>selecionadas.has(normalizar(i.situacao))&&(!grupoValor||i.grupoComplementar===grupoValor)&&(!termo||correspondePesquisaComplementar(i,termo)));
+      if(typeof renderizarComplementares==='function')renderizarComplementares(filtrados);
+    }
+    situacoes.forEach(s=>{
+      const n=normalizar(s),fixa=fixas.includes(n),label=document.createElement('label');
+      label.className='situacao-opcao'+(fixa?' fixa':'');
+      label.innerHTML='<input type="checkbox" '+(fixa?'checked disabled':'')+'><span></span>';
+      label.querySelector('span').textContent=s;
+      const cb=label.querySelector('input');
+      cb.onchange=()=>{cb.checked?selecionadas.add(n):selecionadas.delete(n);aplicar();};
+      lista.appendChild(label);
+    });
+    bloco.querySelector('.situacao-multipla-botao').onclick=()=>bloco.classList.toggle('aberta');
+  }
+  const abrirAnterior=window.abrirAba;
+  window.abrirAba=function(id,botao){
+    abrirAnterior(id,botao);
+    if(id==='complementares')setTimeout(montarFiltroSituacaoComplementaresSeguro,50);
+  };
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(montarFiltroSituacaoComplementaresSeguro,500));
+})();
+</script>`;
+  const complementos = patch + "\n" + visual + "\n" + hotfixComplementares;
   const htmlFinal = htmlBase.includes("</body>")
     ? htmlBase.replace("</body>", complementos + "\n</body>")
     : htmlBase + complementos;
