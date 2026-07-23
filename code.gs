@@ -42,9 +42,11 @@ function incluirArquivoHtml(nomeArquivo) {
 function doGet() {
   const htmlBase = HtmlService.createHtmlOutputFromFile("Index").getContent();
   const patch = incluirArquivoHtml("PatchPerformance");
+  const visual = incluirArquivoHtml("VisualAdjustmentsV13");
+  const complementos = patch + "\n" + visual;
   const htmlFinal = htmlBase.includes("</body>")
-    ? htmlBase.replace("</body>", patch + "\n</body>")
-    : htmlBase + patch;
+    ? htmlBase.replace("</body>", complementos + "\n</body>")
+    : htmlBase + complementos;
 
   return HtmlService
     .createHtmlOutput(htmlFinal)
