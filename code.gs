@@ -55,6 +55,7 @@ function enviarConvocacoesSelecionadasGestorComCopia(matriculas, emailsGestor, d
   const dadosAgenda = lerAgendaDados();
   const turnosAgenda = montarUltimosTurnosAgenda(dadosAgenda);
   const mapa = new Map();
+
   lista.forEach(c => {
     mapa.set(String(c.mat || "").trim(), c);
     if (c.matriculaCompleta) mapa.set(String(c.matriculaCompleta || "").trim(), c);
@@ -66,8 +67,15 @@ function enviarConvocacoesSelecionadasGestorComCopia(matriculas, emailsGestor, d
 
   selecionadas.forEach(mat => {
     const colaborador = mapa.get(mat);
+
     if (!colaborador) {
-      resultados.push({ sucesso: false, ignorado: false, matricula: mat, colaborador: "", erro: "Colaborador não encontrado" });
+      resultados.push({
+        sucesso: false,
+        ignorado: false,
+        matricula: mat,
+        colaborador: "",
+        erro: "Colaborador não encontrado"
+      });
       return;
     }
 
@@ -90,6 +98,7 @@ function enviarConvocacoesSelecionadasGestorComCopia(matriculas, emailsGestor, d
         turnosAgenda: turnosAgenda,
         incluirAnexo: true
       });
+
       anexos.push(pdf.anexo);
       enviados.push(pdf);
       resultados.push({
@@ -118,11 +127,17 @@ function enviarConvocacoesSelecionadasGestorComCopia(matriculas, emailsGestor, d
           reconvocacao: true,
           dataAnteriorBR: opcoes.dataAnteriorBR || "",
           novaDataBR: obterNovaDataConvocacaoBR(enviados),
-          colaborador: enviados.length === 1 ? (enviados[0].colaborador || enviados[0].nome || "") : ""
+          colaborador: enviados.length === 1
+            ? (enviados[0].colaborador || enviados[0].nome || "")
+            : ""
         }
       : {};
+
     const corpo = montarCorpoEmailGestor(enviados, dataInicio, dataFim, contexto);
-    const thread = opcoes.responderThreadId ? obterThreadGmailPorId(opcoes.responderThreadId) : null;
+    const thread = opcoes.responderThreadId
+      ? obterThreadGmailPorId(opcoes.responderThreadId)
+      : null;
+
     const opcoesEmail = {
       htmlBody: corpo.html,
       attachments: anexos,
@@ -136,11 +151,14 @@ function enviarConvocacoesSelecionadasGestorComCopia(matriculas, emailsGestor, d
     }
 
     const threadId = thread ? thread.getId() : localizarThreadEnviada(assunto);
+
     resultados.forEach(r => {
       if (!r.sucesso) return;
+
       r.emailEnviado = true;
       r.destinatarios = emails.join(", ");
       r.copia = EMAIL_COPIA_CONVOCACOES;
+
       registrarHistoricoEnvioConvocacao(r.matricula, {
         destinatarios: emails,
         assunto: assunto,
@@ -158,191 +176,560 @@ function enviarConvocacoesSelecionadasGestorComCopia(matriculas, emailsGestor, d
 function enviarReconvocacaoPendenciaGestorComCopia(mat, emailsGestor, dataInicio, dataFim, dataAnteriorBR) {
   const historico = obterHistoricoEnvioConvocacao(mat);
   const threadAnterior = historico.threadId || localizarThreadAnteriorConvocacao(mat);
-  return enviarConvocacoesSelecionadasGestorComCopia([mat], emailsGestor, dataInicio, dataFim, {
-    reconvocacao: true,
-    dataAnteriorBR: dataAnteriorBR || "",
-    responderThreadId: threadAnterior
-  });
+
+  return enviarConvocacoesSelecionadasGestorComCopia(
+    [mat],
+    emailsGestor,
+    dataInicio,
+    dataFim,
+    {
+      reconvocacao: true,
+      dataAnteriorBR: dataAnteriorBR || "",
+      responderThreadId: threadAnterior
+    }
+  );
 }
 
 function doGet() {
   const htmlBase = HtmlService.createHtmlOutputFromFile("Index").getContent();
   const patch = incluirArquivoHtml("PatchPerformance");
   const visual = incluirArquivoHtml("VisualAdjustmentsV13");
+
   const ajustesFinais = `
 <style>
-.filtro-situacao-check{position:relative;width:190px;flex:0 0 190px}
-.filtro-situacao-check>label{display:block;font-size:10px;font-weight:600;margin-bottom:4px;color:#334155}
-.filtro-situacao-check-botao{width:100%;height:36px;background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:0 30px 0 10px;text-align:left;color:#0f172a;position:relative;cursor:pointer;font-size:10px}
-.filtro-situacao-check-botao:after{content:'▾';position:absolute;right:10px;top:9px;color:#475569}
-.filtro-situacao-check-lista{display:none;position:absolute;top:58px;left:0;z-index:9999;width:270px;max-height:300px;overflow:auto;background:#fff;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 10px 25px rgba(15,23,42,.2);padding:8px}
-.filtro-situacao-check.aberto .filtro-situacao-check-lista{display:block}
-.filtro-situacao-check-opcao{display:flex!important;align-items:center;gap:8px;padding:6px 5px;margin:0!important;font-size:11px!important;color:#0f172a!important;cursor:pointer}
-.filtro-situacao-check-opcao:hover{background:#f1f5f9;border-radius:6px}
-.filtro-situacao-check-opcao input{display:inline-block!important;appearance:auto!important;width:14px!important;height:14px!important;min-width:14px!important;margin:0!important;opacity:1!important}
-.filtro-situacao-check-opcao.fixa{font-weight:700}
-.filtro-situacao-check-opcao.fixa span:after{content:' • fixa';font-size:9px;color:#64748b;font-weight:400}
-#filtroSituacaoConvocar{display:none!important}
+.filtro-situacao-check {
+  position: relative;
+  width: 190px;
+  flex: 0 0 190px;
+}
+.filtro-situacao-check > label {
+  display: block;
+  margin-bottom: 4px;
+  color: #334155;
+  font-size: 10px;
+  font-weight: 600;
+}
+.filtro-situacao-check-botao {
+  position: relative;
+  width: 100%;
+  height: 36px;
+  padding: 0 30px 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  text-align: left;
+  font-size: 11px;
+  cursor: pointer;
+}
+.filtro-situacao-check-botao::after {
+  content: '▾';
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  color: #475569;
+}
+.filtro-situacao-check-lista {
+  display: none;
+  position: absolute;
+  top: 58px;
+  left: 0;
+  z-index: 10050;
+  width: 280px;
+  max-height: 300px;
+  padding: 8px;
+  overflow: auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, .2);
+}
+.filtro-situacao-check.aberto .filtro-situacao-check-lista {
+  display: block;
+}
+.filtro-situacao-check-opcao {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  margin: 0 !important;
+  padding: 7px 5px;
+  color: #0f172a !important;
+  font-size: 11px !important;
+  cursor: pointer;
+}
+.filtro-situacao-check-opcao:hover {
+  border-radius: 6px;
+  background: #f1f5f9;
+}
+.filtro-situacao-check-opcao input {
+  display: inline-block !important;
+  width: 14px !important;
+  min-width: 14px !important;
+  height: 14px !important;
+  margin: 0 !important;
+  opacity: 1 !important;
+  appearance: auto !important;
+}
+.filtro-situacao-check-opcao.fixa {
+  font-weight: 700;
+}
+.filtro-situacao-check-opcao.fixa span::after {
+  content: ' • fixa';
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 400;
+}
+#filtroSituacaoConvocar {
+  display: none !important;
+}
 </style>
 <script>
-(function(){
-  const FIXAS=['ATIVO','FERIAS'];
-  const estado={convocar:new Set(FIXAS),complementares:new Set(FIXAS)};
-  const norm=v=>String(v||'').trim().toUpperCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');
+(function () {
+  'use strict';
 
-  function dadosConvocar(){return window.dadosPortal&&dadosPortal.convocar&&Array.isArray(dadosPortal.convocar.todos)?dadosPortal.convocar.todos:[];}
-  function dadosComplementares(){return window.dadosPortal&&Array.isArray(dadosPortal.examesComplementares)?dadosPortal.examesComplementares:[];}
-  function situacoes(lista){return [...new Set((lista||[]).map(i=>i.situacao).filter(Boolean))].sort((a,b)=>a.localeCompare(b));}
+  const FIXAS = ['ATIVO', 'FERIAS'];
+  const estado = {
+    convocar: new Set(FIXAS),
+    complementares: new Set(FIXAS)
+  };
 
-  function fecharTodos(exceto){document.querySelectorAll('.filtro-situacao-check.aberto').forEach(el=>{if(el!==exceto)el.classList.remove('aberto');});}
-  document.addEventListener('click',()=>fecharTodos(null));
-
-  function resumo(tipo,lista){
-    const nomes=situacoes(lista).filter(s=>estado[tipo].has(norm(s)));
-    return nomes.length<=2?nomes.join(', '):nomes.slice(0,2).join(', ')+' +'+(nomes.length-2);
+  function portalAtual() {
+    return typeof dadosPortal !== 'undefined' && dadosPortal ? dadosPortal : null;
   }
 
-  function filtrarConvocarSeguro(){
-    if(!window.dadosPortal||!dadosPortal.convocar)return;
-    const termo=typeof obterTermoPesquisa==='function'?obterTermoPesquisa('pesquisaConvocar'):'';
-    const lista=dadosConvocar().filter(i=>estado.convocar.has(norm(i.situacao))&&(!termo||correspondePesquisa(i,termo)));
-    if(typeof renderizarConvocar==='function')renderizarConvocar(lista);
+  function processamentoAtivo() {
+    return typeof loteEmProcessamento !== 'undefined' && loteEmProcessamento === true;
   }
 
-  function filtrarComplementaresSeguro(){
-    if(!window.dadosPortal)return;
-    const grupo=document.getElementById('filtroGrupoComplementar')?.value||'';
-    const termo=typeof obterTermoPesquisa==='function'?obterTermoPesquisa('pesquisaComplementares'):'';
-    const lista=dadosComplementares().filter(i=>estado.complementares.has(norm(i.situacao))&&(!grupo||i.grupoComplementar===grupo)&&(!termo||correspondePesquisaComplementar(i,termo)));
-    if(typeof renderizarComplementares==='function')renderizarComplementares(lista);
+  function definirProcessamento(valor) {
+    if (typeof loteEmProcessamento !== 'undefined') loteEmProcessamento = valor;
   }
 
-  function criarControle(tipo,lista,referencia,inserirAntes){
-    const linha=referencia&&referencia.closest('.linha-filtros');
-    if(!linha)return null;
-    linha.querySelectorAll('.situacao-multipla,.filtro-situacao-check[data-tipo="'+tipo+'"]')
-      .forEach(el=>el.remove());
+  function normalizar(valor) {
+    return String(valor || '')
+      .trim()
+      .toUpperCase()
+      .normalize('NFD')
+      .replace(/[\\u0300-\\u036f]/g, '');
+  }
 
-    const bloco=document.createElement('div');
-    bloco.className='filtro-situacao-check';
-    bloco.dataset.tipo=tipo;
-    bloco.innerHTML='<label>Situação</label><button type="button" class="filtro-situacao-check-botao"></button><div class="filtro-situacao-check-lista"></div>';
-    const alvo=inserirAntes||referencia.closest('div');
-    linha.insertBefore(bloco,alvo||linha.firstChild);
+  function listaConvocar() {
+    const portal = portalAtual();
+    return portal && portal.convocar && Array.isArray(portal.convocar.todos)
+      ? portal.convocar.todos
+      : [];
+  }
 
-    const botao=bloco.querySelector('.filtro-situacao-check-botao');
-    const caixa=bloco.querySelector('.filtro-situacao-check-lista');
-    const opcoes=situacoes(lista);
-    opcoes.forEach(s=>{
-      const n=norm(s),fixa=FIXAS.includes(n);
-      if(fixa)estado[tipo].add(n);
-      const label=document.createElement('label');
-      label.className='filtro-situacao-check-opcao'+(fixa?' fixa':'');
-      const input=document.createElement('input');
-      input.type='checkbox';
-      input.checked=fixa||estado[tipo].has(n);
-      input.disabled=fixa;
-      const span=document.createElement('span');
-      span.textContent=s;
-      label.appendChild(input);label.appendChild(span);caixa.appendChild(label);
-      input.addEventListener('change',()=>{
-        input.checked?estado[tipo].add(n):estado[tipo].delete(n);
-        botao.textContent=resumo(tipo,lista)||'Selecione';
-        tipo==='convocar'?filtrarConvocarSeguro():filtrarComplementaresSeguro();
+  function listaComplementares() {
+    const portal = portalAtual();
+    return portal && Array.isArray(portal.examesComplementares)
+      ? portal.examesComplementares
+      : [];
+  }
+
+  function obterSituacoes(lista) {
+    return [...new Set((lista || []).map(item => item.situacao).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b));
+  }
+
+  function assinaturaSituacoes(lista) {
+    return obterSituacoes(lista).map(normalizar).join('|');
+  }
+
+  function textoResumo(tipo, lista) {
+    const selecionadas = obterSituacoes(lista)
+      .filter(situacao => estado[tipo].has(normalizar(situacao)));
+
+    if (selecionadas.length === 0) return 'Selecione';
+    if (selecionadas.length <= 2) return selecionadas.join(', ');
+    return selecionadas.slice(0, 2).join(', ') + ' +' + (selecionadas.length - 2);
+  }
+
+  function fecharFiltros(exceto) {
+    document.querySelectorAll('.filtro-situacao-check.aberto').forEach(elemento => {
+      if (elemento !== exceto) elemento.classList.remove('aberto');
+    });
+  }
+
+  document.addEventListener('click', function () {
+    fecharFiltros(null);
+  });
+
+  function renderizarFiltro(tipo, lista, referencia) {
+    if (!referencia || !lista.length) return null;
+
+    const linha = referencia.closest('.linha-filtros');
+    if (!linha) return null;
+
+    linha.querySelectorAll('.situacao-multipla').forEach(elemento => elemento.remove());
+
+    const assinatura = assinaturaSituacoes(lista);
+    let bloco = linha.querySelector('.filtro-situacao-check[data-tipo="' + tipo + '"]');
+
+    if (bloco && bloco.dataset.assinatura === assinatura) {
+      const botaoExistente = bloco.querySelector('.filtro-situacao-check-botao');
+      if (botaoExistente) botaoExistente.textContent = textoResumo(tipo, lista);
+      return bloco;
+    }
+
+    if (bloco) bloco.remove();
+
+    bloco = document.createElement('div');
+    bloco.className = 'filtro-situacao-check';
+    bloco.dataset.tipo = tipo;
+    bloco.dataset.assinatura = assinatura;
+    bloco.innerHTML =
+      '<label>Situação</label>' +
+      '<button type="button" class="filtro-situacao-check-botao"></button>' +
+      '<div class="filtro-situacao-check-lista"></div>';
+
+    const alvo = referencia.closest('div');
+    linha.insertBefore(bloco, alvo || linha.firstChild);
+
+    const botao = bloco.querySelector('.filtro-situacao-check-botao');
+    const caixa = bloco.querySelector('.filtro-situacao-check-lista');
+
+    obterSituacoes(lista).forEach(situacao => {
+      const chave = normalizar(situacao);
+      const fixa = FIXAS.includes(chave);
+      if (fixa) estado[tipo].add(chave);
+
+      const label = document.createElement('label');
+      label.className = 'filtro-situacao-check-opcao' + (fixa ? ' fixa' : '');
+
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.checked = fixa || estado[tipo].has(chave);
+      input.disabled = fixa;
+
+      const texto = document.createElement('span');
+      texto.textContent = situacao;
+
+      label.appendChild(input);
+      label.appendChild(texto);
+      caixa.appendChild(label);
+
+      input.addEventListener('change', function () {
+        if (input.checked) estado[tipo].add(chave);
+        else estado[tipo].delete(chave);
+
+        botao.textContent = textoResumo(tipo, lista);
+        if (tipo === 'convocar') filtrarConvocarEstavel();
+        else filtrarComplementaresEstavel();
       });
     });
-    botao.textContent=resumo(tipo,lista)||'Selecione';
-    botao.addEventListener('click',e=>{e.stopPropagation();const abrir=!bloco.classList.contains('aberto');fecharTodos(bloco);bloco.classList.toggle('aberto',abrir);});
-    caixa.addEventListener('click',e=>e.stopPropagation());
+
+    botao.textContent = textoResumo(tipo, lista);
+    botao.addEventListener('click', function (evento) {
+      evento.stopPropagation();
+      const abrir = !bloco.classList.contains('aberto');
+      fecharFiltros(bloco);
+      bloco.classList.toggle('aberto', abrir);
+    });
+
+    caixa.addEventListener('click', function (evento) {
+      evento.stopPropagation();
+    });
+
     return bloco;
   }
 
-  function montarConvocar(){
-    const select=document.getElementById('filtroSituacaoConvocar');
-    if(!select||!dadosConvocar().length)return;
-    criarControle('convocar',dadosConvocar(),select,select.closest('div'));
+  function montarFiltroConvocar() {
+    const select = document.getElementById('filtroSituacaoConvocar');
+    const lista = listaConvocar();
+    if (!select || !lista.length) return;
+    renderizarFiltro('convocar', lista, select);
   }
 
-  function montarComplementares(){
-    const grupo=document.getElementById('filtroGrupoComplementar');
-    if(!grupo||!dadosComplementares().length)return;
-    criarControle('complementares',dadosComplementares(),grupo,grupo.closest('div'));
+  function montarFiltroComplementares() {
+    const grupo = document.getElementById('filtroGrupoComplementar');
+    const lista = listaComplementares();
+    if (!grupo || !lista.length) return;
+    renderizarFiltro('complementares', lista, grupo);
   }
 
-  function removerPrioridadeComplementares(){
-    const tabela=document.querySelector('#tabelaComplementares table');
-    if(!tabela)return;
-    const ths=[...tabela.querySelectorAll('thead th')];
-    const indice=ths.findIndex(th=>norm(th.textContent)==='PRIORIDADE');
-    if(indice<0)return;
-    tabela.querySelectorAll('tr').forEach(tr=>{if(tr.children[indice])tr.children[indice].remove();});
+  function filtrarConvocarEstavel() {
+    const portal = portalAtual();
+    if (!portal || !portal.convocar) return;
+
+    const termo = typeof obterTermoPesquisa === 'function'
+      ? obterTermoPesquisa('pesquisaConvocar')
+      : '';
+
+    const filtrados = listaConvocar().filter(item =>
+      estado.convocar.has(normalizar(item.situacao)) &&
+      (!termo || correspondePesquisa(item, termo))
+    );
+
+    if (typeof renderizarConvocar === 'function') renderizarConvocar(filtrados);
   }
 
-  function examesComplementaresSelecionados(matriculas){
-    const chaves=new Set((matriculas||[]).map(v=>String(v||'').trim()));
-    return dadosComplementares().filter(item=>chaves.has(String(item.mat||'').trim())||chaves.has(String(item.matricula||'').trim())||chaves.has(String(item.matriculaCompleta||'').trim()));
-  }
+  function filtrarComplementaresEstavel() {
+    const portal = portalAtual();
+    if (!portal) return;
 
-  function confirmarExamesComplementares(matriculas){
-    const itens=examesComplementaresSelecionados(matriculas);
-    if(!itens.length)return true;
-    const linhas=itens.map(item=>'• '+(item.nome||'Sem nome')+' — '+(item.grupoComplementar||'Exame complementar')).join('\\n');
-    return window.confirm('ATENÇÃO: os colaboradores abaixo necessitam realizar exames complementares antes do ASO:\\n\\n'+linhas+'\\n\\nConfirme se os exames já foram realizados ou providenciados. Deseja continuar com o envio ao gestor?');
-  }
+    const grupo = document.getElementById('filtroGrupoComplementar');
+    const grupoSelecionado = grupo ? grupo.value || '' : '';
+    const termo = typeof obterTermoPesquisa === 'function'
+      ? obterTermoPesquisa('pesquisaComplementares')
+      : '';
 
-  function enviarLoteGestorComCopia(matriculas,emailGestor){
-    if(window.loteEmProcessamento){mostrarErro('Já existe uma geração/envio em lote em andamento. Aguarde finalizar.');return;}
-    const lista=[...new Set((matriculas||[]).map(String).filter(Boolean))];
-    if(!lista.length){mostrarErro('Nenhuma matrícula válida para enviar.');return;}
-    if(!confirmarExamesComplementares(lista))return;
-    const dataInicio=document.getElementById('dataInicio').value;
-    const dataFim=document.getElementById('dataFim').value;
-    if(!dataInicio||!dataFim){mostrarErro('Informe a data inicial e a data final.');return;}
-    limparMensagens();limparStatusLote();
-    const tamanhoLote=10;let indice=0,sucesso=0,ignorados=0,falhas=0;const motivos={};
-    window.loteEmProcessamento=true;mostrarLoading(true);
-    atualizarProgressoLote(0,lista.length,'Enviando convocações ao gestor');
-    lista.forEach(mat=>definirStatusLote(mat,'aguardando-lote','...','Aguardando envio'));
-    function proximo(){
-      const lote=lista.slice(indice,indice+tamanhoLote);
-      if(!lote.length){
-        window.loteEmProcessamento=false;mostrarLoading(false);atualizarProgressoLote(lista.length,lista.length,'Envio concluído');
-        const resumo=Object.keys(motivos).map(m=>m+': '+motivos[m]).join(' | ');
-        let texto=sucesso+' convocação(ões) enviada(s) para '+emailGestor+', com cópia para ${EMAIL_COPIA_CONVOCACOES}. '+ignorados+' ignorado(s). '+falhas+' falha(s).';
-        if(resumo)texto+=' Motivos: '+resumo+'.';mostrarOk(texto);return;
-      }
-      google.script.run.withSuccessHandler(resultados=>{
-        (resultados||[]).forEach(r=>{const mat=String(r.matricula||'');if(r.sucesso){sucesso++;definirStatusLote(mat,'ok-lote','@',r.arquivo||'Convocação enviada');}else if(r.ignorado){ignorados++;const motivo=r.motivo||'Ignorado';motivos[motivo]=(motivos[motivo]||0)+1;definirStatusLote(mat,'erro-lote','!',motivo);}else{falhas++;definirStatusLote(mat,'erro-lote','X',r.erro||'Falha ao enviar');}});
-        indice+=lote.length;atualizarProgressoLote(Math.min(indice,lista.length),lista.length,'Enviando convocações ao gestor');setTimeout(proximo,300);
-      }).withFailureHandler(erro=>{lote.forEach(mat=>definirStatusLote(mat,'erro-lote','X',erro.message||erro));falhas+=lote.length;indice+=lote.length;setTimeout(proximo,600);}).enviarConvocacoesSelecionadasGestorComCopia(lote,emailGestor,dataInicio,dataFim);
+    const filtrados = listaComplementares().filter(item =>
+      estado.complementares.has(normalizar(item.situacao)) &&
+      (!grupoSelecionado || item.grupoComplementar === grupoSelecionado) &&
+      (!termo || correspondePesquisaComplementar(item, termo))
+    );
+
+    if (typeof renderizarComplementares === 'function') {
+      renderizarComplementares(filtrados);
     }
-    proximo();
   }
 
-  function enviarPendenciaGestorComCopia(mat,dataAnteriorBR){
-    if(window.loteEmProcessamento){mostrarErro('Já existe uma geração/envio em lote em andamento. Aguarde finalizar.');return;}
-    const emails=typeof obterEmailsGestor==='function'?obterEmailsGestor():[];
-    if(!emails.length){mostrarErro('Informe o e-mail do gestor antes de enviar a pendência.');return;}
-    if(!confirmarExamesComplementares([mat]))return;
-    const dataInicio=document.getElementById('dataInicio').value,dataFim=document.getElementById('dataFim').value;
-    limparMensagens();mostrarLoading(true);window.loteEmProcessamento=true;
-    google.script.run.withSuccessHandler(resultados=>{window.loteEmProcessamento=false;mostrarLoading(false);const r=(resultados||[])[0]||{};if(r.sucesso){mostrarOk('Nova convocação enviada ao gestor, com cópia para ${EMAIL_COPIA_CONVOCACOES}.');carregarDados(true);}else if(r.ignorado)mostrarErro(r.motivo||'Convocação ignorada.');else mostrarErro(r.erro||'Falha ao enviar nova convocação.');}).withFailureHandler(erro=>{window.loteEmProcessamento=false;mostrarLoading(false);mostrarErro(erro.message||erro);}).enviarReconvocacaoPendenciaGestorComCopia(mat,emails.join('; '),dataInicio,dataFim,dataAnteriorBR);
+  function removerColunaPrioridadeComplementares() {
+    const tabela = document.querySelector('#tabelaComplementares table');
+    if (!tabela) return;
+
+    const cabecalhos = Array.from(tabela.querySelectorAll('thead th'));
+    const indice = cabecalhos.findIndex(th => normalizar(th.textContent) === 'PRIORIDADE');
+    if (indice < 0) return;
+
+    tabela.querySelectorAll('tr').forEach(linha => {
+      if (linha.children[indice]) linha.children[indice].remove();
+    });
   }
 
-  const abrirOriginal=window.abrirAba;
-  window.abrirAba=function(id,botao){abrirOriginal(id,botao);setTimeout(()=>{if(id==='convocar')montarConvocar();if(id==='complementares'){montarComplementares();removerPrioridadeComplementares();}},30);};
-  const tudoOriginal=window.renderizarTudo;
-  window.renderizarTudo=function(dados){tudoOriginal(dados);setTimeout(()=>{montarConvocar();montarComplementares();removerPrioridadeComplementares();},30);};
-  const renderConvocarOriginal=window.renderizarConvocar;
-  window.renderizarConvocar=function(lista){renderConvocarOriginal(lista);setTimeout(montarConvocar,0);};
-  const renderComplementaresOriginal=window.renderizarComplementares;
-  window.renderizarComplementares=function(lista){renderComplementaresOriginal(lista);setTimeout(()=>{montarComplementares();removerPrioridadeComplementares();},0);};
+  function examesComplementaresSelecionados(matriculas) {
+    const chaves = new Set((matriculas || []).map(valor => String(valor || '').trim()));
 
-  window.filtrarConvocacaoPorSituacao=filtrarConvocarSeguro;
-  window.filtrarComplementares=filtrarComplementaresSeguro;
-  window.enviarLoteGestor=enviarLoteGestorComCopia;
-  window.enviarPendenciaGestor=enviarPendenciaGestorComCopia;
-  document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{montarConvocar();montarComplementares();removerPrioridadeComplementares();},700));
+    return listaComplementares().filter(item =>
+      chaves.has(String(item.mat || '').trim()) ||
+      chaves.has(String(item.matricula || '').trim()) ||
+      chaves.has(String(item.matriculaCompleta || '').trim())
+    );
+  }
+
+  function confirmarExamesComplementares(matriculas) {
+    const itens = examesComplementaresSelecionados(matriculas);
+    if (!itens.length) return true;
+
+    const linhas = itens.map(item =>
+      '• ' + (item.nome || 'Sem nome') + ' — ' +
+      (item.grupoComplementar || 'Exame complementar')
+    ).join('\\n');
+
+    return window.confirm(
+      'ATENÇÃO: os colaboradores abaixo necessitam realizar exames complementares antes do ASO:\\n\\n' +
+      linhas +
+      '\\n\\nConfirme se os exames já foram realizados ou providenciados. Deseja continuar com o envio ao gestor?'
+    );
+  }
+
+  function enviarLoteGestorComCopia(matriculas, emailGestor) {
+    if (processamentoAtivo()) {
+      mostrarErro('Já existe uma geração/envio em lote em andamento. Aguarde finalizar.');
+      return;
+    }
+
+    const lista = [...new Set((matriculas || []).map(String).filter(Boolean))];
+    if (!lista.length) {
+      mostrarErro('Nenhuma matrícula válida para enviar.');
+      return;
+    }
+
+    if (!confirmarExamesComplementares(lista)) return;
+
+    const dataInicio = document.getElementById('dataInicio').value;
+    const dataFim = document.getElementById('dataFim').value;
+
+    if (!dataInicio || !dataFim) {
+      mostrarErro('Informe a data inicial e a data final.');
+      return;
+    }
+
+    limparMensagens();
+    limparStatusLote();
+
+    const tamanhoLote = 10;
+    let indice = 0;
+    let sucesso = 0;
+    let ignorados = 0;
+    let falhas = 0;
+    const motivos = {};
+
+    definirProcessamento(true);
+    mostrarLoading(true);
+    atualizarProgressoLote(0, lista.length, 'Enviando convocações ao gestor');
+    lista.forEach(mat => definirStatusLote(mat, 'aguardando-lote', '...', 'Aguardando envio'));
+
+    function processarProximo() {
+      const lote = lista.slice(indice, indice + tamanhoLote);
+
+      if (!lote.length) {
+        definirProcessamento(false);
+        mostrarLoading(false);
+        atualizarProgressoLote(lista.length, lista.length, 'Envio concluído');
+
+        const resumo = Object.keys(motivos)
+          .map(motivo => motivo + ': ' + motivos[motivo])
+          .join(' | ');
+
+        let texto = sucesso + ' convocação(ões) enviada(s) para ' + emailGestor +
+          ', com cópia para thais.tpc@isgh.org.br. ' +
+          ignorados + ' ignorado(s). ' + falhas + ' falha(s).';
+
+        if (resumo) texto += ' Motivos: ' + resumo + '.';
+        mostrarOk(texto);
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(function (resultados) {
+          (resultados || []).forEach(resultado => {
+            const mat = String(resultado.matricula || '');
+
+            if (resultado.sucesso) {
+              sucesso++;
+              definirStatusLote(mat, 'ok-lote', '@', resultado.arquivo || 'Convocação enviada');
+            } else if (resultado.ignorado) {
+              ignorados++;
+              const motivo = resultado.motivo || 'Ignorado';
+              motivos[motivo] = (motivos[motivo] || 0) + 1;
+              definirStatusLote(mat, 'erro-lote', '!', motivo);
+            } else {
+              falhas++;
+              definirStatusLote(mat, 'erro-lote', 'X', resultado.erro || 'Falha ao enviar');
+            }
+          });
+
+          indice += lote.length;
+          atualizarProgressoLote(
+            Math.min(indice, lista.length),
+            lista.length,
+            'Enviando convocações ao gestor'
+          );
+          setTimeout(processarProximo, 300);
+        })
+        .withFailureHandler(function (erro) {
+          lote.forEach(mat => definirStatusLote(mat, 'erro-lote', 'X', erro.message || erro));
+          falhas += lote.length;
+          indice += lote.length;
+          atualizarProgressoLote(
+            Math.min(indice, lista.length),
+            lista.length,
+            'Continuando após falha do lote'
+          );
+          setTimeout(processarProximo, 600);
+        })
+        .enviarConvocacoesSelecionadasGestorComCopia(
+          lote,
+          emailGestor,
+          dataInicio,
+          dataFim
+        );
+    }
+
+    processarProximo();
+  }
+
+  function enviarPendenciaGestorComCopia(mat, dataAnteriorBR) {
+    if (processamentoAtivo()) {
+      mostrarErro('Já existe uma geração/envio em lote em andamento. Aguarde finalizar.');
+      return;
+    }
+
+    const emails = typeof obterEmailsGestor === 'function' ? obterEmailsGestor() : [];
+    if (!emails.length) {
+      mostrarErro('Informe o e-mail do gestor antes de enviar a pendência.');
+      return;
+    }
+
+    const invalidos = emails.filter(email => !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email));
+    if (invalidos.length) {
+      mostrarErro('E-mail(s) inválido(s): ' + invalidos.join(', '));
+      return;
+    }
+
+    if (!confirmarExamesComplementares([mat])) return;
+
+    const dataInicio = document.getElementById('dataInicio').value;
+    const dataFim = document.getElementById('dataFim').value;
+
+    if (!dataInicio || !dataFim) {
+      mostrarErro('Informe a data inicial e a data final.');
+      return;
+    }
+
+    limparMensagens();
+    mostrarLoading(true);
+    definirProcessamento(true);
+
+    google.script.run
+      .withSuccessHandler(function (resultados) {
+        definirProcessamento(false);
+        mostrarLoading(false);
+
+        const resultado = (resultados || [])[0] || {};
+        if (resultado.sucesso) {
+          mostrarOk('Nova convocação enviada ao gestor, com cópia para thais.tpc@isgh.org.br.');
+          carregarDados(true);
+        } else if (resultado.ignorado) {
+          mostrarErro(resultado.motivo || 'Convocação ignorada.');
+        } else {
+          mostrarErro(resultado.erro || 'Falha ao enviar nova convocação.');
+        }
+      })
+      .withFailureHandler(function (erro) {
+        definirProcessamento(false);
+        mostrarLoading(false);
+        mostrarErro(erro.message || erro);
+      })
+      .enviarReconvocacaoPendenciaGestorComCopia(
+        mat,
+        emails.join('; '),
+        dataInicio,
+        dataFim,
+        dataAnteriorBR
+      );
+  }
+
+  const abrirAbaOriginal = window.abrirAba;
+  window.abrirAba = function (id, botao) {
+    abrirAbaOriginal(id, botao);
+    setTimeout(function () {
+      if (id === 'convocar') montarFiltroConvocar();
+      if (id === 'complementares') {
+        montarFiltroComplementares();
+        removerColunaPrioridadeComplementares();
+      }
+    }, 0);
+  };
+
+  const renderizarConvocarOriginal = window.renderizarConvocar;
+  window.renderizarConvocar = function (lista) {
+    renderizarConvocarOriginal(lista);
+    montarFiltroConvocar();
+  };
+
+  const renderizarComplementaresOriginal = window.renderizarComplementares;
+  window.renderizarComplementares = function (lista) {
+    renderizarComplementaresOriginal(lista);
+    montarFiltroComplementares();
+    removerColunaPrioridadeComplementares();
+  };
+
+  const limparFiltrosOriginal = window.limparFiltrosLocais;
+  window.limparFiltrosLocais = function () {
+    estado.convocar = new Set(FIXAS);
+    estado.complementares = new Set(FIXAS);
+    if (typeof limparFiltrosOriginal === 'function') limparFiltrosOriginal();
+    montarFiltroConvocar();
+    montarFiltroComplementares();
+  };
+
+  window.filtrarConvocacaoPorSituacao = filtrarConvocarEstavel;
+  window.filtrarComplementares = filtrarComplementaresEstavel;
+  window.enviarLoteGestor = enviarLoteGestorComCopia;
+  window.enviarPendenciaGestor = enviarPendenciaGestorComCopia;
 })();
 </script>`;
 
