@@ -10,13 +10,13 @@ function executarRegressaoV13(dataInicio, dataFim) {
   const resultadoAntigo = obterDadosPortal(dataInicio, dataFim, true);
   const resumoNovo = obterResumoPortalV13Leve(dataInicio, dataFim, true);
   const modulos = {
-    convocar: obterModuloPortalV13("CONVOCAR", dataInicio, dataFim, false),
-    pendencias: obterModuloPortalV13("PENDENCIAS", dataInicio, dataFim, false),
-    prioridade: obterModuloPortalV13("PRIORIDADE", dataInicio, dataFim, false),
-    vencidos: obterModuloPortalV13("VENCIDOS", dataInicio, dataFim, false),
-    complementares: obterModuloPortalV13("COMPLEMENTARES", dataInicio, dataFim, false),
-    colaboradores: obterModuloPortalV13("COLABORADORES", dataInicio, dataFim, false),
-    indicadores: obterModuloPortalV13("INDICADORES", dataInicio, dataFim, false)
+    convocar: obterModuloPortalV13("CONVOCAR", dataInicio, dataFim, true),
+    pendencias: obterModuloPortalV13("PENDENCIAS", dataInicio, dataFim, true),
+    prioridade: obterModuloPortalV13("PRIORIDADE", dataInicio, dataFim, true),
+    vencidos: obterModuloPortalV13("VENCIDOS", dataInicio, dataFim, true),
+    complementares: obterModuloPortalV13("COMPLEMENTARES", dataInicio, dataFim, true),
+    colaboradores: obterModuloPortalV13("COLABORADORES", dataInicio, dataFim, true),
+    indicadores: obterModuloPortalV13("INDICADORES", dataInicio, dataFim, true)
   };
 
   const testes = [];
@@ -83,10 +83,10 @@ function medirPerformanceV13(dataInicio, dataFim) {
   const medicoes = [];
   medicoes.push(medir("Resumo V13 - carga fria", () => obterResumoPortalV13Leve(dataInicio, dataFim, true).dashboard.totalColaboradores));
   medicoes.push(medir("Resumo V13 - cache", () => obterResumoPortalV13Leve(dataInicio, dataFim, false).dashboard.totalColaboradores));
-  medicoes.push(medir("Convocar - primeira chamada", () => obterModuloPortalV13("CONVOCAR", dataInicio, dataFim, false).convocar.todos.length));
+  medicoes.push(medir("Convocar - primeira chamada", () => obterModuloPortalV13("CONVOCAR", dataInicio, dataFim, true).convocar.todos.length));
   medicoes.push(medir("Convocar - cache", () => obterModuloPortalV13("CONVOCAR", dataInicio, dataFim, false).convocar.todos.length));
-  medicoes.push(medir("Pendências - primeira chamada", () => obterModuloPortalV13("PENDENCIAS", dataInicio, dataFim, false).pendencias.operacionais.length));
-  medicoes.push(medir("Indicadores - primeira chamada", () => obterModuloPortalV13("INDICADORES", dataInicio, dataFim, false).indicadores.resumoMensal.length));
+  medicoes.push(medir("Pendências - primeira chamada", () => obterModuloPortalV13("PENDENCIAS", dataInicio, dataFim, true).pendencias.operacionais.length));
+  medicoes.push(medir("Indicadores - primeira chamada", () => obterModuloPortalV13("INDICADORES", dataInicio, dataFim, true).indicadores.resumoMensal.length));
   medicoes.push(medir("Gráfico Dashboard", () => obterGraficoPortalV13(dataInicio, dataFim).resumoMensal.length));
 
   const resumo = { periodo: dataInicio + " a " + dataFim, medicoes: medicoes };
