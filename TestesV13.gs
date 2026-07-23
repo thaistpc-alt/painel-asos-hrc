@@ -1,11 +1,27 @@
 /* =========================================================
-   TESTES DE REGRESSÃO E PERFORMANCE V13
+   TESTES DE REGRESSÃO E PERFORMANCE V13.2
    Execute no Apps Script antes da implantação.
 ========================================================= */
 
+function periodoPadraoTesteV13_(dataInicio, dataFim) {
+  return {
+    inicio: dataInicio || Utilities.formatDate(
+      new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+      CONFIG.TIMEZONE,
+      "yyyy-MM-dd"
+    ),
+    fim: dataFim || Utilities.formatDate(
+      new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
+      CONFIG.TIMEZONE,
+      "yyyy-MM-dd"
+    )
+  };
+}
+
 function executarRegressaoV13(dataInicio, dataFim) {
-  dataInicio = dataInicio || Utilities.formatDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1), CONFIG.TIMEZONE, "yyyy-MM-dd");
-  dataFim = dataFim || Utilities.formatDate(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), CONFIG.TIMEZONE, "yyyy-MM-dd");
+  const periodo = periodoPadraoTesteV13_(dataInicio, dataFim);
+  dataInicio = periodo.inicio;
+  dataFim = periodo.fim;
 
   const resultadoAntigo = obterDadosPortal(dataInicio, dataFim, true);
   const resumoNovo = obterResumoPortalV13Leve(dataInicio, dataFim, true);
@@ -25,7 +41,10 @@ function executarRegressaoV13(dataInicio, dataFim) {
     testes.push({ teste: nome, sucesso: ok, esperado: esperado, obtido: obtido });
   }
   function mats(lista) {
-    return (lista || []).map(i => String(i.mat || i.matricula || "")).filter(Boolean).sort();
+    return (lista || [])
+      .map(i => String(i.mat || i.matricula || ""))
+      .filter(Boolean)
+      .sort();
   }
 
   comparar("dashboard.totalColaboradores", resultadoAntigo.dashboard.totalColaboradores, resumoNovo.dashboard.totalColaboradores);
@@ -34,7 +53,6 @@ function executarRegressaoV13(dataInicio, dataFim) {
   comparar("dashboard.totalPrioridade", resultadoAntigo.dashboard.totalPrioridade, resumoNovo.dashboard.totalPrioridade);
   comparar("dashboard.totalVencidos", resultadoAntigo.dashboard.totalVencidos, resumoNovo.dashboard.totalVencidos);
   comparar("dashboard.totalExamesComplementares", resultadoAntigo.dashboard.totalExamesComplementares, resumoNovo.dashboard.totalExamesComplementares);
-
   comparar("matrículas Convocar", mats(resultadoAntigo.convocar.todos), mats(modulos.convocar.convocar.todos));
   comparar("matrículas Pendências", mats(resultadoAntigo.pendencias.operacionais), mats(modulos.pendencias.pendencias.operacionais));
   comparar("matrículas Prioridade ativos", mats(resultadoAntigo.prioridadeAtivos), mats(modulos.prioridade.prioridadeAtivos));
@@ -53,6 +71,7 @@ function executarRegressaoV13(dataInicio, dataFim) {
     total: testes.length,
     aprovados: testes.length - falhas.length,
     falhas: falhas.length,
+    origemContexto: resumoNovo.meta ? resumoNovo.meta.origemCache : "",
     testesAprovados: testes.filter(t => t.sucesso).map(t => t.teste),
     divergencias: falhas.map(t => ({
       teste: t.teste,
@@ -71,25 +90,83 @@ function executarRegressaoV13(dataInicio, dataFim) {
 }
 
 function medirPerformanceV13(dataInicio, dataFim) {
-  dataInicio = dataInicio || Utilities.formatDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1), CONFIG.TIMEZONE, "yyyy-MM-dd");
-  dataFim = dataFim || Utilities.formatDate(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), CONFIG.TIMEZONE, "yyyy-MM-dd");
+  const periodo = periodoPadraoTesteV13_(dataInicio, dataFim);
+  dataInicio = periodo.inicio;
+  dataFim = periodo.fim;
 
   function medir(nome, fn) {
     const inicio = Date.now();
-    const valor = fn();
-    return { etapa: nome, duracaoMs: Date.now() - inicio, valor: valor };
+    const retorno = fn();
+    return {
+      etapa: nome,
+      duracaoMs: Date.now() - inicio,
+      valor: retorno.valor,
+      origem: retorno.origem || ""
+    };
   }
 
   const medicoes = [];
-  medicoes.push(medir("Resumo V13 - carga fria", () => obterResumoPortalV13Leve(dataInicio, dataFim, true).dashboard.totalColaboradores));
-  medicoes.push(medir("Resumo V13 - cache", () => obterResumoPortalV13Leve(dataInicio, dataFim, false).dashboard.totalColaboradores));
-  medicoes.push(medir("Convocar - primeira chamada", () => obterModuloPortalV13("CONVOCAR", dataInicio, dataFim, true).convocar.todos.length));
-  medicoes.push(medir("Convocar - cache", () => obterModuloPortalV13("CONVOCAR", dataInicio, dataFim, false).convocar.todos.length));
-  medicoes.push(medir("Pendências - primeira chamada", () => obterModuloPortalV13("PENDENCIAS", dataInicio, dataFim, true).pendencias.operacionais.length));
-  medicoes.push(medir("Indicadores - primeira chamada", () => obterModuloPortalV13("INDICADORES", dataInicio, dataFim, true).indicadores.resumoMensal.length));
-  medicoes.push(medir("Gráfico Dashboard", () => obterGraficoPortalV13(dataInicio, dataFim).resumoMensal.length));
 
-  const resumo = { periodo: dataInicio + " a " + dataFim, medicoes: medicoes };
+  const resumoFrio = obterResumoPortalV13Leve(dataInicio, dataFim, true);
+  medicoes.push({
+    etapa: "Resumo V13 - carga fria",
+    duracaoMs: resumoFrio.meta && resumoFrio.meta.duracaoProcessamentoMs
+      ? resumoFrio.meta.duracaoProcessamentoMs
+      : 0,
+    valor: resumoFrio.dashboard.totalColaboradores,
+    origem: resumoFrio.meta ? resumoFrio.meta.origemCache : "nova"
+  });
+
+  /* Limpa somente a memória da execução. O CacheService e o fallback
+     persistente permanecem, simulando uma nova requisição do navegador. */
+  PERF13_MEMORIA = {};
+  medicoes.push(medir("Resumo V13 - cache entre requisições", function () {
+    const r = obterResumoPortalV13Leve(dataInicio, dataFim, false);
+    return {
+      valor: r.dashboard.totalColaboradores,
+      origem: r.meta ? r.meta.origemCache : ""
+    };
+  }));
+
+  PERF13_MEMORIA = {};
+  medicoes.push(medir("Convocar - primeira chamada", function () {
+    const r = obterModuloPortalV13("CONVOCAR", dataInicio, dataFim, true);
+    return { valor: r.convocar.todos.length, origem: r.__contextoV13 || "" };
+  }));
+
+  PERF13_MEMORIA = {};
+  medicoes.push(medir("Convocar - cache entre requisições", function () {
+    const r = obterModuloPortalV13("CONVOCAR", dataInicio, dataFim, false);
+    return {
+      valor: r.convocar.todos.length,
+      origem: r.__origemCacheV13 || r.__cacheV13 || r.__contextoV13 || ""
+    };
+  }));
+
+  PERF13_MEMORIA = {};
+  medicoes.push(medir("Pendências", function () {
+    const r = obterModuloPortalV13("PENDENCIAS", dataInicio, dataFim, true);
+    return { valor: r.pendencias.operacionais.length, origem: r.__contextoV13 || "" };
+  }));
+
+  PERF13_MEMORIA = {};
+  medicoes.push(medir("Indicadores", function () {
+    const r = obterModuloPortalV13("INDICADORES", dataInicio, dataFim, true);
+    return { valor: r.indicadores.resumoMensal.length, origem: r.__contextoV13 || "" };
+  }));
+
+  PERF13_MEMORIA = {};
+  medicoes.push(medir("Gráfico Dashboard", function () {
+    const r = obterGraficoPortalV13(dataInicio, dataFim);
+    return { valor: r.resumoMensal.length, origem: r.origemContexto || r.__origemCacheV13 || "" };
+  }));
+
+  const diagnostico = diagnosticarCacheV13(dataInicio, dataFim);
+  const resumo = {
+    periodo: dataInicio + " a " + dataFim,
+    diagnosticoCache: diagnostico,
+    medicoes: medicoes
+  };
   console.log(JSON.stringify(resumo, null, 2));
   return resumo;
 }
