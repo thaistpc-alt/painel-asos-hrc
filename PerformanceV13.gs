@@ -1,71 +1,24 @@
 /* =========================================================
-   PAINEL DE ASOS - CAMADA DE DESEMPENHO V13
+   PAINEL DE ASOS - CAMADA DE DESEMPENHO V13.2
    - preserva os geradores e regras existentes;
    - lê a AGENDA apenas nas colunas necessárias;
-   - processa a base uma vez e armazena somente dados serializáveis;
+   - processa Fonte + Agenda uma única vez por contexto;
+   - usa cache em memória, CacheService e fallback persistente;
    - entrega cada módulo sob demanda.
 ========================================================= */
 
-const PERF13_PREFIXO = "ASOS_V13_1_";
+const PERF13_PREFIXO = "ASOS_V13_2_";
 const PERF13_TTL = 1800;
-const PERF13_PARTE = 85000;
+const PERF13_PARTE = 80000;
+const PERF13_MAX_PARTES = 50;
+const PERF13_ABA_CACHE = "_CACHE_ASOS_V13";
+const PERF13_PARTE_PERSISTENTE = 45000;
+var PERF13_MEMORIA = {};
 
 function obterResumoPortalV13(dataInicio, dataFim, forcarAtualizacao) {
-  validarPeriodoV13_(dataInicio, dataFim);
-  const chave = "RESUMO_" + dataInicio + "_" + dataFim;
-
-  if (!forcarAtualizacao) {
-    const cacheado = obterCacheV13_(chave);
-    if (cacheado) return cacheado;
-  }
-
-  const contexto = construirContextoV13_(dataInicio, dataFim, !!forcarAtualizacao);
-  const lista = contexto.lista;
-  const pendencias = contexto.pendencias;
-
-  const convocar = gerarListaConvocar(lista, dataInicio, dataFim)
-    .filter(c => !c.asoRealizadoValido);
-
-  const complementares = gerarExamesComplementares(lista, dataInicio, dataFim)
-    .filter(c => !c.asoRealizadoValido);
-
-  const agendados = lista.filter(c => noPeriodo(c.dataAgendada, dataInicio, dataFim));
-  const prioridade = lista.filter(c => {
-    const dias = Number(c.diasParaVencer);
-    return dias >= 0 && dias <= 30 && !c.asoRealizadoAgendaAtual && !c.asoRealizadoValido;
-  });
-  const vencidos = lista.filter(c => ehVencido(c) && !c.asoRealizadoAgendaAtual && !c.asoRealizadoValido);
-  const indicadores = gerarIndicadores(lista);
-
-  const resumo = {
-    meta: {
-      versao: "13.0",
-      cache: "não",
-      geradoEm: Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm:ss"),
-      dataInicio: dataInicio,
-      dataFim: dataFim
-    },
-    dashboard: {
-      totalColaboradores: lista.length,
-      totalConvocar: convocar.length,
-      totalConvocarPendentes: convocar.filter(c => !ehAsoRealizado(c)).length,
-      totalConvocarRealizados: convocar.filter(ehAsoRealizado).length,
-      totalAgendados: agendados.length,
-      totalCompareceram: agendados.filter(ehAsoRealizado).length,
-      totalFaltosos: (pendencias.operacionais || []).length,
-      totalPrioridade: prioridade.length,
-      totalVencidos: vencidos.length,
-      totalVencidosAtivos: vencidos.filter(ehAtivo).length,
-      totalAtrasadosAtivos: lista.filter(c => c.atrasadoAtivo && !c.asoRealizadoValido).length,
-      totalExamesComplementares: complementares.length
-    },
-    indicadoresResumo: {
-      ano: indicadores.ano,
-      resumoMensal: indicadores.resumoMensal || []
-    }
-  };
-
-  salvarCacheV13_(chave, resumo);
+  const resumo = obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao);
+  const grafico = obterGraficoPortalV13(dataInicio, dataFim);
+  resumo.indicadoresResumo = grafico;
   return resumo;
 }
 
@@ -76,11 +29,16 @@ function obterModuloPortalV13(modulo, dataInicio, dataFim, forcarAtualizacao) {
 
   if (!forcarAtualizacao) {
     const cacheado = obterCacheV13_(chave);
-    if (cacheado) return cacheado;
+    if (cacheado) {
+      cacheado.__cacheV13 = "cache";
+      return cacheado;
+    }
   }
 
-  const contexto = construirContextoV13_(dataInicio, dataFim, !!forcarAtualizacao);
-  const lista = contexto.lista;
+  /* Forçar o módulo não deve reconstruir Fonte + Agenda. O botão Atualizar
+     já força o resumo/contexto antes de solicitar o módulo. */
+  const contexto = construirContextoV13_(dataInicio, dataFim, false);
+  const lista = contexto.lista || [];
   let resultado;
 
   switch (nome) {
@@ -98,7 +56,7 @@ function obterModuloPortalV13(modulo, dataInicio, dataFim, forcarAtualizacao) {
     }
     case "FALTOSOS":
     case "PENDENCIAS": {
-      const pendencias = contexto.pendencias;
+      const pendencias = contexto.pendencias || { operacionais: [] };
       resultado = { pendencias: pendencias, faltosos: pendencias.operacionais || [] };
       aplicarHistoricoEnviosPendencias(resultado);
       break;
@@ -148,22 +106,30 @@ function obterModuloPortalV13(modulo, dataInicio, dataFim, forcarAtualizacao) {
       throw new Error("Módulo inválido: " + modulo);
   }
 
+  resultado.__contextoV13 = contexto.origemCache || "nova";
   salvarCacheV13_(chave, resultado);
   return resultado;
 }
 
 function construirContextoV13_(dataInicio, dataFim, forcarAtualizacao) {
-  const chaveLista = "LISTA_" + dataInicio + "_" + dataFim;
-  const chavePendencias = "PEND_" + dataInicio + "_" + dataFim;
+  const chave = "CONTEXTO_" + dataInicio + "_" + dataFim;
 
   if (!forcarAtualizacao) {
-    const listaCache = obterCacheV13_(chaveLista);
-    const pendCache = obterCacheV13_(chavePendencias);
-    if (listaCache && Array.isArray(listaCache.lista) && pendCache) {
-      return { lista: listaCache.lista, pendencias: pendCache, cache: true };
+    const cacheado = obterCacheV13_(chave);
+    if (cacheado && Array.isArray(cacheado.lista) && cacheado.pendencias) {
+      cacheado.origemCache = cacheado.__origemCacheV13 || "cache";
+      return cacheado;
+    }
+
+    const persistente = obterCachePersistenteV13_(chave);
+    if (persistente && Array.isArray(persistente.lista) && persistente.pendencias) {
+      persistente.origemCache = "persistente";
+      salvarCacheV13_(chave, persistente);
+      return persistente;
     }
   }
 
+  const inicio = Date.now();
   const lista = lerFontePainel();
   const eventos = montarEventosAgendaPorMatriculaV13_();
   aplicarOcorrenciasAgenda(lista, eventos);
@@ -171,9 +137,17 @@ function construirContextoV13_(dataInicio, dataFim, forcarAtualizacao) {
   prepararFlagsPortal(lista);
   const pendencias = gerarPendencias(lista, eventos);
 
-  salvarCacheV13_(chaveLista, { lista: lista });
-  salvarCacheV13_(chavePendencias, pendencias);
-  return { lista: lista, pendencias: pendencias, cache: false };
+  const contexto = {
+    lista: lista,
+    pendencias: pendencias,
+    origemCache: "nova",
+    processadoEm: Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm:ss"),
+    duracaoProcessamentoMs: Date.now() - inicio
+  };
+
+  salvarCacheV13_(chave, contexto);
+  salvarCachePersistenteV13_(chave, contexto);
+  return contexto;
 }
 
 function montarEventosAgendaPorMatriculaV13_() {
@@ -194,7 +168,12 @@ function montarEventosAgendaPorMatriculaV13_() {
   const primeiraColuna = Math.min.apply(null, colunas);
   const ultimaColunaUsada = Math.max.apply(null, colunas);
   const largura = ultimaColunaUsada - primeiraColuna + 1;
-  const valores = aba.getRange(cfg.linhaDados + 1, primeiraColuna + 1, ultimaLinha - cfg.linhaDados, largura).getValues();
+  const quantidadeLinhas = ultimaLinha - cfg.linhaDados;
+  if (quantidadeLinhas <= 0) return mapaEventos;
+
+  const valores = aba
+    .getRange(cfg.linhaDados + 1, primeiraColuna + 1, quantidadeLinhas, largura)
+    .getValues();
 
   const idxMat = cfg.colMatricula - primeiraColuna;
   const idxStatus = cfg.colStatus - primeiraColuna;
@@ -204,6 +183,7 @@ function montarEventosAgendaPorMatriculaV13_() {
   valores.forEach(linha => {
     const mat = String(linha[idxMat] || "").trim();
     if (!mat) return;
+
     const data = formatarDataISO(linha[idxData]);
     const status = valorTexto(linha[idxStatus]);
     const statusNorm = normalizarTexto(status);
@@ -243,35 +223,57 @@ function montarEventosAgendaPorMatriculaV13_() {
   });
 
   mapaEventos.forEach(eventos => {
-    if (Array.isArray(eventos)) eventos.sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")));
+    if (Array.isArray(eventos)) {
+      eventos.sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")));
+    }
   });
   return mapaEventos;
 }
 
 function validarPeriodoV13_(inicio, fim) {
   if (!inicio || !fim) throw new Error("Informe a data inicial e a data final.");
-  if (String(inicio) > String(fim)) throw new Error("A data inicial não pode ser maior que a data final.");
+  if (String(inicio) > String(fim)) {
+    throw new Error("A data inicial não pode ser maior que a data final.");
+  }
 }
 
 function chaveCacheV13_(sufixo) {
-  return (PERF13_PREFIXO + String(sufixo || "").replace(/[^A-Za-z0-9_\-]/g, "_")).substring(0, 220);
+  return (PERF13_PREFIXO + String(sufixo || "").replace(/[^A-Za-z0-9_\-]/g, "_"))
+    .substring(0, 220);
+}
+
+function serializarCacheV13_(objeto) {
+  const json = JSON.stringify(objeto);
+  const gzip = Utilities.gzip(Utilities.newBlob(json, "application/json"));
+  return Utilities.base64Encode(gzip.getBytes());
+}
+
+function desserializarCacheV13_(base64) {
+  const bytes = Utilities.base64Decode(base64);
+  const json = Utilities.ungzip(Utilities.newBlob(bytes)).getDataAsString("UTF-8");
+  return JSON.parse(json);
 }
 
 function salvarCacheV13_(sufixo, objeto) {
+  const chave = chaveCacheV13_(sufixo);
+  PERF13_MEMORIA[chave] = objeto;
+
   try {
     const cache = CacheService.getScriptCache();
-    const chave = chaveCacheV13_(sufixo);
-    const json = JSON.stringify(objeto);
-    const gzip = Utilities.gzip(Utilities.newBlob(json, "application/json"));
-    const base64 = Utilities.base64Encode(gzip.getBytes());
+    const base64 = serializarCacheV13_(objeto);
     const qtd = Math.ceil(base64.length / PERF13_PARTE);
-    if (qtd < 1 || qtd > 10) return false;
-    const itens = {};
-    itens[chave + "_M"] = String(qtd);
+    if (qtd < 1 || qtd > PERF13_MAX_PARTES) return false;
+
+    /* O manifesto é gravado por último. Assim nunca aponta para um conjunto
+       de fragmentos parcialmente escrito. */
     for (let i = 0; i < qtd; i++) {
-      itens[chave + "_" + i] = base64.substring(i * PERF13_PARTE, (i + 1) * PERF13_PARTE);
+      cache.put(
+        chave + "_" + i,
+        base64.substring(i * PERF13_PARTE, (i + 1) * PERF13_PARTE),
+        PERF13_TTL
+      );
     }
-    cache.putAll(itens, PERF13_TTL);
+    cache.put(chave + "_M", String(qtd), PERF13_TTL);
     return true;
   } catch (e) {
     return false;
@@ -279,11 +281,18 @@ function salvarCacheV13_(sufixo, objeto) {
 }
 
 function obterCacheV13_(sufixo) {
+  const chave = chaveCacheV13_(sufixo);
+  if (Object.prototype.hasOwnProperty.call(PERF13_MEMORIA, chave)) {
+    const memoria = PERF13_MEMORIA[chave];
+    if (memoria && typeof memoria === "object") memoria.__origemCacheV13 = "memoria";
+    return memoria;
+  }
+
   try {
     const cache = CacheService.getScriptCache();
-    const chave = chaveCacheV13_(sufixo);
     const qtd = Number(cache.get(chave + "_M"));
-    if (!qtd || qtd > 10) return null;
+    if (!qtd || qtd > PERF13_MAX_PARTES) return null;
+
     const chaves = [];
     for (let i = 0; i < qtd; i++) chaves.push(chave + "_" + i);
     const partes = cache.getAll(chaves);
@@ -293,10 +302,111 @@ function obterCacheV13_(sufixo) {
       if (!parte) return null;
       base64 += parte;
     }
-    const bytes = Utilities.base64Decode(base64);
-    const json = Utilities.ungzip(Utilities.newBlob(bytes)).getDataAsString("UTF-8");
-    return JSON.parse(json);
+
+    const objeto = desserializarCacheV13_(base64);
+    if (objeto && typeof objeto === "object") objeto.__origemCacheV13 = "cache";
+    PERF13_MEMORIA[chave] = objeto;
+    return objeto;
   } catch (e) {
     return null;
   }
+}
+
+function obterAbaCachePersistenteV13_(criar) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let aba = ss.getSheetByName(PERF13_ABA_CACHE);
+  if (!aba && criar) {
+    aba = ss.insertSheet(PERF13_ABA_CACHE);
+    aba.getRange(1, 1, 1, 5).setValues([["CHAVE", "EXPIRA_EM", "PARTE", "TOTAL", "CONTEUDO"]]);
+    aba.hideSheet();
+  }
+  return aba;
+}
+
+function salvarCachePersistenteV13_(sufixo, objeto) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(3000)) return false;
+
+  try {
+    const aba = obterAbaCachePersistenteV13_(true);
+    const chave = chaveCacheV13_(sufixo);
+    const base64 = serializarCacheV13_(objeto);
+    const total = Math.ceil(base64.length / PERF13_PARTE_PERSISTENTE);
+    const expira = Date.now() + PERF13_TTL * 1000;
+    const linhas = [];
+
+    for (let i = 0; i < total; i++) {
+      linhas.push([
+        chave,
+        expira,
+        i,
+        total,
+        base64.substring(i * PERF13_PARTE_PERSISTENTE, (i + 1) * PERF13_PARTE_PERSISTENTE)
+      ]);
+    }
+
+    /* A aba técnica mantém somente o contexto mais recente. Isso evita
+       crescimento contínuo e torna a leitura previsível. */
+    aba.clearContents();
+    aba.getRange(1, 1, 1, 5).setValues([["CHAVE", "EXPIRA_EM", "PARTE", "TOTAL", "CONTEUDO"]]);
+    if (linhas.length) aba.getRange(2, 1, linhas.length, 5).setValues(linhas);
+    if (!aba.isSheetHidden()) aba.hideSheet();
+    return true;
+  } catch (e) {
+    return false;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function obterCachePersistenteV13_(sufixo) {
+  try {
+    const aba = obterAbaCachePersistenteV13_(false);
+    if (!aba || aba.getLastRow() < 2) return null;
+
+    const chave = chaveCacheV13_(sufixo);
+    const valores = aba.getRange(2, 1, aba.getLastRow() - 1, 5).getValues();
+    const linhas = valores
+      .filter(l => String(l[0] || "") === chave && Number(l[1]) > Date.now())
+      .sort((a, b) => Number(a[2]) - Number(b[2]));
+
+    if (!linhas.length) return null;
+    const total = Number(linhas[0][3]);
+    if (linhas.length !== total) return null;
+    return desserializarCacheV13_(linhas.map(l => String(l[4] || "")).join(""));
+  } catch (e) {
+    return null;
+  }
+}
+
+function diagnosticarCacheV13(dataInicio, dataFim) {
+  dataInicio = dataInicio || Utilities.formatDate(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    CONFIG.TIMEZONE,
+    "yyyy-MM-dd"
+  );
+  dataFim = dataFim || Utilities.formatDate(
+    new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
+    CONFIG.TIMEZONE,
+    "yyyy-MM-dd"
+  );
+
+  const chave = "CONTEXTO_" + dataInicio + "_" + dataFim;
+  const inicio = Date.now();
+  const contexto = construirContextoV13_(dataInicio, dataFim, false);
+  const base64 = serializarCacheV13_(contexto);
+  const resultado = {
+    origem: contexto.origemCache || contexto.__origemCacheV13 || "desconhecida",
+    duracaoMs: Date.now() - inicio,
+    colaboradores: (contexto.lista || []).length,
+    pendencias: contexto.pendencias && contexto.pendencias.operacionais
+      ? contexto.pendencias.operacionais.length
+      : 0,
+    tamanhoComprimidoCaracteres: base64.length,
+    partesCacheService: Math.ceil(base64.length / PERF13_PARTE),
+    partesPersistentes: Math.ceil(base64.length / PERF13_PARTE_PERSISTENTE),
+    chave: chaveCacheV13_(chave)
+  };
+  console.log(JSON.stringify(resultado, null, 2));
+  return resultado;
 }
