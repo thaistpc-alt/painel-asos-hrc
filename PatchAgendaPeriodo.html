@@ -1,0 +1,98 @@
+<style>
+  .data-agendada-periodo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+  }
+
+  .sinal-agenda-periodo {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 999px;
+    font-size: 8.5px;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .sinal-agenda-anterior {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+
+  .sinal-agenda-posterior {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+  }
+</style>
+
+<script>
+(function () {
+  function obterPeriodoAgendaPortal() {
+    return {
+      inicio: document.getElementById("dataInicio")?.value || "",
+      fim: document.getElementById("dataFim")?.value || ""
+    };
+  }
+
+  function classificarAgendaNoPeriodoPortal(dataISO) {
+    if (!dataISO) return "SEM_AGENDAMENTO";
+
+    const periodo = obterPeriodoAgendaPortal();
+    if (!periodo.inicio || !periodo.fim) return "DENTRO_DO_PERIODO";
+    if (dataISO < periodo.inicio) return "ANTERIOR_AO_PERIODO";
+    if (dataISO > periodo.fim) return "POSTERIOR_AO_PERIODO";
+    return "DENTRO_DO_PERIODO";
+  }
+
+  window.formatarDataAgendadaConvocar = function (item) {
+    const dataISO = String(item?.dataAgendada || "").trim();
+    const dataBR = String(item?.dataAgendadaBR || "").trim();
+    const classificacao = classificarAgendaNoPeriodoPortal(dataISO);
+
+    if (classificacao === "SEM_AGENDAMENTO") {
+      return '<span class="pendente-agendamento">Pendente agendamento</span>';
+    }
+
+    let sinalizacao = "";
+
+    if (classificacao === "ANTERIOR_AO_PERIODO") {
+      sinalizacao = '<span class="sinal-agenda-periodo sinal-agenda-anterior" title="A data agendada é anterior ao período filtrado e deve ser verificada para possível reagendamento.">Reagendar</span>';
+    } else if (classificacao === "POSTERIOR_AO_PERIODO") {
+      sinalizacao = '<span class="sinal-agenda-periodo sinal-agenda-posterior" title="A data agendada é posterior ao período filtrado.">Fora do período</span>';
+    }
+
+    return '<div class="data-agendada-periodo"><span>' +
+      escaparHtml(dataBR || dataISO) +
+      '</span>' + sinalizacao + '</div>';
+  };
+
+  window.formatarStatusAgendaConvocar = function (item) {
+    if (!item?.dataAgendada) return "";
+
+    const status = String(item.statusAgenda || item.statusAgendaNorm || "").trim();
+    const statusNorm = normalizarTextoPortal(status);
+
+    if (statusNorm.includes("ASO REALIZADO")) {
+      return escaparHtml("ASO Realizado");
+    }
+
+    if (statusNorm.includes("NAO COMPARECEU ASO")) {
+      return escaparHtml("Não compareceu ASO");
+    }
+
+    if (statusNorm.includes("REAGENDOU")) {
+      return escaparHtml("Reagendou");
+    }
+
+    if (statusNorm.includes("CANCELADO")) {
+      return escaparHtml("Cancelado");
+    }
+
+    return escaparHtml(status);
+  };
+})();
+</script>
