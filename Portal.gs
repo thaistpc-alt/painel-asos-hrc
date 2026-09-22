@@ -826,10 +826,43 @@ function gerarColaboradoresPortal(lista) {
 
   return (lista || [])
     .map(c => {
-      const dias = calcularDiasStatusColaborador(c, hojeISO);
-      const statusAso = definirStatusAsoColaborador(c, dias);
+      // A FONTEpainel pode manter o último ASO histórico por algum tempo.
+      // Quando a V14 identifica um ASO PERIÓDICO realizado posteriormente na AGENDA,
+      // a aba Geral deve exibir esse evento como o último ASO efetivo.
+      const eventoPeriodicoRealizado = c && c.eventoQueEncerrouCiclo
+        ? c.eventoQueEncerrouCiclo
+        : null;
+      const dataRealizadaAgenda = eventoPeriodicoRealizado && eventoPeriodicoRealizado.data
+        ? eventoPeriodicoRealizado.data
+        : "";
+      const usarAgendaComoUltimoAso =
+        !!dataRealizadaAgenda &&
+        (!c.dataUltimoAso || dataMaiorQue(dataRealizadaAgenda, c.dataUltimoAso));
 
-      return Object.assign({}, c, {
+      const dataUltimoAsoEfetiva = usarAgendaComoUltimoAso
+        ? dataRealizadaAgenda
+        : c.dataUltimoAso;
+
+      const proximoVencimentoEfetivo =
+        usarAgendaComoUltimoAso && Number(c.periodicidade) > 0
+          ? adicionarMeses(dataUltimoAsoEfetiva, Number(c.periodicidade))
+          : c.proximoVencimento;
+
+      const colaboradorExibicao = Object.assign({}, c, {
+        dataUltimoAsoEfetiva: dataUltimoAsoEfetiva || "",
+        dataUltimoAsoBR: formatarDataBR(dataUltimoAsoEfetiva),
+        proximoVencimentoEfetivo: proximoVencimentoEfetivo || "",
+        proximoVencimentoBR: formatarDataBR(proximoVencimentoEfetivo),
+        origemUltimoAso: usarAgendaComoUltimoAso ? "AGENDA" : "FONTE",
+        // Se houve periódico posterior à fonte, o vencimento antigo não pode
+        // continuar classificando o colaborador como atrasado na aba Geral.
+        statusGeral: usarAgendaComoUltimoAso ? "EM DIA" : c.statusGeral
+      });
+
+      const dias = calcularDiferencaDias(proximoVencimentoEfetivo, hojeISO);
+      const statusAso = definirStatusAsoColaborador(colaboradorExibicao, dias);
+
+      return Object.assign({}, colaboradorExibicao, {
         statusAso: statusAso.texto,
         statusAsoClasse: statusAso.classe,
         diasStatusAso: dias === null ? "" : dias
