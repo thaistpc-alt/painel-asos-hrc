@@ -534,15 +534,26 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
       .sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")))
       .pop();
 
-    const realizadosPosteriores = eventos.filter(e => e.ehAsoRealizado && dataMaiorQue(e.data, ultimaPendencia.data));
+    const realizadosPosteriores = eventos
+      .filter(e => e.ehAsoRealizado)
+      .filter(ehEventoPeriodicoAgenda)
+      .filter(e => dataMaiorQue(e.data, ultimaPendencia.data));
 
-    if (ehAsoRealizado(colaborador) && dataMaiorQue(colaborador.dataAgendada, ultimaPendencia.data)) {
+    /* Fallback baseado no periódico validado pela própria rotina da AGENDA.
+       Evita que retorno/demissional/consulta resolvam uma pendência periódica. */
+    if (
+      colaborador.temAsoRealizadoAgenda &&
+      colaborador.dataAsoRealizadoAgenda &&
+      dataMaiorQue(colaborador.dataAsoRealizadoAgenda, ultimaPendencia.data)
+    ) {
       realizadosPosteriores.push({
         mat: mat,
-        data: colaborador.dataAgendada,
-        dataBR: colaborador.dataAgendadaBR,
-        status: colaborador.statusAgenda,
-        statusNorm: colaborador.statusAgendaNorm,
+        data: colaborador.dataAsoRealizadoAgenda,
+        dataBR: colaborador.dataAsoRealizadoAgendaBR || formatarDataBR(colaborador.dataAsoRealizadoAgenda),
+        status: "ASO Realizado",
+        statusNorm: "ASO REALIZADO",
+        tipo: colaborador.tipoAsoRealizadoAgenda || "Periódico",
+        tipoNorm: normalizarTexto(colaborador.tipoAsoRealizadoAgenda || "Periódico"),
         ehAsoRealizado: true
       });
     }
@@ -904,10 +915,37 @@ function gerarColaboradoresPortal(lista) {
 
   return (lista || [])
     .map(c => {
-      const dias = calcularDiasStatusColaborador(c, hojeISO);
-      const statusAso = definirStatusAsoColaborador(c, dias);
+      /* A FONTEpainel pode manter por algum tempo a data do ASO anterior.
+         Quando a AGENDA já possui um PERIÓDICO realizado posteriormente,
+         esse evento passa a ser a referência efetiva da aba Geral. */
+      const dataPeriodicoRealizado = c && c.temAsoRealizadoAgenda
+        ? String(c.dataAsoRealizadoAgenda || "")
+        : "";
+      const usarAgendaComoUltimoAso =
+        !!dataPeriodicoRealizado &&
+        (!c.dataUltimoAso || dataMaiorQue(dataPeriodicoRealizado, c.dataUltimoAso));
 
-      return Object.assign({}, c, {
+      const dataUltimoAsoEfetiva = usarAgendaComoUltimoAso
+        ? dataPeriodicoRealizado
+        : (c.dataUltimoAso || "");
+
+      const proximoVencimentoEfetivo =
+        usarAgendaComoUltimoAso && Number(c.periodicidade) > 0
+          ? adicionarMeses(dataUltimoAsoEfetiva, Number(c.periodicidade))
+          : (c.proximoVencimento || "");
+
+      const colaboradorExibicao = Object.assign({}, c, {
+        dataUltimoAsoEfetiva: dataUltimoAsoEfetiva,
+        dataUltimoAsoBR: formatarDataBR(dataUltimoAsoEfetiva),
+        proximoVencimentoEfetivo: proximoVencimentoEfetivo,
+        proximoVencimentoBR: formatarDataBR(proximoVencimentoEfetivo),
+        origemUltimoAso: usarAgendaComoUltimoAso ? "AGENDA" : "FONTE"
+      });
+
+      const dias = calcularDiferencaDias(proximoVencimentoEfetivo, hojeISO);
+      const statusAso = definirStatusAsoColaborador(colaboradorExibicao, dias);
+
+      return Object.assign({}, colaboradorExibicao, {
         statusAso: statusAso.texto,
         statusAsoClasse: statusAso.classe,
         diasStatusAso: dias === null ? "" : dias
