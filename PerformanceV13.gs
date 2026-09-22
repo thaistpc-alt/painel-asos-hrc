@@ -7,7 +7,7 @@
    - entrega cada módulo sob demanda.
 ========================================================= */
 
-const PERF13_PREFIXO = "ASOS_V14_5_";
+const PERF13_PREFIXO = "ASOS_V14_6_";
 const PERF13_TTL = 1800;
 const PERF13_PARTE = 80000;
 const PERF13_MAX_PARTES = 50;
@@ -25,7 +25,10 @@ function obterResumoPortalV13(dataInicio, dataFim, forcarAtualizacao) {
 function obterModuloPortalV13(modulo, dataInicio, dataFim, forcarAtualizacao) {
   validarPeriodoV13_(dataInicio, dataFim);
   const nome = normalizarTexto(modulo || "");
-  const chave = "MOD_" + nome + "_" + dataInicio + "_" + dataFim;
+  const modulosGlobais = new Set(["FALTOSOS", "PENDENCIAS", "PRIORIDADE", "VENCIDOS", "COLABORADORES", "INDICADORES"]);
+  const chave = modulosGlobais.has(nome)
+    ? "MOD_" + nome + "_GLOBAL"
+    : "MOD_" + nome + "_" + dataInicio + "_" + dataFim;
 
   if (!forcarAtualizacao) {
     const cacheado = obterCacheV13_(chave);
@@ -100,7 +103,7 @@ function obterModuloPortalV13(modulo, dataInicio, dataFim, forcarAtualizacao) {
       };
       break;
     case "INDICADORES":
-      resultado = { indicadores: gerarIndicadores(lista) };
+      resultado = { indicadores: obterIndicadoresPortalV14_6_(contexto) };
       break;
     default:
       throw new Error("Módulo inválido: " + modulo);
@@ -109,6 +112,16 @@ function obterModuloPortalV13(modulo, dataInicio, dataFim, forcarAtualizacao) {
   resultado.__contextoV13 = contexto.origemCache || "nova";
   salvarCacheV13_(chave, resultado);
   return resultado;
+}
+
+function obterIndicadoresPortalV14_6_(contexto) {
+  const chave = "INDICADORES_GLOBAL_" + obterAnoVigente();
+  const cacheado = obterCacheV13_(chave);
+  if (cacheado && Array.isArray(cacheado.resumoMensal)) return cacheado;
+
+  const indicadores = gerarIndicadores(contexto && contexto.lista ? contexto.lista : []);
+  salvarCacheV13_(chave, indicadores);
+  return indicadores;
 }
 
 function construirContextoV13Legado_(dataInicio, dataFim, forcarAtualizacao) {
@@ -155,10 +168,11 @@ function montarEventosAgendaPorMatriculaV13_() {
   const mapaEventos = new Map();
   const mapaOcorrencias = new Map();
   mapaEventos.__ocorrenciasPorMatricula = mapaOcorrencias;
-  if (!aba || aba.getLastRow() < 2) return mapaEventos;
+  if (!aba) return mapaEventos;
 
   const ultimaLinha = aba.getLastRow();
-  const ultimaColuna = aba.getLastColumn();
+  if (ultimaLinha < 2) return mapaEventos;
+  const ultimaColuna = Math.min(13, aba.getLastColumn());
   const amostra = aba.getRange(1, 1, Math.min(8, ultimaLinha), ultimaColuna).getValues();
   const cfg = identificarColunasAgenda(amostra);
   if (!cfg) return mapaEventos;
@@ -222,11 +236,8 @@ function montarEventosAgendaPorMatriculaV13_() {
     });
   });
 
-  mapaEventos.forEach(eventos => {
-    if (Array.isArray(eventos)) {
-      eventos.sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")));
-    }
-  });
+  // A ordenação é feita uma única vez em obterEventosPorColaborador,
+  // depois da consolidação das possíveis variações de matrícula.
   return mapaEventos;
 }
 
@@ -267,15 +278,17 @@ function salvarCacheV13_(sufixo, objeto) {
     const qtd = Math.ceil(base64.length / PERF13_PARTE);
     if (qtd < 1 || qtd > PERF13_MAX_PARTES) return false;
 
-    /* O manifesto é gravado por último. Assim nunca aponta para um conjunto
-       de fragmentos parcialmente escrito. */
+    /* Grava todos os fragmentos em uma única chamada ao CacheService.
+       O manifesto continua sendo gravado por último para não apontar
+       para um conjunto incompleto. */
+    const partes = {};
     for (let i = 0; i < qtd; i++) {
-      cache.put(
-        chave + "_" + i,
-        base64.substring(i * PERF13_PARTE, (i + 1) * PERF13_PARTE),
-        PERF13_TTL
+      partes[chave + "_" + i] = base64.substring(
+        i * PERF13_PARTE,
+        (i + 1) * PERF13_PARTE
       );
     }
+    cache.putAll(partes, PERF13_TTL);
     cache.put(chave + "_M", String(qtd), PERF13_TTL);
     return true;
   } catch (e) {
@@ -382,7 +395,7 @@ function obterCachePersistenteV13_(sufixo) {
   }
 }
 
-function diagnosticarCacheV13(dataInicio, dataFim) {
+function diagnosticarCacheV13Legado_(dataInicio, dataFim) {
   dataInicio = dataInicio || Utilities.formatDate(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     CONFIG.TIMEZONE,
