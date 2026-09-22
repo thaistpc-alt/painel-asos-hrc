@@ -7,7 +7,7 @@
    - entrega cada módulo sob demanda.
 ========================================================= */
 
-const PERF13_PREFIXO = "ASOS_V14_6_";
+const PERF13_PREFIXO = "ASOS_V14_7_";
 const PERF13_TTL = 1800;
 const PERF13_PARTE = 80000;
 const PERF13_MAX_PARTES = 50;
