@@ -11,7 +11,7 @@ function lerFontePainel() {
   }
 
   const ultimaLinha = aba.getLastRow();
-  const ultimaColuna = Math.max(aba.getLastColumn(), COL.CONVOCACAO_BAIXADA);
+  const ultimaColuna = COL.CONVOCACAO_BAIXADA;
 
   if (ultimaLinha < 2) return [];
 
@@ -356,9 +356,8 @@ function aplicarOcorrenciasAgenda(lista, eventosPorMatricula) {
 function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
   (lista || []).forEach(c => {
     const eventos = obterEventosPorColaborador(eventosPorMatricula, c);
-    const eventosOrdenados = eventos
-      .filter(e => e.data)
-      .sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")));
+    // obterEventosPorColaborador já devolve a lista ordenada.
+    const eventosOrdenados = eventos.filter(e => e.data);
     const ultimoEvento = eventosOrdenados.length
       ? eventosOrdenados[eventosOrdenados.length - 1]
       : null;
@@ -370,8 +369,7 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
 
     const realizadosTodos = eventos
       .filter(e => e.ehAsoRealizado)
-      .filter(e => e.data)
-      .sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")));
+      .filter(e => e.data);
 
     const realizados = realizadosTodos.filter(ehEventoPeriodicoAgenda);
 
@@ -475,6 +473,15 @@ function obterChavesMatricula(mat, matriculaCompleta) {
 function obterEventosPorColaborador(eventosPorMatricula, colaborador) {
   const mapa = eventosPorMatricula || new Map();
   const chaves = obterChavesMatricula(colaborador.mat, colaborador.matriculaCompleta);
+  const chaveCache = chaves.slice().sort().join("|");
+
+  // A mesma consolidação era refeita em aplicarAsoRealizadoAgenda e gerarPendencias.
+  // O cache existe somente durante a execução atual e não é serializado.
+  if (!mapa.__eventosResolvidos) mapa.__eventosResolvidos = new Map();
+  if (mapa.__eventosResolvidos.has(chaveCache)) {
+    return mapa.__eventosResolvidos.get(chaveCache);
+  }
+
   const vistos = new Set();
   const eventos = [];
 
@@ -488,29 +495,24 @@ function obterEventosPorColaborador(eventosPorMatricula, colaborador) {
     });
   });
 
-  return eventos.sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")));
+  eventos.sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")));
+  mapa.__eventosResolvidos.set(chaveCache, eventos);
+  return eventos;
 }
 
 function gerarPendencias(lista, eventosPorMatriculaParam) {
-  const mapaFonte = new Map();
-  (lista || []).forEach(c => {
-    const mat = String(c.mat || "").trim();
-    if (mat) mapaFonte.set(mat, c);
-    const matCompleta = String(c.matriculaCompleta || "").trim();
-    if (matCompleta) mapaFonte.set(matCompleta, c);
-  });
-
   const eventosPorMatricula = eventosPorMatriculaParam || montarEventosAgendaPorMatricula();
   const necessitaReconvocacao = [];
   const agendadosReagendados = [];
   const resolvidos = [];
   const processadas = new Set();
 
-  mapaFonte.forEach((colaborador, chave) => {
+  (lista || []).forEach(colaborador => {
     const mat = String(colaborador.mat || "").trim();
     if (!mat || processadas.has(mat)) return;
     processadas.add(mat);
 
+    // A lista já vem consolidada, sem duplicidades e em ordem cronológica.
     const eventos = obterEventosPorColaborador(eventosPorMatricula, colaborador);
     const eventosPendencia = eventos.filter(e => e.ehNaoCompareceu || e.ehReagendou);
 
@@ -529,10 +531,7 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
 
     if (eventosPendencia.length === 0) return;
 
-    const ultimaPendencia = eventosPendencia
-      .slice()
-      .sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")))
-      .pop();
+    const ultimaPendencia = eventosPendencia[eventosPendencia.length - 1];
 
     const realizadosPosteriores = eventos
       .filter(e => e.ehAsoRealizado)
@@ -546,25 +545,28 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
       colaborador.dataAsoRealizadoAgenda &&
       dataMaiorQue(colaborador.dataAsoRealizadoAgenda, ultimaPendencia.data)
     ) {
-      realizadosPosteriores.push({
-        mat: mat,
-        data: colaborador.dataAsoRealizadoAgenda,
-        dataBR: colaborador.dataAsoRealizadoAgendaBR || formatarDataBR(colaborador.dataAsoRealizadoAgenda),
-        status: "ASO Realizado",
-        statusNorm: "ASO REALIZADO",
-        tipo: colaborador.tipoAsoRealizadoAgenda || "Periódico",
-        tipoNorm: normalizarTexto(colaborador.tipoAsoRealizadoAgenda || "Periódico"),
-        ehAsoRealizado: true
-      });
+      const jaExiste = realizadosPosteriores.some(e =>
+        String(e.data || "") === String(colaborador.dataAsoRealizadoAgenda || "")
+      );
+
+      if (!jaExiste) {
+        realizadosPosteriores.push({
+          mat: mat,
+          data: colaborador.dataAsoRealizadoAgenda,
+          dataBR: colaborador.dataAsoRealizadoAgendaBR || formatarDataBR(colaborador.dataAsoRealizadoAgenda),
+          status: "ASO Realizado",
+          statusNorm: "ASO REALIZADO",
+          tipo: colaborador.tipoAsoRealizadoAgenda || "Periódico",
+          tipoNorm: normalizarTexto(colaborador.tipoAsoRealizadoAgenda || "Periódico"),
+          ehAsoRealizado: true
+        });
+      }
     }
 
     const itemBase = montarItemPendencia(colaborador, ultimaPendencia, eventosPendencia.length);
 
     if (realizadosPosteriores.length > 0) {
-      const realizado = realizadosPosteriores
-        .slice()
-        .sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")))
-        .pop();
+      const realizado = realizadosPosteriores[realizadosPosteriores.length - 1];
 
       resolvidos.push(Object.assign({}, itemBase, {
         grupoPendencia: "Resolvido",
@@ -579,10 +581,14 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
     let novaData = "";
     let novaDataBR = "";
 
-    const proximoAgendamento = eventos
-      .filter(e => e.data && dataMaiorQue(e.data, ultimaPendencia.data))
-      .filter(e => !e.ehNaoCompareceu && !e.ehReagendou && !e.ehCancelado && !e.ehAsoRealizado)
-      .sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")))[0];
+    const proximoAgendamento = eventos.find(e =>
+      e.data &&
+      dataMaiorQue(e.data, ultimaPendencia.data) &&
+      !e.ehNaoCompareceu &&
+      !e.ehReagendou &&
+      !e.ehCancelado &&
+      !e.ehAsoRealizado
+    );
 
     if (proximoAgendamento) {
       novaData = proximoAgendamento.data;
@@ -592,9 +598,6 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
       novaDataBR = colaborador.dataAgendadaBR || formatarDataBR(colaborador.dataAgendada);
     }
 
-    // Regra V8.4:
-    // Reagendou somente entra em Agendados/Reagendados quando existir nova data posterior à pendência.
-    // Se estiver como Reagendou, mas sem nova data, continua em Necessita reconvocação.
     if (novaData) {
       agendadosReagendados.push(Object.assign({}, itemBase, {
         grupoPendencia: "Agendado/Reagendado",
@@ -631,7 +634,6 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
     todos: operacionais
   };
 }
-
 function montarItemPendencia(colaborador, evento, qtdOcorrencias) {
   return Object.assign({}, colaborador, {
     dataUltimaPendencia: evento.data || "",

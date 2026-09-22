@@ -52,7 +52,7 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
 
   const resumo = {
     meta: {
-      versao: "13.2",
+      versao: "14.6",
       cache: contexto.origemCache === "nova" ? "não" : "sim",
       origemCache: contexto.origemCache || "nova",
       duracaoProcessamentoMs: contexto.duracaoProcessamentoMs || 0,
@@ -85,18 +85,25 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
     __contextoV13: contexto.origemCache || "nova"
   });
 
+  // A lista de complementares já foi calculada para o contador do Dashboard.
+  // Reaproveita o resultado quando o usuário abrir a aba.
+  salvarCacheV13_("MOD_COMPLEMENTARES_" + dataInicio + "_" + dataFim, {
+    examesComplementares: complementares,
+    __contextoV13: contexto.origemCache || "nova"
+  });
+
   salvarCacheV13_(chave, resumo);
   return resumo;
 }
 
 function obterGraficoPortalV13(dataInicio, dataFim) {
   validarPeriodoV13_(dataInicio, dataFim);
-  const chave = "GRAFICO_V4_SEM_FUTUROS_" + dataInicio + "_" + dataFim;
+  const chave = "GRAFICO_GLOBAL_" + obterAnoVigente();
   const cacheado = obterCacheV13_(chave);
   if (cacheado) return cacheado;
 
   const contexto = construirContextoV13_(dataInicio, dataFim, false);
-  const indicadores = gerarIndicadores(contexto.lista || []);
+  const indicadores = obterIndicadoresPortalV14_6_(contexto);
   const mesAtual = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "yyyy-MM");
   const resumoAteMesAtual = (indicadores.resumoMensal || []).filter(function(item) {
     const mes = String(item.mesAnalise || item.mes || "");

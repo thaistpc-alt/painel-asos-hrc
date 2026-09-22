@@ -13,7 +13,7 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
   const NOMES={abaDashboard:'Dashboard',abaColaboradores:'Geral',abaFaltosos:'Pendências',abaPrioridade:'Prioridade',abaConvocar:'Convocar',abaComplementares:'Ex. Complementares',abaVencidos:'Vencidos',abaIndicadores:'Indicadores'};
   const MODULOS={convocar:'CONVOCAR',faltosos:'PENDENCIAS',prioridade:'PRIORIDADE',vencidos:'VENCIDOS',complementares:'COMPLEMENTARES',colaboradores:'COLABORADORES',indicadores:'INDICADORES'};
   const carregados=new Set(),origens=new Map();
-  let filtroAtivo=null,abaAtual='dashboard',requisicao=0;
+  let filtroAtivo=null,abaAtual='dashboard',requisicao=0,timerGrafico=null,graficoCarregado=false;
   const periodo=()=>({inicio:document.getElementById('dataInicio').value,fim:document.getElementById('dataFim').value});
   const chaveModulo=id=>{const p=periodo();return p.inicio+'|'+p.fim+'|'+id};
   function debounce(fn,ms){let t;return function(){clearTimeout(t);const a=arguments,c=this;t=setTimeout(()=>fn.apply(c,a),ms)}}
@@ -42,8 +42,15 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
   }
 
   function carregarGrafico(){
+    if(graficoCarregado)return;
     const p=periodo();
-    google.script.run.withSuccessHandler(renderGrafico).withFailureHandler(()=>{const el=document.getElementById('dashboardGraficoConteudo');if(el){el.className='grafico-vazio';el.textContent='Não foi possível carregar o gráfico.'}}).obterGraficoPortalV13(p.inicio,p.fim);
+    google.script.run.withSuccessHandler(r=>{graficoCarregado=true;renderGrafico(r)}).withFailureHandler(()=>{const el=document.getElementById('dashboardGraficoConteudo');if(el){el.className='grafico-vazio';el.textContent='Não foi possível carregar o gráfico.'}}).obterGraficoPortalV13(p.inicio,p.fim);
+  }
+
+  function agendarGrafico(){
+    if(graficoCarregado)return;
+    if(timerGrafico)clearTimeout(timerGrafico);
+    timerGrafico=setTimeout(()=>{timerGrafico=null;if(abaAtual==='dashboard')carregarGrafico()},700);
   }
 
   function montarShell(){
@@ -66,8 +73,8 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
 
   function carregarResumo(forcar){
     const p=periodo();if(!p.inicio||!p.fim){mostrarErro('Informe a data inicial e a data final.');return}
-    const token=++requisicao;mostrarLoading(true);limparMensagens();if(forcar){carregados.clear();dadosPortal=null}
-    google.script.run.withSuccessHandler(r=>{if(token!==requisicao)return;dadosPortal={dashboard:r.dashboard};periodoCarregadoPortal=p.inicio+'|'+p.fim;atualizarDashboard(r.dashboard);atualizarNomesAbas(r.dashboard);aplicarRotulosMenu();mostrarLoading(false);carregarGrafico();if(abaAtual!=='dashboard')carregarModulo(abaAtual,forcar)}).withFailureHandler(e=>{mostrarLoading(false);mostrarErro(e.message||e)}).obterResumoPortalV13Leve(p.inicio,p.fim,!!forcar);
+    const token=++requisicao;mostrarLoading(true);limparMensagens();if(forcar){carregados.clear();dadosPortal=null;graficoCarregado=false;if(timerGrafico){clearTimeout(timerGrafico);timerGrafico=null}}
+    google.script.run.withSuccessHandler(r=>{if(token!==requisicao)return;dadosPortal={dashboard:r.dashboard};periodoCarregadoPortal=p.inicio+'|'+p.fim;atualizarDashboard(r.dashboard);atualizarNomesAbas(r.dashboard);aplicarRotulosMenu();mostrarLoading(false);if(abaAtual==='dashboard')agendarGrafico();else carregarModulo(abaAtual,forcar)}).withFailureHandler(e=>{mostrarLoading(false);mostrarErro(e.message||e)}).obterResumoPortalV13Leve(p.inicio,p.fim,!!forcar);
   }
 
   function carregarModulo(id,forcar){
@@ -90,7 +97,7 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
   window.carregarDados=forcar=>carregarResumo(!!forcar);
   window.atualizarDadosForcado=()=>carregarResumo(true);
   window.renderizarAbaAtiva=function(){if(abaAtual!=='dashboard')carregarModulo(abaAtual,false)};
-  window.abrirAba=function(id,botao){document.querySelectorAll('.conteudo').forEach(d=>d.style.display='none');const alvo=document.getElementById(id);if(alvo)alvo.style.display='block';document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));if(botao)botao.classList.add('ativa');abaAtual=id;moverFiltro(id);if(id!=='dashboard')carregarModulo(id,false)};
+  window.abrirAba=function(id,botao){document.querySelectorAll('.conteudo').forEach(d=>d.style.display='none');const alvo=document.getElementById(id);if(alvo)alvo.style.display='block';document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));if(botao)botao.classList.add('ativa');abaAtual=id;moverFiltro(id);if(id==='dashboard')agendarGrafico();else carregarModulo(id,false)};
   window.onload=function(){montarShell();const hoje=new Date(),ini=new Date(hoje.getFullYear(),hoje.getMonth(),1),fim=new Date(hoje.getFullYear(),hoje.getMonth()+1,0);document.getElementById('dataInicio').value=formatarDataInput(ini);document.getElementById('dataFim').value=formatarDataInput(fim);document.getElementById('dataInicio').removeAttribute('onchange');document.getElementById('dataFim').removeAttribute('onchange');moverFiltro('dashboard');carregarResumo(false)};
 })();
 </script>

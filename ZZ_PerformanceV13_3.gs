@@ -1,10 +1,10 @@
 /* =========================================================
-   V13.4 - CONTEXTO GLOBAL COMPARTILHADO
+   V14.6 - CONTEXTO GLOBAL COMPARTILHADO
    Fonte + Agenda não dependem do período selecionado.
    Os módulos continuam armazenados por período.
 ========================================================= */
 
-const PERF133_PREFIXO = "ASOS_V13_4_";
+const PERF133_PREFIXO = "ASOS_V14_6_";
 const PERF133_PARTE_PROPRIEDADE = 8000;
 const PERF133_MAX_PARTES = 55;
 const PERF133_TTL_MS = 30 * 60 * 1000;
