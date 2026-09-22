@@ -342,10 +342,10 @@ function executarRegressaoFaltaRealizadaV14_5() {
 
 
 /* =========================================================
-   V14.6 - DIAGNÓSTICO DETALHADO DE PERFORMANCE
+   V14.7 - DIAGNÓSTICO DETALHADO DE PERFORMANCE
    Mede as etapas do contexto sem depender do cache anterior.
 ========================================================= */
-function diagnosticarPerformanceDetalhadaV14_6() {
+function diagnosticarPerformanceDetalhadaV14_7() {
   const etapas = [];
   const totalInicio = Date.now();
 
@@ -400,7 +400,7 @@ function diagnosticarPerformanceDetalhadaV14_6() {
   });
 
   const resultado = {
-    versao: "14.6",
+    versao: "14.7",
     duracaoTotalMs: Date.now() - totalInicio,
     colaboradores: lista.length,
     pendenciasOperacionais: (pendencias.operacionais || []).length,
@@ -416,20 +416,20 @@ function diagnosticarPerformanceDetalhadaV14_6() {
 
 
 /* =========================================================
-   V14.6 - VALIDAÇÃO ÚNICA ANTES DA PUBLICAÇÃO
+   V14.7 - VALIDAÇÃO ÚNICA ANTES DA PUBLICAÇÃO
 ========================================================= */
-function validarAntesPublicarV14_6() {
+function validarAntesPublicarV14_7() {
   const inicio = Date.now();
 
   const regrasConvocacao = executarRegressaoRegrasConvocacaoV14();
   const faltaPosterior = executarRegressaoFaltaRealizadaV14_5();
-  const performanceDetalhada = diagnosticarPerformanceDetalhadaV14_6();
+  const performanceDetalhada = diagnosticarPerformanceDetalhadaV14_7();
 
   const resultado = {
     sucesso:
       !!regrasConvocacao && regrasConvocacao.sucesso === true &&
       !!faltaPosterior && faltaPosterior.sucesso === true,
-    versao: "14.6",
+    versao: "14.7",
     duracaoTotalValidacaoMs: Date.now() - inicio,
     regrasConvocacao: {
       sucesso: !!regrasConvocacao && regrasConvocacao.sucesso === true,
