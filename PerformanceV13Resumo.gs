@@ -1,6 +1,9 @@
 /* Dashboard leve: não calcula indicadores anuais durante a abertura. */
 function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
   validarPeriodoV13_(dataInicio, dataFim);
+  if (forcarAtualizacao && typeof avancarRevisaoCacheV133_ === "function") {
+    avancarRevisaoCacheV133_();
+  }
   const chave = "RESUMO_LEVE_V3_" + dataInicio + "_" + dataFim;
 
   if (!forcarAtualizacao) {
@@ -34,7 +37,7 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
   lista.forEach(c => {
     if (noPeriodo(c.dataAgendada, dataInicio, dataFim)) {
       totalAgendados++;
-      if (ehAsoRealizado(c)) totalCompareceram++;
+      if (c.temAsoRealizadoAgenda) totalCompareceram++;
     }
     if (!c.asoRealizadoAgendaAtual && !c.asoRealizadoValido) {
       const dias = Number(c.diasParaVencer);

@@ -167,5 +167,8 @@ function salvarCachePortal(sufixo, objeto) {
 }
 
 function limparCachePortal() {
+  if (typeof avancarRevisaoCacheV133_ === "function") {
+    return avancarRevisaoCacheV133_();
+  }
   return true;
 }

@@ -138,17 +138,26 @@ function enviarConvocacoesSelecionadasGestorComCopia(matriculas, emailsGestor, d
       ? obterThreadGmailPorId(opcoes.responderThreadId)
       : null;
 
-    const opcoesEmail = {
+    const destinatariosOriginais = thread
+      ? obterDestinatariosOriginaisThread(thread)
+      : [];
+    const destinatariosEnvio = Array.from(new Set(
+      emails.concat(destinatariosOriginais)
+        .map(email => String(email || "").trim().toLowerCase())
+        .filter(email => email && email !== EMAIL_COPIA_CONVOCACOES.toLowerCase())
+    ));
+
+    if (destinatariosEnvio.length === 0) {
+      throw new Error("Não foi possível identificar os e-mails dos coordenadores.");
+    }
+
+    GmailApp.sendEmail(destinatariosEnvio.join(","), assunto, corpo.texto, {
       htmlBody: corpo.html,
       attachments: anexos,
       cc: EMAIL_COPIA_CONVOCACOES
-    };
+    });
 
-    if (thread) {
-      thread.reply(corpo.texto, opcoesEmail);
-    } else {
-      GmailApp.sendEmail(emails.join(","), assunto, corpo.texto, opcoesEmail);
-    }
+    emails.splice(0, emails.length, ...destinatariosEnvio);
 
     const threadId = thread ? thread.getId() : localizarThreadEnviada(assunto);
 
@@ -549,7 +558,7 @@ function doGet() {
     limparMensagens();
     limparStatusLote();
 
-    const tamanhoLote = 10;
+    const tamanhoLote = 30;
     let indice = 0;
     let sucesso = 0;
     let ignorados = 0;

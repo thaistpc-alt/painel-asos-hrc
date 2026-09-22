@@ -18,6 +18,98 @@ function periodoPadraoTesteV13_(dataInicio, dataFim) {
   };
 }
 
+function executarRegressaoRegrasConvocacaoV14() {
+  const resultados = [];
+
+  function testar(nome, condicao, detalhe) {
+    resultados.push({
+      teste: nome,
+      ok: !!condicao,
+      detalhe: detalhe || ""
+    });
+  }
+
+  const colaborador = {
+    mat: "TESTE_X",
+    matriculaCompleta: "2009999",
+    nome: "COLABORADOR TESTE",
+    situacao: "Férias",
+    situacaoNorm: "FERIAS",
+    dataUltimoAso: "2025-11-03",
+    dataConvocar: "2026-09-04",
+    dataAgendada: "2026-10-05",
+    proximoVencimento: "2026-11-03"
+  };
+
+  const eventos = new Map();
+  eventos.set("TESTE_X", [{
+    mat: "TESTE_X",
+    data: "2026-08-07",
+    dataBR: "07/08/2026",
+    tipo: "DEMISSIONAL",
+    tipoNorm: "DEMISSIONAL",
+    status: "ASO Realizado",
+    statusNorm: "ASO REALIZADO",
+    ehAsoRealizado: true
+  }]);
+
+  aplicarAsoRealizadoAgenda([colaborador], eventos);
+  prepararFlagsPortal([colaborador]);
+
+  testar(
+    "Demissional não encerra ciclo periódico",
+    colaborador.asoRealizadoValido === false,
+    colaborador.asosRealizadosNaoPeriodicos
+  );
+
+  const outubro = gerarListaConvocar([colaborador], "2026-10-01", "2026-10-31");
+  testar(
+    "Convocação de setembro agendada em outubro aparece em outubro",
+    outubro.length === 1 && outubro[0].grupoConvocacao === "Agendado no período",
+    outubro.length ? outubro[0].grupoConvocacao : "não listado"
+  );
+
+  const setembro = gerarListaConvocar([colaborador], "2026-09-01", "2026-09-30");
+  testar(
+    "Colaborador em férias permanece elegível no mês original",
+    setembro.length === 1 && setembro[0].grupoConvocacao === "Convocação do período",
+    setembro.length ? setembro[0].grupoConvocacao : "não listado"
+  );
+
+  const periodico = Object.assign({}, colaborador, {
+    mat: "TESTE_PERIODICO",
+    dataAgendada: "2026-10-06"
+  });
+  const eventosPeriodicos = new Map();
+  eventosPeriodicos.set("TESTE_PERIODICO", [{
+    mat: "TESTE_PERIODICO",
+    data: "2026-10-06",
+    dataBR: "06/10/2026",
+    tipo: "PERIÓDICO",
+    tipoNorm: "PERIODICO",
+    status: "ASO Realizado",
+    statusNorm: "ASO REALIZADO",
+    ehAsoRealizado: true
+  }]);
+  aplicarAsoRealizadoAgenda([periodico], eventosPeriodicos);
+  prepararFlagsPortal([periodico]);
+  testar(
+    "Periódico realizado encerra o ciclo",
+    periodico.asoRealizadoValido === true,
+    periodico.dataAsoRealizadoAgenda
+  );
+
+  const falhas = resultados.filter(r => !r.ok);
+  const resumo = {
+    sucesso: falhas.length === 0,
+    total: resultados.length,
+    falhas: falhas.length,
+    resultados: resultados
+  };
+  console.log(JSON.stringify(resumo, null, 2));
+  return resumo;
+}
+
 function executarRegressaoV13(dataInicio, dataFim) {
   const periodo = periodoPadraoTesteV13_(dataInicio, dataFim);
   dataInicio = periodo.inicio;

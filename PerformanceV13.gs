@@ -7,7 +7,7 @@
    - entrega cada módulo sob demanda.
 ========================================================= */
 
-const PERF13_PREFIXO = "ASOS_V13_2_";
+const PERF13_PREFIXO = "ASOS_V14_2_";
 const PERF13_TTL = 1800;
 const PERF13_PARTE = 80000;
 const PERF13_MAX_PARTES = 50;
@@ -111,7 +111,7 @@ function obterModuloPortalV13(modulo, dataInicio, dataFim, forcarAtualizacao) {
   return resultado;
 }
 
-function construirContextoV13_(dataInicio, dataFim, forcarAtualizacao) {
+function construirContextoV13Legado_(dataInicio, dataFim, forcarAtualizacao) {
   const chave = "CONTEXTO_" + dataInicio + "_" + dataFim;
 
   if (!forcarAtualizacao) {
@@ -238,7 +238,10 @@ function validarPeriodoV13_(inicio, fim) {
 }
 
 function chaveCacheV13_(sufixo) {
-  return (PERF13_PREFIXO + String(sufixo || "").replace(/[^A-Za-z0-9_\-]/g, "_"))
+  const revisao = typeof obterRevisaoCacheV133_ === "function"
+    ? obterRevisaoCacheV133_()
+    : "SEM_REVISAO";
+  return (PERF13_PREFIXO + revisao + "_" + String(sufixo || "").replace(/[^A-Za-z0-9_\-]/g, "_"))
     .substring(0, 220);
 }
 
@@ -410,3 +413,4 @@ function diagnosticarCacheV13(dataInicio, dataFim) {
   console.log(JSON.stringify(resultado, null, 2));
   return resultado;
 }
+

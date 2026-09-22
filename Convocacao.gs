@@ -91,6 +91,30 @@ function registrarConvocacaoBaixada(mat) {
   return true;
 }
 
+function registrarEmailsConvocacaoEnviados(matriculas) {
+  const selecionadas = new Set((matriculas || []).map(m => String(m || "").trim()).filter(Boolean));
+  if (selecionadas.size === 0) return 0;
+  const aba = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.ABA_FONTE);
+  if (!aba || aba.getLastRow() < 2) return 0;
+  const totalLinhas = aba.getLastRow() - 1;
+  const mats = aba.getRange(2, COL.MAT, totalLinhas, 1).getDisplayValues();
+  const controle = aba.getRange(2, COL.CONVOCACAO_BAIXADA, totalLinhas, 1);
+  const valores = controle.getDisplayValues();
+  let marcadas = 0;
+  mats.forEach((linha, indice) => {
+    if (!selecionadas.has(String(linha[0] || "").trim())) return;
+    valores[indice][0] = "✓";
+    marcadas++;
+  });
+  if (marcadas > 0) controle.setValues(valores);
+  return marcadas;
+}
+
+
+function marcarEmailsAgostoEnviados() {
+  return reconstruirHistoricoEnviosAgosto2026();
+}
+
 function gerarConvocacaoIndividual(mat) {
   const lista = lerFontePainel();
   const matricula = String(mat).trim();
@@ -107,8 +131,7 @@ function gerarConvocacaoIndividual(mat) {
   return gerarConvocacaoPorColaborador(colaborador, null);
 }
 
-function gerarConvocacaoPorColaborador(colaborador, dadosAgenda, opcoes) {
-  opcoes = opcoes || {};
+function criarContextoGeracaoConvocacoes() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const modeloOriginal = ss.getSheetByName(CONFIG.ABA_MODELO);
 
@@ -116,12 +139,33 @@ function gerarConvocacaoPorColaborador(colaborador, dadosAgenda, opcoes) {
     throw new Error("Aba CONVOCAÇÃO não encontrada.");
   }
 
+  const nomeTemp = "TEMP_CONVOCACOES_" + new Date().getTime();
+  return {
+    ss: ss,
+    modeloTemp: modeloOriginal.copyTo(ss).setName(nomeTemp),
+    pasta: DriveApp.getFolderById(CONFIG.PASTA_PDFS_ID)
+  };
+}
+
+function encerrarContextoGeracaoConvocacoes(contexto) {
+  if (!contexto || !contexto.ss || !contexto.modeloTemp) return;
+  try {
+    contexto.ss.deleteSheet(contexto.modeloTemp);
+  } catch (e) {
+    console.warn("Não foi possível excluir a aba temporária: " + e.message);
+  }
+}
+
+function gerarConvocacaoPorColaborador(colaborador, dadosAgenda, opcoes) {
+  opcoes = opcoes || {};
+  const contextoProprio = !opcoes.contextoGeracao;
+  const contexto = opcoes.contextoGeracao || criarContextoGeracaoConvocacoes();
+  const ss = contexto.ss;
+  const modeloTemp = contexto.modeloTemp;
+
   const turno = colaborador.dataAgendada
     ? buscarUltimoTurnoAgenda(colaborador.mat, opcoes.turnosAgenda || dadosAgenda)
     : "";
-
-  const nomeTemp = "TEMP_CONVOCACAO_" + colaborador.mat + "_" + new Date().getTime();
-  const modeloTemp = modeloOriginal.copyTo(ss).setName(nomeTemp);
 
   try {
     modeloTemp.getRange("C10:C13").setValues([
@@ -152,8 +196,7 @@ function gerarConvocacaoPorColaborador(colaborador, dadosAgenda, opcoes) {
 
     const pdf = exportarAbaComoPDF(ss.getId(), modeloTemp.getSheetId(), nomeArquivo);
 
-    const pasta = DriveApp.getFolderById(CONFIG.PASTA_PDFS_ID);
-    const arquivo = pasta.createFile(pdf).setName(nomeArquivo + ".pdf");
+    const arquivo = contexto.pasta.createFile(pdf).setName(nomeArquivo + ".pdf");
 
     registrarConvocacaoBaixada(colaborador.mat);
 
@@ -170,13 +213,13 @@ function gerarConvocacaoPorColaborador(colaborador, dadosAgenda, opcoes) {
     };
 
     if (opcoes.incluirAnexo) {
-      resultado.anexo = arquivo.getBlob().setName(arquivo.getName());
+      resultado.anexo = pdf.copyBlob().setName(arquivo.getName());
     }
 
     return resultado;
 
   } finally {
-    ss.deleteSheet(modeloTemp);
+    if (contextoProprio) encerrarContextoGeracaoConvocacoes(contexto);
   }
 }
 
@@ -331,8 +374,9 @@ function gerarConvocacoesSelecionadasLote(matriculas, dataInicio, dataFim) {
   return resultados;
 }
 
-const LIMITE_ANEXOS_EMAIL_GESTOR = 10;
+const LIMITE_ANEXOS_EMAIL_GESTOR = 30;
 const PREFIXO_HISTORICO_CONVOCACAO = "HIST_ENVIO_CONVOCACAO_";
+const EMAIL_COPIA_CONVOCACOES_GESTOR = "thais.tpc@isgh.org.br";
 
 function validarEmailsGestor(emailsGestor) {
   const emails = String(emailsGestor || "")
@@ -378,62 +422,69 @@ function enviarConvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInici
   const resultados = [];
   const anexos = [];
   const enviados = [];
+  let contextoGeracao = null;
 
-  selecionadas.forEach(mat => {
-    const colaborador = mapa.get(mat);
+  try {
+    selecionadas.forEach(mat => {
+      const colaborador = mapa.get(mat);
 
-    if (!colaborador) {
-      resultados.push({
-        sucesso: false,
-        ignorado: false,
-        matricula: mat,
-        colaborador: "",
-        erro: "Colaborador não encontrado"
-      });
-      return;
-    }
+      if (!colaborador) {
+        resultados.push({
+          sucesso: false,
+          ignorado: false,
+          matricula: mat,
+          colaborador: "",
+          erro: "Colaborador não encontrado"
+        });
+        return;
+      }
 
-    const motivo = motivoNaoBaixarConvocacao(colaborador, dataInicio, dataFim);
+      const motivo = motivoNaoBaixarConvocacao(colaborador, dataInicio, dataFim);
 
-    if (motivo) {
-      resultados.push({
-        sucesso: false,
-        ignorado: true,
-        colaborador: colaborador.nome,
-        matricula: colaborador.mat,
-        situacao: colaborador.situacao,
-        dataAgendadaBR: colaborador.dataAgendadaBR,
-        motivo: motivo
-      });
-      return;
-    }
+      if (motivo) {
+        resultados.push({
+          sucesso: false,
+          ignorado: true,
+          colaborador: colaborador.nome,
+          matricula: colaborador.mat,
+          situacao: colaborador.situacao,
+          dataAgendadaBR: colaborador.dataAgendadaBR,
+          motivo: motivo
+        });
+        return;
+      }
 
-    try {
-      const pdf = gerarConvocacaoPorColaborador(colaborador, dadosAgenda, {
-        turnosAgenda: turnosAgenda,
-        incluirAnexo: true
-      });
+      try {
+        if (!contextoGeracao) contextoGeracao = criarContextoGeracaoConvocacoes();
+        const pdf = gerarConvocacaoPorColaborador(colaborador, dadosAgenda, {
+          turnosAgenda: turnosAgenda,
+          incluirAnexo: true,
+          contextoGeracao: contextoGeracao
+        });
 
-      anexos.push(pdf.anexo);
-      enviados.push(pdf);
-      resultados.push({
-        sucesso: true,
-        ignorado: false,
-        colaborador: colaborador.nome,
-        matricula: colaborador.mat,
-        arquivo: pdf.arquivo,
-        url: pdf.url
-      });
-    } catch (e) {
-      resultados.push({
-        sucesso: false,
-        ignorado: false,
-        colaborador: colaborador.nome,
-        matricula: colaborador.mat,
-        erro: e.message
-      });
-    }
-  });
+        anexos.push(pdf.anexo);
+        enviados.push(pdf);
+        resultados.push({
+          sucesso: true,
+          ignorado: false,
+          colaborador: colaborador.nome,
+          matricula: colaborador.mat,
+          arquivo: pdf.arquivo,
+          url: pdf.url
+        });
+      } catch (e) {
+        resultados.push({
+          sucesso: false,
+          ignorado: false,
+          colaborador: colaborador.nome,
+          matricula: colaborador.mat,
+          erro: e.message
+        });
+      }
+    });
+  } finally {
+    encerrarContextoGeracaoConvocacoes(contextoGeracao);
+  }
 
   if (anexos.length > 0) {
     const assunto = montarAssuntoEmailGestor(dataInicio, dataFim);
@@ -449,33 +500,52 @@ function enviarConvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInici
     const thread = opcoes.responderThreadId ? obterThreadGmailPorId(opcoes.responderThreadId) : null;
 
     if (thread) {
-      thread.reply(corpo.texto, {
+      const destinatariosOriginais = obterDestinatariosOriginaisThread(thread);
+      const destinatariosEnvio = Array.from(new Set(
+        emails.concat(destinatariosOriginais)
+          .map(email => String(email || "").trim().toLowerCase())
+          .filter(email => email && email !== EMAIL_COPIA_CONVOCACOES_GESTOR.toLowerCase())
+      ));
+
+      if (destinatariosEnvio.length === 0) {
+        throw new Error("Não foi possível identificar os e-mails dos coordenadores.");
+      }
+
+      GmailApp.sendEmail(destinatariosEnvio.join(","), assunto, corpo.texto, {
         htmlBody: corpo.html,
-        attachments: anexos
+        attachments: anexos,
+        cc: EMAIL_COPIA_CONVOCACOES_GESTOR
       });
+
+      emails.splice(0, emails.length, ...destinatariosEnvio);
     } else {
       GmailApp.sendEmail(emails.join(","), assunto, corpo.texto, {
         htmlBody: corpo.html,
-        attachments: anexos
+        attachments: anexos,
+        cc: EMAIL_COPIA_CONVOCACOES_GESTOR
       });
     }
 
-    const threadId = thread ? thread.getId() : localizarThreadEnviada(assunto);
+    // A pesquisa no Gmail é adiada para uma eventual reconvocação. Fazer a
+    // busca logo após o envio adicionava vários segundos ao caminho crítico.
+    const threadId = thread ? thread.getId() : "";
 
     resultados.forEach(r => {
       if (r.sucesso) {
         r.emailEnviado = true;
         r.destinatarios = emails.join(", ");
-        registrarHistoricoEnvioConvocacao(r.matricula, {
-          destinatarios: emails,
-          assunto: assunto,
-          threadId: threadId,
-          arquivo: r.arquivo,
-          url: r.url,
-          reconvocacao: !!opcoes.reconvocacao
-        });
       }
     });
+
+    registrarHistoricoEnviosConvocacaoEmLote(resultados, {
+      destinatarios: emails,
+      assunto: assunto,
+      threadId: threadId,
+      reconvocacao: !!opcoes.reconvocacao
+    });
+    registrarEmailsConvocacaoEnviados(
+      resultados.filter(r => r && r.sucesso).map(r => r.matricula)
+    );
   }
 
   return resultados;
@@ -572,6 +642,28 @@ function escaparHtmlEmail(valor) {
     .replace(/'/g, "&#039;");
 }
 
+function extrairEmailsCabecalhoGmail(valor) {
+  const encontrados = String(valor || "").match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) || [];
+  return Array.from(new Set(encontrados.map(email => email.toLowerCase())));
+}
+
+function obterDestinatariosOriginaisThread(thread) {
+  if (!thread) return [];
+
+  try {
+    const mensagens = thread.getMessages();
+    if (!mensagens || mensagens.length === 0) return [];
+
+    const original = mensagens[0];
+    return extrairEmailsCabecalhoGmail(
+      [original.getTo(), original.getCc()].filter(Boolean).join(",")
+    );
+  } catch (e) {
+    console.warn("Não foi possível recuperar os destinatários originais: " + e.message);
+    return [];
+  }
+}
+
 function obterThreadGmailPorId(threadId) {
   if (!threadId) return null;
   try {
@@ -626,6 +718,39 @@ function registrarHistoricoEnvioConvocacao(mat, dados) {
   }));
 }
 
+function registrarHistoricoEnviosConvocacaoEmLote(resultados, dados) {
+  const enviados = (resultados || []).filter(r => r && r.sucesso && r.matricula);
+  if (enviados.length === 0) return;
+
+  const props = PropertiesService.getScriptProperties();
+  const existentes = props.getProperties();
+  const atualizacoes = {};
+  const agora = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "yyyy-MM-dd HH:mm:ss");
+
+  enviados.forEach(r => {
+    const chave = chaveHistoricoConvocacao(r.matricula);
+    let atual = {};
+    try {
+      atual = JSON.parse(existentes[chave] || "{}") || {};
+    } catch (e) {
+      atual = {};
+    }
+
+    atualizacoes[chave] = JSON.stringify({
+      totalEnvios: (Number(atual.totalEnvios) || 0) + 1,
+      ultimoEnvioEm: agora,
+      destinatarios: dados.destinatarios || atual.destinatarios || [],
+      assunto: dados.assunto || atual.assunto || "",
+      threadId: dados.threadId || atual.threadId || "",
+      ultimoArquivo: r.arquivo || "",
+      ultimaUrl: r.url || "",
+      teveReconvocacao: !!dados.reconvocacao || !!atual.teveReconvocacao
+    });
+  });
+
+  props.setProperties(atualizacoes, false);
+}
+
 function obterResumoHistoricoEnviosConvocacao(matriculas) {
   const props = PropertiesService.getScriptProperties();
   const propriedades = props.getProperties();
@@ -652,6 +777,93 @@ function obterResumoHistoricoEnviosConvocacao(matriculas) {
   });
 
   return resumo;
+}
+
+/** Reconstrói, sem reenviar mensagens, o histórico de e-mails de agosto/2026. */
+function reconstruirHistoricoEnviosAgosto2026() {
+  const inicio = "2026-08-01";
+  const fim = "2026-08-31";
+  const elegiveis = new Set(
+    lerFontePainel()
+      .filter(c => noPeriodo(c.dataConvocar, inicio, fim))
+      .map(c => String(c.mat || "").trim())
+      .filter(Boolean)
+  );
+  const encontrados = {};
+  const threads = GmailApp.search('in:sent subject:"Convocações de ASO - SESMT HRC"', 0, 500);
+
+  threads.forEach(thread => {
+    thread.getMessages().forEach(mensagem => {
+      const assunto = String(mensagem.getSubject() || "");
+      if (!assunto.includes("Convocações de ASO - SESMT HRC")) return;
+
+      const corpo = String(mensagem.getPlainBody() || "");
+      const matriculasMensagem = new Set();
+      const regex = /Matr[ií]cula\s+(\d+)/gi;
+      let match;
+      while ((match = regex.exec(corpo)) !== null) {
+        const mat = String(match[1] || "").trim();
+        if (elegiveis.has(mat)) matriculasMensagem.add(mat);
+      }
+
+      matriculasMensagem.forEach(mat => {
+        const data = mensagem.getDate();
+        const atual = encontrados[mat];
+        if (!atual || data.getTime() > atual.data.getTime()) {
+          encontrados[mat] = {
+            data: data,
+            destinatarios: String(mensagem.getTo() || "")
+              .split(",")
+              .map(email => email.trim())
+              .filter(Boolean),
+            assunto: assunto,
+            threadId: thread.getId()
+          };
+        }
+      });
+    });
+  });
+
+  const props = PropertiesService.getScriptProperties();
+  const existentes = props.getProperties();
+  const atualizacoes = {};
+  const marcadas = [];
+  const preservadas = [];
+
+  Object.keys(encontrados).forEach(mat => {
+    const chave = chaveHistoricoConvocacao(mat);
+    if (existentes[chave]) {
+      preservadas.push(mat);
+      return;
+    }
+
+    const envio = encontrados[mat];
+    atualizacoes[chave] = JSON.stringify({
+      totalEnvios: 1,
+      ultimoEnvioEm: Utilities.formatDate(envio.data, CONFIG.TIMEZONE, "yyyy-MM-dd HH:mm:ss"),
+      destinatarios: envio.destinatarios,
+      assunto: envio.assunto,
+      threadId: envio.threadId,
+      ultimoArquivo: "",
+      ultimaUrl: "",
+      teveReconvocacao: false
+    });
+    marcadas.push(mat);
+  });
+
+  if (Object.keys(atualizacoes).length > 0) {
+    props.setProperties(atualizacoes, false);
+  }
+  registrarEmailsConvocacaoEnviados(Object.keys(encontrados));
+
+  const resultado = {
+    totalElegiveisAgosto: elegiveis.size,
+    localizadasNosEmails: Object.keys(encontrados).length,
+    marcadas: marcadas.sort(),
+    preservadas: preservadas.sort()
+  };
+  console.log(JSON.stringify(resultado));
+  return resultado;
 }
 
 function enviarReconvocacaoPendenciaGestor(mat, emailsGestor, dataInicio, dataFim, dataAnteriorBR) {
@@ -707,3 +919,4 @@ function exportarAbaComoPDF(spreadsheetId, sheetId, nomeArquivo) {
 
   return resposta.getBlob().setName(nomeArquivo + ".pdf");
 }
+

@@ -30,7 +30,8 @@ function lerFontePainel() {
         ? calcularDiferencaDias(formatarDataISO(l[COL.PROXIMO_VENCIMENTO - 1]), obterHojeISO())
         : Number(diasRaw) || 0;
 
-      const statusAgenda = valorTexto(l[COL.STATUS_AGENDA - 1]);
+      const informacoesAgenda = valorTexto(l[COL.STATUS_AGENDA - 1]);
+      const statusAgenda = "";
       const statusGeral = valorTexto(l[COL.STATUS_GERAL - 1]);
       const situacao = valorTexto(l[COL.SITUACAO - 1]);
 
@@ -77,12 +78,12 @@ function lerFontePainel() {
 
         statusAgenda: statusAgenda,
         statusAgendaNorm: normalizarTexto(statusAgenda),
+        informacoesAgenda: informacoesAgenda,
 
         statusGeral: statusGeral,
         statusGeralNorm: normalizarTexto(statusGeral),
 
-        // Zera a coluna Convocação no portal.
-        convocacaoBaixada: ""
+        convocacaoBaixada: valorTexto(l[COL.CONVOCACAO_BAIXADA - 1])
       };
     });
 }
@@ -115,7 +116,8 @@ function ehNaoCompareceuAso(c) {
 }
 
 function ehReagendouAso(c) {
-  return c.statusAgendaNorm === "REAGENDOU" || c.statusAgendaNorm.includes("REAGENDOU");
+  const status = normalizarTexto(c && c.statusAgendaNorm || "");
+  return status === "REAGENDOU" || status.includes("REAGENDOU");
 }
 
 function ehNaoCompareceuOuReagendou(c) {
@@ -123,7 +125,8 @@ function ehNaoCompareceuOuReagendou(c) {
 }
 
 function ehVencido(c) {
-  return c.statusGeralNorm.includes("VENCIDO") || Number(c.diasParaVencer) < 0;
+  const status = normalizarTexto(c && c.statusGeralNorm || "");
+  return status.includes("VENCIDO") || Number(c && c.diasParaVencer) < 0;
 }
 
 function ehAtrasadoAtivo(c) {
@@ -267,7 +270,7 @@ function obterDadosPortal(dataInicio, dataFim, forcarAtualizacao) {
 function prepararFlagsPortal(lista) {
   (lista || []).forEach(c => {
     c.ativoAtual = ehAtivo(c);
-    c.asoRealizadoAgendaAtual = ehAsoRealizado(c);
+    c.asoRealizadoAgendaAtual = !!c.temAsoRealizadoAgenda;
     c.asoRealizadoValido = temAsoRealizadoValido(c);
     c.vencidoAtual = ehVencido(c);
     c.atrasadoAtivo = c.ativoAtual && c.vencidoAtual;
@@ -275,14 +278,22 @@ function prepararFlagsPortal(lista) {
   return lista || [];
 }
 
+function ehEventoPeriodicoAgenda(evento) {
+  const tipo = normalizarTexto(evento && (evento.tipoNorm || evento.tipo) || "");
+  return tipo.includes("PERIODIC");
+}
+
 function aplicarHistoricoEnviosPendencias(dadosPortal) {
-  if (!dadosPortal || !dadosPortal.pendencias) return dadosPortal;
+  if (!dadosPortal) return dadosPortal;
 
   const listas = [
-    dadosPortal.pendencias.necessitaReconvocacao || [],
-    dadosPortal.pendencias.agendadosReagendados || [],
-    dadosPortal.pendencias.operacionais || [],
-    dadosPortal.pendencias.todos || [],
+    dadosPortal.convocar && dadosPortal.convocar.todos || [],
+    dadosPortal.convocar && dadosPortal.convocar.pendentes || [],
+    dadosPortal.convocar && dadosPortal.convocar.realizados || [],
+    dadosPortal.pendencias && dadosPortal.pendencias.necessitaReconvocacao || [],
+    dadosPortal.pendencias && dadosPortal.pendencias.agendadosReagendados || [],
+    dadosPortal.pendencias && dadosPortal.pendencias.operacionais || [],
+    dadosPortal.pendencias && dadosPortal.pendencias.todos || [],
     dadosPortal.faltosos || []
   ];
 
@@ -345,15 +356,56 @@ function aplicarOcorrenciasAgenda(lista, eventosPorMatricula) {
 function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
   (lista || []).forEach(c => {
     const eventos = obterEventosPorColaborador(eventosPorMatricula, c);
-    const realizados = eventos
+    const eventosOrdenados = eventos
+      .filter(e => e.data)
+      .sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")));
+    const ultimoEvento = eventosOrdenados.length
+      ? eventosOrdenados[eventosOrdenados.length - 1]
+      : null;
+
+    // O status operacional reflete somente o último registro da agenda.
+    // Se o registro mais recente ainda não possui status, permanece vazio.
+    c.statusAgenda = ultimoEvento ? valorTexto(ultimoEvento.status) : "";
+    c.statusAgendaNorm = normalizarTexto(c.statusAgenda);
+
+    const realizadosTodos = eventos
       .filter(e => e.ehAsoRealizado)
       .filter(e => e.data)
       .sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")));
+
+    const realizados = realizadosTodos.filter(ehEventoPeriodicoAgenda);
+
+    c.asosRealizadosNaoPeriodicos = realizadosTodos
+      .filter(e => !ehEventoPeriodicoAgenda(e))
+      .map(e => ({
+        data: e.data || "",
+        dataBR: e.dataBR || formatarDataBR(e.data),
+        tipo: e.tipo || "",
+        status: e.status || ""
+      }));
+
+    /* A coluna Q já descreve periódicos, demissionais e retornos. Quando o
+       registro realizado veio com outro tipo (por exemplo, CONSULTA), a
+       planilha pode deixar a informação vazia e o painel acabava exibindo
+       apenas "ASO Realizado". Nesse caso, complementamos com a data real. */
+    if (!valorTexto(c.informacoesAgenda) && realizadosTodos.length) {
+      const ultimoRealizado = realizadosTodos[realizadosTodos.length - 1];
+      const tipoRealizado = normalizarTexto(ultimoRealizado.tipo || "");
+      const dataRealizadaBR = ultimoRealizado.dataBR || formatarDataBR(ultimoRealizado.data);
+      let descricaoRealizacao = "ASO realizado";
+
+      if (tipoRealizado.includes("DEMISSIONAL")) descricaoRealizacao = "ASO demissional realizado";
+      else if (tipoRealizado.includes("RETORNO")) descricaoRealizacao = "ASO de retorno realizado";
+      else if (tipoRealizado.includes("PERIODICO")) descricaoRealizacao = "ASO periódico realizado";
+
+      c.informacoesAgenda = descricaoRealizacao + (dataRealizadaBR ? " em " + dataRealizadaBR : "");
+    }
 
     if (realizados.length === 0) {
       c.temAsoRealizadoAgenda = false;
       c.dataAsoRealizadoAgenda = "";
       c.dataAsoRealizadoAgendaBR = "";
+      c.tipoAsoRealizadoAgenda = "";
       return;
     }
 
@@ -362,6 +414,7 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
     c.temAsoRealizadoAgenda = true;
     c.dataAsoRealizadoAgenda = ultimo.data;
     c.dataAsoRealizadoAgendaBR = ultimo.dataBR || formatarDataBR(ultimo.data);
+    c.tipoAsoRealizadoAgenda = ultimo.tipo || "Periódico";
   });
 
   return lista || [];
@@ -369,8 +422,6 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
 
 function temAsoRealizadoValido(c) {
   if (!c) return false;
-
-  if (ehAsoRealizado(c)) return true;
 
   const dataRealizado = c.dataAsoRealizadoAgenda || "";
   if (!dataRealizado) return false;
@@ -751,11 +802,39 @@ function obterResumoSincronizacaoAgenda() {
 }
 
 function gerarListaConvocar(lista, dataInicio, dataFim) {
-  return lista
-    .filter(c => noPeriodo(c.dataConvocar, dataInicio, dataFim))
+  return (lista || [])
+    .filter(c => situacaoPermiteBaixarConvocacao(c))
+    .map(c => {
+      let grupo = "";
+      let dataReferencia = "";
+
+      if (noPeriodo(c.dataAgendada, dataInicio, dataFim)) {
+        grupo = "Agendado no período";
+        dataReferencia = c.dataAgendada;
+      } else if (noPeriodo(c.dataConvocar, dataInicio, dataFim)) {
+        grupo = "Convocação do período";
+        dataReferencia = c.dataConvocar;
+      } else if (
+        c.dataConvocar &&
+        c.dataConvocar < dataInicio &&
+        (!c.dataAgendada || c.dataAgendada < dataInicio)
+      ) {
+        grupo = "Pendência anterior";
+        dataReferencia = c.dataConvocar;
+      }
+
+      if (!grupo) return null;
+
+      return Object.assign({}, c, {
+        grupoConvocacao: grupo,
+        dataReferenciaConvocacao: dataReferencia,
+        dataReferenciaConvocacaoBR: formatarDataBR(dataReferencia)
+      });
+    })
+    .filter(Boolean)
     .sort((a, b) => {
-      const dataA = a.dataConvocar || "";
-      const dataB = b.dataConvocar || "";
+      const dataA = a.dataReferenciaConvocacao || a.dataConvocar || "";
+      const dataB = b.dataReferenciaConvocacao || b.dataConvocar || "";
 
       if (dataA !== dataB) return dataA.localeCompare(dataB);
 
@@ -773,9 +852,8 @@ function ordenarPorDataAgendada(a, b) {
 }
 
 function gerarExamesComplementares(lista, dataInicio, dataFim) {
-  return (lista || [])
+  return gerarListaConvocar(lista, dataInicio, dataFim)
     .filter(c => colaboradorExigeExameComplementar(c))
-    .filter(c => noPeriodo(c.dataConvocar, dataInicio, dataFim))
     .map(c => Object.assign({}, c, {
       grupoComplementar: obterGrupoExameComplementar(c),
       prioridadeComplementar: definirPrioridadeComplementar(c)
@@ -856,3 +934,4 @@ function definirStatusAsoColaborador(c, dias) {
 
   return { texto: "Em dias", classe: "baixa" };
 }
+

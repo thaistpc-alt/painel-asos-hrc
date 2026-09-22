@@ -9,6 +9,23 @@ const PERF133_PARTE_PROPRIEDADE = 8000;
 const PERF133_MAX_PARTES = 55;
 const PERF133_TTL_MS = 30 * 60 * 1000;
 const PERF133_CHAVE_CONTEXTO = "CONTEXTO_GLOBAL";
+const PERF133_PROP_REVISAO = "ASOS_V14_REVISAO_CACHE";
+var PERF133_REVISAO_MEMORIA = "";
+
+function obterRevisaoCacheV133_() {
+  if (PERF133_REVISAO_MEMORIA) return PERF133_REVISAO_MEMORIA;
+  const propriedades = PropertiesService.getScriptProperties();
+  PERF133_REVISAO_MEMORIA = propriedades.getProperty(PERF133_PROP_REVISAO) || "V14_INICIAL";
+  return PERF133_REVISAO_MEMORIA;
+}
+
+function avancarRevisaoCacheV133_() {
+  const revisao = "V14_" + new Date().getTime();
+  PropertiesService.getScriptProperties().setProperty(PERF133_PROP_REVISAO, revisao);
+  PERF133_REVISAO_MEMORIA = revisao;
+  PERF13_MEMORIA = {};
+  return revisao;
+}
 
 /* Compatibilidade do Apps Script com gzip. */
 desserializarCacheV13_ = function(base64) {
@@ -19,13 +36,30 @@ desserializarCacheV13_ = function(base64) {
 };
 
 function chaveContextoV133_() {
-  return PERF133_PREFIXO + PERF133_CHAVE_CONTEXTO;
+  return PERF133_PREFIXO + obterRevisaoCacheV133_() + "_" + PERF133_CHAVE_CONTEXTO;
+}
+
+function limparContextosAntigosPropriedadesV133_(propriedades, chaveAtual) {
+  const todas = propriedades.getProperties();
+  let alterado = false;
+  Object.keys(todas).forEach(function(chave) {
+    if (
+      chave.indexOf(PERF133_PREFIXO) === 0 &&
+      chave.indexOf(PERF133_CHAVE_CONTEXTO) >= 0 &&
+      chave.indexOf(chaveAtual + "_") !== 0
+    ) {
+      delete todas[chave];
+      alterado = true;
+    }
+  });
+  if (alterado) propriedades.setProperties(todas, true);
 }
 
 function salvarContextoPropriedadesV133_(contexto) {
   try {
     const propriedades = PropertiesService.getScriptProperties();
     const chave = chaveContextoV133_();
+    limparContextosAntigosPropriedadesV133_(propriedades, chave);
     const base64 = serializarCacheV13_(contexto);
     const total = Math.ceil(base64.length / PERF133_PARTE_PROPRIEDADE);
     if (total < 1 || total > PERF133_MAX_PARTES) return false;
@@ -115,6 +149,8 @@ function construirContextoV13_(dataInicio, dataFim, forcarAtualizacao) {
     duracaoProcessamentoMs: Date.now() - inicio
   };
 
+  // CacheService é o caminho rápido. O fallback persistente só é gravado
+  // quando o cache principal realmente não comporta o contexto.
   const salvoNoCache = salvarCacheV13_(chave, contexto);
   if (!salvoNoCache) salvarContextoPropriedadesV133_(contexto);
   return contexto;
