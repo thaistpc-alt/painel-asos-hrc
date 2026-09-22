@@ -36,7 +36,10 @@ function formatarDataISO(valor) {
   if (!valor) return "";
 
   if (Object.prototype.toString.call(valor) === "[object Date]" && !isNaN(valor)) {
-    return Utilities.formatDate(valor, CONFIG.TIMEZONE, "yyyy-MM-dd");
+    const ano = valor.getFullYear();
+    const mes = String(valor.getMonth() + 1).padStart(2, "0");
+    const dia = String(valor.getDate()).padStart(2, "0");
+    return ano + "-" + mes + "-" + dia;
   }
 
   const texto = String(valor).trim();
@@ -63,7 +66,11 @@ function formatarDataISO(valor) {
 
   const convertido = new Date(texto);
   const resultado = !isNaN(convertido)
-    ? Utilities.formatDate(convertido, CONFIG.TIMEZONE, "yyyy-MM-dd")
+    ? [
+        convertido.getFullYear(),
+        String(convertido.getMonth() + 1).padStart(2, "0"),
+        String(convertido.getDate()).padStart(2, "0")
+      ].join("-")
     : "";
 
   return memorizarUtilitario(MEMO_DATA_ISO, texto, resultado);
@@ -88,18 +95,40 @@ function noPeriodo(dataISO, inicioISO, fimISO) {
 
 function adicionarMeses(dataISO, meses) {
   if (!dataISO || !meses) return "";
-  const data = dataISOParaDate(dataISO);
-  if (!data) return "";
-  data.setMonth(data.getMonth() + Number(meses));
-  return Utilities.formatDate(data, CONFIG.TIMEZONE, "yyyy-MM-dd");
+  const texto = formatarDataISO(dataISO);
+  if (!texto) return "";
+
+  const data = new Date(Date.UTC(
+    Number(texto.substring(0, 4)),
+    Number(texto.substring(5, 7)) - 1,
+    Number(texto.substring(8, 10))
+  ));
+  data.setUTCMonth(data.getUTCMonth() + Number(meses));
+
+  return [
+    data.getUTCFullYear(),
+    String(data.getUTCMonth() + 1).padStart(2, "0"),
+    String(data.getUTCDate()).padStart(2, "0")
+  ].join("-");
 }
 
 function calcularDiferencaDias(dataFinalISO, dataInicialISO) {
-  if (!dataFinalISO || !dataInicialISO) return null;
-  const final = dataISOParaDate(dataFinalISO);
-  const inicial = dataISOParaDate(dataInicialISO);
-  if (!final || !inicial) return null;
-  return Math.round((final - inicial) / 86400000);
+  const finalTexto = formatarDataISO(dataFinalISO);
+  const inicialTexto = formatarDataISO(dataInicialISO);
+  if (!finalTexto || !inicialTexto) return null;
+
+  const finalUTC = Date.UTC(
+    Number(finalTexto.substring(0, 4)),
+    Number(finalTexto.substring(5, 7)) - 1,
+    Number(finalTexto.substring(8, 10))
+  );
+  const inicialUTC = Date.UTC(
+    Number(inicialTexto.substring(0, 4)),
+    Number(inicialTexto.substring(5, 7)) - 1,
+    Number(inicialTexto.substring(8, 10))
+  );
+
+  return Math.round((finalUTC - inicialUTC) / 86400000);
 }
 
 function obterHojeISO() {
