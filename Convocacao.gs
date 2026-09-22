@@ -11,8 +11,9 @@ function lerAgendaDados() {
   const ultimaLinha = aba.getLastRow();
   if (ultimaLinha < 3) return [];
 
-  const ultimaColuna = aba.getLastColumn();
-  return aba.getRange(3, 1, ultimaLinha - 2, ultimaColuna).getValues();
+  // Para localizar turno são necessárias apenas as colunas D:I.
+  // Evita ler toda a largura da AGENDA em cada lote de PDFs.
+  return aba.getRange(3, 4, ultimaLinha - 2, 6).getValues();
 }
 
 function buscarUltimoTurnoAgenda(mat, dadosAgenda) {
@@ -24,45 +25,45 @@ function buscarUltimoTurnoAgenda(mat, dadosAgenda) {
 
   if (!dados || dados.length === 0) return "";
 
-  const COL_DATA_AGENDA = 4;
-  const COL_MAT_AGENDA = 8;
-  const COL_TURNO_AGENDA = 9;
-
+  // lerAgendaDados devolve D:I => data=0, matrícula=4, turno=5.
+  const IDX_DATA = 0;
+  const IDX_MAT = 4;
+  const IDX_TURNO = 5;
   const matricula = String(mat).trim();
+  let melhorData = new Date(0);
+  let turno = "";
 
-  const registros = dados
-    .filter(l => String(l[COL_MAT_AGENDA - 1]).trim() === matricula)
-    .filter(l => l[COL_DATA_AGENDA - 1])
-    .sort((a, b) => {
-      const dataB = new Date(limparDataParaOrdenacao(b[COL_DATA_AGENDA - 1]));
-      const dataA = new Date(limparDataParaOrdenacao(a[COL_DATA_AGENDA - 1]));
-      return dataB - dataA;
-    });
+  dados.forEach(l => {
+    if (String(l[IDX_MAT] || "").trim() !== matricula || !l[IDX_DATA]) return;
+    const data = limparDataParaOrdenacao(l[IDX_DATA]);
+    if (data >= melhorData) {
+      melhorData = data;
+      turno = valorTexto(l[IDX_TURNO]);
+    }
+  });
 
-  if (registros.length === 0) return "";
-
-  return registros[0][COL_TURNO_AGENDA - 1] || "";
+  return turno;
 }
 
 function montarUltimosTurnosAgenda(dadosAgenda) {
   const dados = dadosAgenda || lerAgendaDados();
   const mapa = new Map();
 
-  const COL_DATA_AGENDA = 4;
-  const COL_MAT_AGENDA = 8;
-  const COL_TURNO_AGENDA = 9;
+  const IDX_DATA = 0;
+  const IDX_MAT = 4;
+  const IDX_TURNO = 5;
 
   dados.forEach(l => {
-    const mat = String(l[COL_MAT_AGENDA - 1] || "").trim();
+    const mat = String(l[IDX_MAT] || "").trim();
     if (!mat) return;
 
-    const data = limparDataParaOrdenacao(l[COL_DATA_AGENDA - 1]);
+    const data = limparDataParaOrdenacao(l[IDX_DATA]);
     const atual = mapa.get(mat);
 
     if (!atual || data >= atual.data) {
       mapa.set(mat, {
         data: data,
-        turno: valorTexto(l[COL_TURNO_AGENDA - 1])
+        turno: valorTexto(l[IDX_TURNO])
       });
     }
   });
@@ -249,54 +250,60 @@ function gerarConvocacoesPeriodo(dataInicio, dataFim) {
     .sort((a, b) => {
       const dataA = a.dataAgendada || "";
       const dataB = b.dataAgendada || "";
-
       if (dataA !== dataB) return dataA.localeCompare(dataB);
-
       return String(a.nome || "").localeCompare(String(b.nome || ""));
     });
 
   const resultados = [];
   const dadosAgenda = lerAgendaDados();
   const turnosAgenda = montarUltimosTurnosAgenda(dadosAgenda);
+  let contextoGeracao = null;
 
-  lista.forEach(colaborador => {
-    const motivo = motivoNaoBaixarConvocacao(colaborador, dataInicio, dataFim);
+  try {
+    lista.forEach(colaborador => {
+      const motivo = motivoNaoBaixarConvocacao(colaborador, dataInicio, dataFim);
 
-    if (motivo) {
-      resultados.push({
-        sucesso: false,
-        ignorado: true,
-        colaborador: colaborador.nome,
-        matricula: colaborador.mat,
-        situacao: colaborador.situacao,
-        dataAgendadaBR: colaborador.dataAgendadaBR,
-        motivo: motivo
-      });
-      return;
-    }
+      if (motivo) {
+        resultados.push({
+          sucesso: false,
+          ignorado: true,
+          colaborador: colaborador.nome,
+          matricula: colaborador.mat,
+          situacao: colaborador.situacao,
+          dataAgendadaBR: colaborador.dataAgendadaBR,
+          motivo: motivo
+        });
+        return;
+      }
 
-    try {
-      const pdf = gerarConvocacaoPorColaborador(colaborador, dadosAgenda, { turnosAgenda: turnosAgenda });
+      try {
+        if (!contextoGeracao) contextoGeracao = criarContextoGeracaoConvocacoes();
+        const pdf = gerarConvocacaoPorColaborador(colaborador, dadosAgenda, {
+          turnosAgenda: turnosAgenda,
+          contextoGeracao: contextoGeracao
+        });
 
-      resultados.push({
-        sucesso: true,
-        ignorado: false,
-        colaborador: colaborador.nome,
-        matricula: colaborador.mat,
-        arquivo: pdf.arquivo,
-        url: pdf.url
-      });
-
-    } catch (e) {
-      resultados.push({
-        sucesso: false,
-        ignorado: false,
-        colaborador: colaborador.nome,
-        matricula: colaborador.mat,
-        erro: e.message
-      });
-    }
-  });
+        resultados.push({
+          sucesso: true,
+          ignorado: false,
+          colaborador: colaborador.nome,
+          matricula: colaborador.mat,
+          arquivo: pdf.arquivo,
+          url: pdf.url
+        });
+      } catch (e) {
+        resultados.push({
+          sucesso: false,
+          ignorado: false,
+          colaborador: colaborador.nome,
+          matricula: colaborador.mat,
+          erro: e.message
+        });
+      }
+    });
+  } finally {
+    if (contextoGeracao) encerrarContextoGeracaoConvocacoes(contextoGeracao);
+  }
 
   return resultados;
 }
@@ -320,56 +327,65 @@ function gerarConvocacoesSelecionadasLote(matriculas, dataInicio, dataFim) {
   });
 
   const resultados = [];
+  let contextoGeracao = null;
 
-  selecionadas.forEach(mat => {
-    const colaborador = mapa.get(mat);
+  try {
+    selecionadas.forEach(mat => {
+      const colaborador = mapa.get(mat);
 
-    if (!colaborador) {
-      resultados.push({
-        sucesso: false,
-        ignorado: false,
-        matricula: mat,
-        colaborador: "",
-        erro: "Colaborador não encontrado"
-      });
-      return;
-    }
+      if (!colaborador) {
+        resultados.push({
+          sucesso: false,
+          ignorado: false,
+          matricula: mat,
+          colaborador: "",
+          erro: "Colaborador não encontrado"
+        });
+        return;
+      }
 
-    const motivo = motivoNaoBaixarConvocacao(colaborador, dataInicio, dataFim);
+      const motivo = motivoNaoBaixarConvocacao(colaborador, dataInicio, dataFim);
 
-    if (motivo) {
-      resultados.push({
-        sucesso: false,
-        ignorado: true,
-        colaborador: colaborador.nome,
-        matricula: colaborador.mat,
-        situacao: colaborador.situacao,
-        dataAgendadaBR: colaborador.dataAgendadaBR,
-        motivo: motivo
-      });
-      return;
-    }
+      if (motivo) {
+        resultados.push({
+          sucesso: false,
+          ignorado: true,
+          colaborador: colaborador.nome,
+          matricula: colaborador.mat,
+          situacao: colaborador.situacao,
+          dataAgendadaBR: colaborador.dataAgendadaBR,
+          motivo: motivo
+        });
+        return;
+      }
 
-    try {
-      const pdf = gerarConvocacaoPorColaborador(colaborador, dadosAgenda, { turnosAgenda: turnosAgenda });
-      resultados.push({
-        sucesso: true,
-        ignorado: false,
-        colaborador: colaborador.nome,
-        matricula: colaborador.mat,
-        arquivo: pdf.arquivo,
-        url: pdf.url
-      });
-    } catch (e) {
-      resultados.push({
-        sucesso: false,
-        ignorado: false,
-        colaborador: colaborador.nome,
-        matricula: colaborador.mat,
-        erro: e.message
-      });
-    }
-  });
+      try {
+        if (!contextoGeracao) contextoGeracao = criarContextoGeracaoConvocacoes();
+        const pdf = gerarConvocacaoPorColaborador(colaborador, dadosAgenda, {
+          turnosAgenda: turnosAgenda,
+          contextoGeracao: contextoGeracao
+        });
+        resultados.push({
+          sucesso: true,
+          ignorado: false,
+          colaborador: colaborador.nome,
+          matricula: colaborador.mat,
+          arquivo: pdf.arquivo,
+          url: pdf.url
+        });
+      } catch (e) {
+        resultados.push({
+          sucesso: false,
+          ignorado: false,
+          colaborador: colaborador.nome,
+          matricula: colaborador.mat,
+          erro: e.message
+        });
+      }
+    });
+  } finally {
+    if (contextoGeracao) encerrarContextoGeracaoConvocacoes(contextoGeracao);
+  }
 
   return resultados;
 }
