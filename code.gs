@@ -64,8 +64,10 @@ function enviarConvocacoesSelecionadasGestorComCopia(matriculas, emailsGestor, d
   const resultados = [];
   const anexos = [];
   const enviados = [];
+  let contextoGeracao = null;
 
-  selecionadas.forEach(mat => {
+  try {
+    selecionadas.forEach(mat => {
     const colaborador = mapa.get(mat);
 
     if (!colaborador) {
@@ -94,9 +96,11 @@ function enviarConvocacoesSelecionadasGestorComCopia(matriculas, emailsGestor, d
     }
 
     try {
+      if (!contextoGeracao) contextoGeracao = criarContextoGeracaoConvocacoes();
       const pdf = gerarConvocacaoPorColaborador(colaborador, dadosAgenda, {
         turnosAgenda: turnosAgenda,
-        incluirAnexo: true
+        incluirAnexo: true,
+        contextoGeracao: contextoGeracao
       });
 
       anexos.push(pdf.anexo);
@@ -118,7 +122,10 @@ function enviarConvocacoesSelecionadasGestorComCopia(matriculas, emailsGestor, d
         erro: e.message
       });
     }
-  });
+    });
+  } finally {
+    if (contextoGeracao) encerrarContextoGeracaoConvocacoes(contextoGeracao);
+  }
 
   if (anexos.length > 0) {
     const assunto = montarAssuntoEmailGestor(dataInicio, dataFim);
