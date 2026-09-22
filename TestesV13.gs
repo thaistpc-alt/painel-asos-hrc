@@ -181,7 +181,7 @@ function executarRegressaoV13(dataInicio, dataFim) {
   return resumo;
 }
 
-function medirPerformanceV13(dataInicio, dataFim) {
+function medirPerformanceV13LegadoTeste_(dataInicio, dataFim) {
   const periodo = periodoPadraoTesteV13_(dataInicio, dataFim);
   dataInicio = periodo.inicio;
   dataFim = periodo.fim;
@@ -334,6 +334,80 @@ function executarRegressaoFaltaRealizadaV14_5() {
       pendenteOperacional: pendente
     } : null,
     testes: testes
+  };
+
+  console.log(JSON.stringify(resultado, null, 2));
+  return resultado;
+}
+
+
+/* =========================================================
+   V14.6 - DIAGNÓSTICO DETALHADO DE PERFORMANCE
+   Mede as etapas do contexto sem depender do cache anterior.
+========================================================= */
+function diagnosticarPerformanceDetalhadaV14_6() {
+  const etapas = [];
+  const totalInicio = Date.now();
+
+  function medirEtapa(nome, fn) {
+    const inicio = Date.now();
+    const valor = fn();
+    etapas.push({
+      etapa: nome,
+      duracaoMs: Date.now() - inicio
+    });
+    return valor;
+  }
+
+  PERF13_MEMORIA = {};
+
+  const lista = medirEtapa("1. Ler FONTEpainel", function() {
+    return lerFontePainel();
+  });
+
+  const eventos = medirEtapa("2. Ler/indexar AGENDA", function() {
+    return montarEventosAgendaPorMatriculaV13_();
+  });
+
+  medirEtapa("3. Aplicar ocorrências", function() {
+    return aplicarOcorrenciasAgenda(lista, eventos);
+  });
+
+  medirEtapa("4. Aplicar ASOs realizados", function() {
+    return aplicarAsoRealizadoAgenda(lista, eventos);
+  });
+
+  medirEtapa("5. Preparar flags", function() {
+    return prepararFlagsPortal(lista);
+  });
+
+  const pendencias = medirEtapa("6. Gerar pendências", function() {
+    return gerarPendencias(lista, eventos);
+  });
+
+  const contexto = {
+    lista: lista,
+    pendencias: pendencias,
+    origemCache: "diagnostico"
+  };
+
+  const base64 = medirEtapa("7. Serializar contexto", function() {
+    return serializarCacheV13_(contexto);
+  });
+
+  const indicadores = medirEtapa("8. Calcular indicadores", function() {
+    return gerarIndicadores(lista);
+  });
+
+  const resultado = {
+    versao: "14.6",
+    duracaoTotalMs: Date.now() - totalInicio,
+    colaboradores: lista.length,
+    pendenciasOperacionais: (pendencias.operacionais || []).length,
+    tamanhoContextoComprimido: base64.length,
+    partesCacheEstimadas: Math.ceil(base64.length / PERF13_PARTE),
+    mesesIndicadores: (indicadores.resumoMensal || []).length,
+    etapas: etapas
   };
 
   console.log(JSON.stringify(resultado, null, 2));
