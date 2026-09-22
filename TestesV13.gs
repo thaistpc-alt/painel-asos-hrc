@@ -262,3 +262,80 @@ function medirPerformanceV13(dataInicio, dataFim) {
   console.log(JSON.stringify(resumo, null, 2));
   return resumo;
 }
+
+
+/* =========================================================
+   REGRESSÃO V14.5 - falta seguida de ASO periódico realizado
+========================================================= */
+
+function executarRegressaoFaltaRealizadaV14_5() {
+  const contexto = construirContextoV13_("2026-09-01", "2026-09-30", true);
+  const colaborador = (contexto.lista || []).find(c =>
+    obterChavesMatricula(c.mat, c.matriculaCompleta).includes("1883")
+  ) || null;
+
+  const geral = colaborador ? gerarColaboradoresPortal([colaborador])[0] : null;
+  const pendente = !!((contexto.pendencias && contexto.pendencias.operacionais) || [])
+    .find(item => obterChavesMatricula(item.mat, item.matriculaCompleta).includes("1883"));
+
+  const proximoEsperado = colaborador
+    ? adicionarMeses("2026-07-28", Number(colaborador.periodicidade) || 12)
+    : "";
+  const diasEsperados = proximoEsperado
+    ? calcularDiferencaDias(proximoEsperado, obterHojeISO())
+    : null;
+
+  let statusEsperado = "Em dias";
+  if (diasEsperados !== null && Number(diasEsperados) < 0) statusEsperado = "Em atraso";
+  else if (diasEsperados !== null && Number(diasEsperados) <= 30) statusEsperado = "Prioridade";
+
+  const testes = [
+    {
+      teste: "1883 - identifica periódico realizado em 28/07/2026",
+      ok: !!colaborador &&
+        colaborador.temAsoRealizadoAgenda === true &&
+        colaborador.dataAsoRealizadoAgenda === "2026-07-28"
+    },
+    {
+      teste: "1883 - falta anterior deixa de ser pendência operacional",
+      ok: pendente === false
+    },
+    {
+      teste: "1883 - Geral usa o ASO posterior como último ASO",
+      ok: !!geral &&
+        geral.dataUltimoAsoBR === "28/07/2026" &&
+        geral.origemUltimoAso === "AGENDA"
+    },
+    {
+      teste: "1883 - próximo vencimento é recalculado pela periodicidade",
+      ok: !!geral &&
+        geral.proximoVencimentoEfetivo === proximoEsperado &&
+        Number(geral.diasStatusAso) === Number(diasEsperados)
+    },
+    {
+      teste: "1883 - status do Geral usa o vencimento efetivo",
+      ok: !!geral && geral.statusAso === statusEsperado
+    }
+  ];
+
+  const falhas = testes.filter(t => !t.ok);
+  const resultado = {
+    sucesso: falhas.length === 0,
+    matricula: "1883",
+    total: testes.length,
+    aprovados: testes.length - falhas.length,
+    falhas: falhas.map(t => t.teste),
+    dados: geral ? {
+      ultimoAso: geral.dataUltimoAsoBR,
+      proximoVencimento: geral.proximoVencimentoBR,
+      dias: geral.diasStatusAso,
+      status: geral.statusAso,
+      origemUltimoAso: geral.origemUltimoAso,
+      pendenteOperacional: pendente
+    } : null,
+    testes: testes
+  };
+
+  console.log(JSON.stringify(resultado, null, 2));
+  return resultado;
+}

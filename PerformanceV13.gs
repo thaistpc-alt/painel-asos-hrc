@@ -7,7 +7,7 @@
    - entrega cada módulo sob demanda.
 ========================================================= */
 
-const PERF13_PREFIXO = "ASOS_V14_2_";
+const PERF13_PREFIXO = "ASOS_V14_5_";
 const PERF13_TTL = 1800;
 const PERF13_PARTE = 80000;
 const PERF13_MAX_PARTES = 50;
@@ -92,8 +92,8 @@ function obterModuloPortalV13(modulo, dataInicio, dataFim, forcarAtualizacao) {
     case "COLABORADORES":
       resultado = {
         colaboradores: gerarColaboradoresPortal(lista).sort((a, b) => {
-          const diasA = Number(a.diasParaVencer);
-          const diasB = Number(b.diasParaVencer);
+          const diasA = Number(a.diasStatusAso);
+          const diasB = Number(b.diasStatusAso);
           if (diasA !== diasB) return diasA - diasB;
           return String(a.nome || "").localeCompare(String(b.nome || ""));
         })
