@@ -106,10 +106,46 @@ function testarPersistenciaFilaV14_() {
   };
 }
 
+function testarFaltaResolvidaPorAsoPosteriorV14_() {
+  const contexto = construirContextoPortalV14_(true);
+  const colaborador = (contexto.lista || []).find(c =>
+    obterChavesMatricula(c.mat, c.matriculaCompleta).includes("1883")
+  ) || null;
+
+  const geral = colaborador ? gerarColaboradoresPortal([colaborador])[0] : null;
+  const pendenteOperacional = !!((contexto.pendencias && contexto.pendencias.operacionais) || [])
+    .find(item => obterChavesMatricula(item.mat, item.matriculaCompleta).includes("1883"));
+
+  const sucesso =
+    !!colaborador &&
+    !!colaborador.eventoQueEncerrouCiclo &&
+    colaborador.eventoQueEncerrouCiclo.data === "2026-07-28" &&
+    pendenteOperacional === false &&
+    !!geral &&
+    geral.dataUltimoAsoBR === "28/07/2026" &&
+    geral.proximoVencimentoBR === "28/07/2027" &&
+    normalizarTexto(geral.statusAso) !== "EM ATRASO";
+
+  return {
+    sucesso: sucesso,
+    matricula: "1883",
+    eventoQueEncerrouCiclo: colaborador ? colaborador.eventoQueEncerrouCiclo : null,
+    apareceComoPendencia: pendenteOperacional,
+    exibicaoGeral: geral ? {
+      ultimoAso: geral.dataUltimoAsoBR,
+      proximoVencimento: geral.proximoVencimentoBR,
+      dias: geral.diasStatusAso,
+      status: geral.statusAso,
+      origemUltimoAso: geral.origemUltimoAso
+    } : null
+  };
+}
+
 function validarCenariosCriticosV14() {
   const setembro = diagnosticarPainelV14("2026-09-01", "2026-09-30");
   const outubro = diagnosticarPainelV14("2026-10-01", "2026-10-31");
   const sinteticos = testarPersistenciaFilaV14_();
+  const faltaResolvida = testarFaltaResolvidaPorAsoPosteriorV14_();
 
   function item(resultado, mat) {
     return resultado && resultado.matriculasCriticas
@@ -150,6 +186,11 @@ function validarCenariosCriticosV14() {
       teste: "Fila persistente setembro/outubro",
       sucesso: !!sinteticos && sinteticos.sucesso === true,
       detalhe: sinteticos
+    },
+    {
+      teste: "1883 - falta seguida de ASO periódico realizado atualiza a aba Geral",
+      sucesso: !!faltaResolvida && faltaResolvida.sucesso === true,
+      detalhe: faltaResolvida
     }
   ];
 
