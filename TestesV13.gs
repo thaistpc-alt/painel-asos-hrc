@@ -413,3 +413,39 @@ function diagnosticarPerformanceDetalhadaV14_6() {
   console.log(JSON.stringify(resultado, null, 2));
   return resultado;
 }
+
+
+/* =========================================================
+   V14.6 - VALIDAÇÃO ÚNICA ANTES DA PUBLICAÇÃO
+========================================================= */
+function validarAntesPublicarV14_6() {
+  const inicio = Date.now();
+
+  const regrasConvocacao = executarRegressaoRegrasConvocacaoV14();
+  const faltaPosterior = executarRegressaoFaltaRealizadaV14_5();
+  const performanceDetalhada = diagnosticarPerformanceDetalhadaV14_6();
+
+  const resultado = {
+    sucesso:
+      !!regrasConvocacao && regrasConvocacao.sucesso === true &&
+      !!faltaPosterior && faltaPosterior.sucesso === true,
+    versao: "14.6",
+    duracaoTotalValidacaoMs: Date.now() - inicio,
+    regrasConvocacao: {
+      sucesso: !!regrasConvocacao && regrasConvocacao.sucesso === true,
+      falhas: regrasConvocacao && regrasConvocacao.falhas !== undefined
+        ? regrasConvocacao.falhas
+        : null
+    },
+    faltaPosterior: {
+      sucesso: !!faltaPosterior && faltaPosterior.sucesso === true,
+      falhas: faltaPosterior && faltaPosterior.falhas
+        ? faltaPosterior.falhas
+        : []
+    },
+    performance: performanceDetalhada
+  };
+
+  console.log(JSON.stringify(resultado, null, 2));
+  return resultado;
+}
