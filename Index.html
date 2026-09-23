@@ -1037,6 +1037,7 @@
     </div>
 
     <div id="tabelaColaboradores"></div>
+    <div id="paginacaoGeral" class="paginacao-geral"></div>
   </div>
 
   <div class="conteudo" id="indicadores" style="display:none;">
@@ -1067,6 +1068,9 @@
     let periodoCarregadoPortal = "";
     let selecaoConvocacoes = new Set();
     let loteEmProcessamento = false;
+    let paginaGeral = 1;
+    let tamanhoPaginaGeral = 100;
+    let listaFiltradaGeral = [];
 
     window.onload = function() {
       const hoje = new Date();
@@ -1896,8 +1900,60 @@
     function filtrarColaboradores() {
       if (!dadosPortal) return;
       const termo = obterTermoPesquisa("pesquisaColaboradores");
-      const lista = (dadosPortal.colaboradores || []).filter(item => correspondePesquisa(item, termo));
-      renderizarColaboradores(lista);
+      listaFiltradaGeral = (dadosPortal.colaboradores || [])
+        .filter(item => correspondePesquisa(item, termo));
+      paginaGeral = 1;
+      renderizarPaginaColaboradores();
+    }
+
+    function renderizarPaginaColaboradores() {
+      const total = listaFiltradaGeral.length;
+      const paginas = Math.max(1, Math.ceil(total / tamanhoPaginaGeral));
+      paginaGeral = Math.min(Math.max(1, paginaGeral), paginas);
+      const inicio = (paginaGeral - 1) * tamanhoPaginaGeral;
+      const fim = Math.min(inicio + tamanhoPaginaGeral, total);
+
+      renderizarColaboradores(listaFiltradaGeral.slice(inicio, fim));
+      renderizarPaginacaoGeral(total, inicio, fim, paginas);
+    }
+
+    function renderizarPaginacaoGeral(total, inicio, fim, paginas) {
+      const div = document.getElementById("paginacaoGeral");
+      if (!div) return;
+
+      if (!total) {
+        div.innerHTML = "";
+        return;
+      }
+
+      div.innerHTML = `
+        <div class="paginacao-info">
+          Mostrando <strong>${inicio + 1}–${fim}</strong> de <strong>${total}</strong>
+        </div>
+        <div class="paginacao-acoes">
+          <label>Linhas
+            <select onchange="alterarTamanhoPaginaGeral(this.value)">
+              ${[50,100,200].map(n => `<option value="${n}" ${n===tamanhoPaginaGeral?'selected':''}>${n}</option>`).join('')}
+            </select>
+          </label>
+          <button type="button" onclick="mudarPaginaGeral(-1)" ${paginaGeral<=1?'disabled':''}>Anterior</button>
+          <span>Página <strong>${paginaGeral}</strong> de <strong>${paginas}</strong></span>
+          <button type="button" onclick="mudarPaginaGeral(1)" ${paginaGeral>=paginas?'disabled':''}>Próxima</button>
+        </div>
+      `;
+    }
+
+    function mudarPaginaGeral(delta) {
+      paginaGeral += Number(delta) || 0;
+      renderizarPaginaColaboradores();
+      const tabela = document.getElementById("tabelaColaboradores");
+      if (tabela) tabela.scrollIntoView({block:"start", behavior:"smooth"});
+    }
+
+    function alterarTamanhoPaginaGeral(valor) {
+      tamanhoPaginaGeral = Number(valor) || 100;
+      paginaGeral = 1;
+      renderizarPaginaColaboradores();
     }
 
     function renderizarColaboradores(lista) {
