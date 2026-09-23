@@ -92,8 +92,9 @@ function sincronizarBaseV15_(invalidarCache, forcarAtualizacao) {
       if (!aba) throw new Error("Aba FONTE da origem não encontrada.");
       const ultimaLinha = aba.getLastRow();
       if (ultimaLinha < 2) return [];
-      return aba.getRange(2, 2, ultimaLinha - 1, 8).getValues()
+      const brutos = aba.getRange(2, 2, ultimaLinha - 1, 8).getValues()
         .filter(linha => valorTexto(linha[0]));
+      return deduplicarFonteV15_(brutos);
     });
 
     const dadosGestores = medir("Ler GESTORES origem", function() {
@@ -294,6 +295,34 @@ function montarEventosAgendaDeMatrizV15_(valores) {
   }
 
   return mapaEventos;
+}
+
+function deduplicarFonteV15_(linhas) {
+  const mapa = new Map();
+  const ordem = [];
+
+  (linhas || []).forEach(linha => {
+    const matricula = valorTexto(linha && linha[0]);
+    if (!matricula) return;
+
+    if (!mapa.has(matricula)) {
+      mapa.set(matricula, linha);
+      ordem.push(matricula);
+      return;
+    }
+
+    const atual = mapa.get(matricula);
+    const dataAtual = formatarDataISO(atual && atual[6]);
+    const dataNova = formatarDataISO(linha && linha[6]);
+
+    // Se houver divergência real entre duplicados, conserva o registro
+    // com ASO mais recente; em empate mantém a primeira ocorrência.
+    if (dataNova && (!dataAtual || dataNova > dataAtual)) {
+      mapa.set(matricula, linha);
+    }
+  });
+
+  return ordem.map(matricula => mapa.get(matricula));
 }
 
 function montarColaboradoresFonteV15_(dadosFonte, enviadosPorMatricula, eventos) {
