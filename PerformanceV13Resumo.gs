@@ -4,7 +4,7 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
 
   // Atualização forçada = sincronização real das fontes antes de reconstruir o cache.
   if (forcarAtualizacao && typeof sincronizarBaseV15_ === "function") {
-    sincronizarBaseV15_(false);
+    sincronizarBaseV15_(false, true);
   }
   if (forcarAtualizacao && typeof avancarRevisaoCacheV133_ === "function") {
     avancarRevisaoCacheV133_();
