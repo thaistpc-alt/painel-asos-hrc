@@ -125,6 +125,73 @@ function executarRegressaoRegrasConvocacaoV14() {
     periodico.dataAsoRealizadoAgenda
   );
 
+  const colaboradorFuturo = {
+    mat: "TESTE_FUTURO",
+    matriculaCompleta: "2009998",
+    nome: "COLABORADOR FUTURO",
+    situacao: "Ativo",
+    situacaoNorm: "ATIVO",
+    dataUltimoAso: "2025-11-03",
+    dataConvocar: "2026-09-04",
+    dataAgendada: "2026-11-05",
+    proximoVencimento: "2026-11-03",
+    asoRealizadoValido: false
+  };
+  prepararFlagsPortal([colaboradorFuturo]);
+  const outubroPendente = gerarListaConvocar(
+    [colaboradorFuturo],
+    "2026-10-01",
+    "2026-10-31"
+  );
+  testar(
+    "Fila persiste entre mês de origem e agendamento futuro",
+    outubroPendente.length === 1 &&
+      outubroPendente[0].grupoConvocacao === "Pendência anterior",
+    outubroPendente.length ? outubroPendente[0].grupoConvocacao : "não listado"
+  );
+
+  const afastado = Object.assign({}, colaboradorFuturo, {
+    mat: "TESTE_AFASTADO",
+    situacao: "Af.Previdência",
+    situacaoNorm: "AF.PREVIDENCIA",
+    dataAgendada: ""
+  });
+  prepararFlagsPortal([afastado]);
+  const revisaoAfastado = gerarListaRevisaoConvocar(
+    [afastado],
+    "2026-10-01",
+    "2026-10-31"
+  );
+  testar(
+    "Exclusão funcional aparece com motivo em Revisão",
+    revisaoAfastado.length === 1 &&
+      (revisaoAfastado[0].motivos || []).some(m =>
+        normalizarTexto(m).includes("SITUACAO FUNCIONAL")
+      ),
+    revisaoAfastado.length ? revisaoAfastado[0].motivos : "não listado"
+  );
+
+  const tipoIncompleto = Object.assign({}, colaboradorFuturo, {
+    mat: "TESTE_TIPO_INCOMPLETO",
+    dataAgendada: "2026-11-05",
+    asosRealizadosTipoIncompleto: [{
+      data: "2026-09-15",
+      status: "ASO Realizado"
+    }]
+  });
+  prepararFlagsPortal([tipoIncompleto]);
+  const avaliacaoTipo = avaliarElegibilidadeConvocacao(
+    tipoIncompleto,
+    "2026-10-01",
+    "2026-10-31"
+  );
+  testar(
+    "ASO realizado sem tipo não encerra ciclo e exige revisão",
+    avaliacaoTipo.eventoQueEncerrouCiclo === null &&
+      avaliacaoTipo.revisaoDados === true,
+    avaliacaoTipo.motivos
+  );
+
   const falhas = resultados.filter(r => !r.ok);
   const resumo = {
     sucesso: falhas.length === 0,
