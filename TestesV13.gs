@@ -475,3 +475,185 @@ function validarAntesPublicarV14_7() {
   console.log(JSON.stringify(resultado, null, 2));
   return resultado;
 }
+
+
+/* =========================================================
+   V15 - TESTES DA BASE, REGRAS E PERFORMANCE
+========================================================= */
+function validarEstruturaBaseV15() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const fonte = ss.getSheetByName(CONFIG.ABA_FONTE);
+  const indicador = ss.getSheetByName(BASE15_ABA_INDICADOR);
+  const modelo = ss.getSheetByName(CONFIG.ABA_MODELO);
+  const config = ss.getSheetByName(BASE15_ABA_CONFIG);
+
+  const testes = [];
+  function testar(nome, ok, detalhe) {
+    testes.push({ teste: nome, ok: !!ok, detalhe: detalhe || "" });
+  }
+
+  const formulasPR = fonte
+    ? fonte.getRange(2, 16, Math.max(1, fonte.getLastRow() - 1), 3)
+        .getFormulas()
+        .flat()
+        .filter(Boolean)
+    : ["aba ausente"];
+
+  testar(
+    "FONTEpainel P:R sem fórmulas pesadas",
+    formulasPR.length === 0,
+    formulasPR.length + " fórmula(s)"
+  );
+
+  const formulaA2 = fonte ? fonte.getRange("A2").getFormula() : "";
+  const formulaT2 = fonte ? fonte.getRange("T2").getFormula() : "";
+  const formulaU2 = fonte ? fonte.getRange("U2").getFormula() : "";
+  testar("MAT consolidada em ARRAYFORMULA", formulaA2.includes("ARRAYFORMULA"), formulaA2);
+  testar("Mês consolidado em ARRAYFORMULA", formulaT2.includes("ARRAYFORMULA"), formulaT2);
+  testar("Ano consolidado em ARRAYFORMULA", formulaU2.includes("ARRAYFORMULA"), formulaU2);
+
+  const formulasIndicador = indicador
+    ? indicador.getDataRange().getFormulas().flat().filter(Boolean)
+    : ["aba ausente"];
+  testar(
+    "BASE_INDICADOR_ASO materializada",
+    formulasIndicador.length === 0,
+    formulasIndicador.length + " fórmula(s)"
+  );
+  testar(
+    "BASE_INDICADOR_ASO oculta",
+    !!indicador && indicador.isSheetHidden(),
+    indicador ? "aba encontrada" : "aba ausente"
+  );
+
+  const formulasModelo = modelo
+    ? modelo.getDataRange().getFormulas().flat().filter(Boolean)
+    : [];
+  testar(
+    "Modelo CONVOCAÇÃO sem fórmulas externas",
+    formulasModelo.every(f => !normalizarTexto(f).includes("IMPORTRANGE")) &&
+      formulasModelo.every(f => !normalizarTexto(f).includes("VLOOKUP")) &&
+      formulasModelo.every(f => !normalizarTexto(f).includes("XLOOKUP")),
+    formulasModelo
+  );
+  testar(
+    "Cópia redundante de CONVOCAÇÃO removida",
+    !ss.getSheetByName("Cópia de CONVOCAÇÃO"),
+    ss.getSheetByName("Cópia de CONVOCAÇÃO") ? "ainda existe" : "removida"
+  );
+  testar("_CONFIG_ASOS criada", !!config, config ? "ok" : "ausente");
+
+  const elegivelFuturo = {
+    situacao: "Férias",
+    situacaoNorm: "FERIAS",
+    dataAgendada: "2026-10-05",
+    asoRealizadoValido: false
+  };
+  testar(
+    "PDF aceita agendamento futuro fora do mês de origem",
+    motivoNaoBaixarConvocacao(elegivelFuturo, "2026-09-01", "2026-09-30") === "",
+    motivoNaoBaixarConvocacao(elegivelFuturo, "2026-09-01", "2026-09-30")
+  );
+
+  const falhas = testes.filter(t => !t.ok);
+  return {
+    sucesso: falhas.length === 0,
+    total: testes.length,
+    aprovados: testes.length - falhas.length,
+    falhas: falhas.map(t => t.teste),
+    testes: testes
+  };
+}
+
+function validarMaterializacaoAmostraV15() {
+  const contexto = construirContextoV13_("2026-09-01", "2026-09-30", false);
+  const fonte = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.ABA_FONTE);
+  const amostras = ["1883"];
+  const resultados = [];
+
+  amostras.forEach(function(mat) {
+    const c = (contexto.lista || []).find(function(item) {
+      return obterChavesMatricula(item.mat, item.matriculaCompleta).includes(mat);
+    });
+    if (!c || !fonte) {
+      resultados.push({ mat: mat, ok: false, motivo: "não encontrado" });
+      return;
+    }
+
+    const valores = fonte.getRange(c.linha, 16, 1, 3).getDisplayValues()[0];
+    resultados.push({
+      mat: mat,
+      ok:
+        String(valores[0] || "") === String(c.dataAgendadaBR || "") &&
+        String(valores[1] || "") === String(c.informacoesAgenda || "") &&
+        normalizarTexto(valores[2] || "") === normalizarTexto(c.statusGeral || ""),
+      planilha: {
+        dataAgendada: valores[0] || "",
+        informacoes: valores[1] || "",
+        status: valores[2] || ""
+      },
+      memoria: {
+        dataAgendada: c.dataAgendadaBR || "",
+        informacoes: c.informacoesAgenda || "",
+        status: c.statusGeral || ""
+      }
+    });
+  });
+
+  return {
+    sucesso: resultados.every(r => r.ok),
+    resultados: resultados
+  };
+}
+
+function diagnosticarPerformanceDetalhadaV15() {
+  const base = diagnosticarPerformanceDetalhadaV14_7();
+  base.versao = "15.0";
+  return base;
+}
+
+function validarAntesPublicarV15() {
+  const inicio = Date.now();
+
+  const atualizacaoBase = atualizarBasePainelCompletaV15();
+  const estrutura = validarEstruturaBaseV15();
+  const regrasConvocacao = executarRegressaoRegrasConvocacaoV14();
+  const faltaPosterior = executarRegressaoFaltaRealizadaV14_5();
+  const materializacao = validarMaterializacaoAmostraV15();
+  const performance = diagnosticarPerformanceDetalhadaV15();
+
+  const sucesso =
+    atualizacaoBase && atualizacaoBase.sucesso === true &&
+    estrutura.sucesso === true &&
+    regrasConvocacao && regrasConvocacao.sucesso === true &&
+    faltaPosterior && faltaPosterior.sucesso === true &&
+    materializacao.sucesso === true;
+
+  const resultado = {
+    sucesso: sucesso,
+    versao: "15.0",
+    duracaoTotalValidacaoMs: Date.now() - inicio,
+    atualizacaoBase: atualizacaoBase,
+    estruturaBase: estrutura,
+    regrasConvocacao: {
+      sucesso: !!regrasConvocacao && regrasConvocacao.sucesso === true,
+      falhas: regrasConvocacao && regrasConvocacao.falhas !== undefined
+        ? regrasConvocacao.falhas
+        : null
+    },
+    faltaPosterior: {
+      sucesso: !!faltaPosterior && faltaPosterior.sucesso === true,
+      falhas: faltaPosterior && faltaPosterior.falhas
+        ? faltaPosterior.falhas
+        : []
+    },
+    materializacao: materializacao,
+    performance: performance,
+    alertaPerformance: performance.duracaoTotalMs > 8000
+      ? "Carga fria acima de 8 segundos; revisar gargalo antes de publicar."
+      : ""
+  };
+
+  console.log(JSON.stringify(resultado, null, 2));
+  return resultado;
+}
