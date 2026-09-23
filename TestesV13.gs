@@ -534,6 +534,16 @@ function validarEstruturaBaseV15() {
   const cfg = typeof lerConfigBaseV15_ === "function" ? lerConfigBaseV15_() : {};
   testar("Config registra versão 15.0", String(cfg.VERSAO_BASE || "") === "15.0", cfg.VERSAO_BASE || "");
   testar("Config registra sincronização", !!String(cfg.ULTIMA_SINCRONIZACAO || ""), cfg.ULTIMA_SINCRONIZACAO || "");
+  testar(
+    "EDATE compatível - 29/02 + 12 meses",
+    adicionarMeses("2024-02-29", 12) === "2025-02-28",
+    adicionarMeses("2024-02-29", 12)
+  );
+  testar(
+    "EDATE compatível - 31/08 + 6 meses",
+    adicionarMeses("2025-08-31", 6) === "2026-02-28",
+    adicionarMeses("2025-08-31", 6)
+  );
 
   const origem = SpreadsheetApp.openById(cfg.ORIGEM_AGENDA_ID || BASE_V15.ORIGEM_AGENDA_ID);
   const fonteOrigem = origem.getSheetByName(BASE_V15.ORIGEM_FONTE_ABA);
