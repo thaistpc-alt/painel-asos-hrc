@@ -36,26 +36,37 @@ function atualizarBaseDerivadaV15_(opcoes) {
     const lista = contextoOperacional.lista;
     const pendencias = contextoOperacional.pendencias;
 
-    materializarFontePainelV15_(lista);
-    const totalLinhasIndicador = materializarBaseIndicadorV15_(lista);
+    const assinatura = calcularAssinaturaBaseV15_(contextoOperacional);
+    const propriedades = PropertiesService.getScriptProperties();
+    const assinaturaAnterior = propriedades.getProperty("ASOS_V15_ASSINATURA_BASE") || "";
+    const dadosAlterados = assinatura !== assinaturaAnterior;
 
-    SpreadsheetApp.flush();
+    let totalLinhasIndicador = obterTotalLinhasIndicadorV15_();
+
+    if (dadosAlterados) {
+      materializarFontePainelV15_(lista);
+      totalLinhasIndicador = materializarBaseIndicadorV15_(lista);
+      SpreadsheetApp.flush();
+      propriedades.setProperty("ASOS_V15_ASSINATURA_BASE", assinatura);
+
+      if (opcoes.invalidarCache !== false && typeof avancarRevisaoCacheV133_ === "function") {
+        avancarRevisaoCacheV133_();
+      }
+    }
 
     const duracaoMs = Date.now() - inicio;
     atualizarConfigBaseV15_({
       totalColaboradores: lista.length,
       totalPendencias: (pendencias.operacionais || []).length,
       totalLinhasIndicador: totalLinhasIndicador,
-      duracaoMs: duracaoMs
+      duracaoMs: duracaoMs,
+      dadosAlterados: dadosAlterados
     });
-
-    if (opcoes.invalidarCache !== false && typeof avancarRevisaoCacheV133_ === "function") {
-      avancarRevisaoCacheV133_();
-    }
 
     const resultado = {
       sucesso: true,
       versaoBase: "15.0",
+      dadosAlterados: dadosAlterados,
       colaboradores: lista.length,
       pendenciasOperacionais: (pendencias.operacionais || []).length,
       linhasIndicador: totalLinhasIndicador,
@@ -114,8 +125,18 @@ function materializarContextoBaseV15_(contexto) {
   if (!contexto || !Array.isArray(contexto.lista)) return null;
 
   const inicio = Date.now();
-  materializarFontePainelV15_(contexto.lista);
-  const totalLinhasIndicador = materializarBaseIndicadorV15_(contexto.lista);
+  const assinatura = calcularAssinaturaBaseV15_(contexto);
+  const propriedades = PropertiesService.getScriptProperties();
+  const assinaturaAnterior = propriedades.getProperty("ASOS_V15_ASSINATURA_BASE") || "";
+  const dadosAlterados = assinatura !== assinaturaAnterior;
+  let totalLinhasIndicador = obterTotalLinhasIndicadorV15_();
+
+  if (dadosAlterados) {
+    materializarFontePainelV15_(contexto.lista);
+    totalLinhasIndicador = materializarBaseIndicadorV15_(contexto.lista);
+    SpreadsheetApp.flush();
+    propriedades.setProperty("ASOS_V15_ASSINATURA_BASE", assinatura);
+  }
 
   atualizarConfigBaseV15_({
     totalColaboradores: contexto.lista.length,
@@ -123,10 +144,58 @@ function materializarContextoBaseV15_(contexto) {
       ? contexto.pendencias.operacionais.length
       : 0,
     totalLinhasIndicador: totalLinhasIndicador,
-    duracaoMs: Date.now() - inicio
+    duracaoMs: Date.now() - inicio,
+    dadosAlterados: dadosAlterados
   });
 
-  return totalLinhasIndicador;
+  return {
+    dadosAlterados: dadosAlterados,
+    linhasIndicador: totalLinhasIndicador
+  };
+}
+
+function calcularAssinaturaBaseV15_(contexto) {
+  const lista = contexto && Array.isArray(contexto.lista) ? contexto.lista : [];
+  const partes = lista.map(function(c) {
+    return [
+      c.mat || "",
+      c.situacao || "",
+      c.tipoExame || "",
+      c.periodicidade || "",
+      c.dataUltimoAso || "",
+      c.proximoVencimento || "",
+      c.dataConvocar || "",
+      c.dataLimite || "",
+      c.dataAgendada || "",
+      c.statusAgenda || "",
+      c.dataAsoRealizadoAgenda || "",
+      c.informacoesAgenda || "",
+      c.statusGeral || ""
+    ].join("|");
+  });
+
+  const pendencias = contexto && contexto.pendencias && contexto.pendencias.operacionais
+    ? contexto.pendencias.operacionais.map(function(p) {
+        return [p.mat || "", p.dataUltimaPendencia || "", p.novaDataAgendada || ""].join("|");
+      })
+    : [];
+
+  const texto = partes.join("\n") + "\n#PENDENCIAS\n" + pendencias.join("\n");
+  const digest = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    texto,
+    Utilities.Charset.UTF_8
+  );
+
+  return digest.map(function(byte) {
+    const valor = byte < 0 ? byte + 256 : byte;
+    return valor.toString(16).padStart(2, "0");
+  }).join("");
+}
+
+function obterTotalLinhasIndicadorV15_() {
+  const aba = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(BASE15_ABA_INDICADOR);
+  return aba ? Math.max(0, aba.getLastRow() - 1) : 0;
 }
 
 function materializarFontePainelV15_(lista) {
@@ -170,10 +239,11 @@ function materializarBaseIndicadorV15_(lista) {
   if (!aba) return 0;
 
   const linhas = construirBaseIndicadorV15_(lista);
-  const maxLinhas = aba.getMaxRows();
+  const linhasAtuais = Math.max(0, aba.getLastRow() - 1);
+  const linhasLimpar = Math.max(linhasAtuais, linhas.length);
 
-  if (maxLinhas > 1) {
-    aba.getRange(2, 1, maxLinhas - 1, 11).clearContent();
+  if (linhasLimpar > 0) {
+    aba.getRange(2, 1, linhasLimpar, 11).clearContent();
   }
 
   if (linhas.length) {
@@ -237,7 +307,8 @@ function atualizarConfigBaseV15_(dados) {
     ["TOTAL_COLABORADORES", String(Number(dados.totalColaboradores) || 0), "Colaboradores processados na última atualização", "Apps Script"],
     ["TOTAL_PENDENCIAS", String(Number(dados.totalPendencias) || 0), "Pendências operacionais na última atualização", "Apps Script"],
     ["TOTAL_LINHAS_INDICADOR", String(Number(dados.totalLinhasIndicador) || 0), "Linhas materializadas em BASE_INDICADOR_ASO", "Apps Script"],
-    ["DURACAO_ATUALIZACAO_MS", String(Number(dados.duracaoMs) || 0), "Duração da última atualização da base", "Apps Script"]
+    ["DURACAO_ATUALIZACAO_MS", String(Number(dados.duracaoMs) || 0), "Duração da última atualização da base", "Apps Script"],
+    ["DADOS_ALTERADOS", dados.dadosAlterados ? "SIM" : "NÃO", "Indica se a última checagem precisou regravar a base", "Apps Script"]
   ];
 
   aba.getRange(10, 1, linhas.length, 4).setValues(linhas);
