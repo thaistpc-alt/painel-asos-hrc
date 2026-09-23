@@ -116,8 +116,26 @@ function marcarEmailsAgostoEnviados() {
   return reconstruirHistoricoEnviosAgosto2026();
 }
 
+function obterListaColaboradoresConvocacao_(dataInicio, dataFim) {
+  const hoje = new Date();
+  const inicio = dataInicio || [
+    hoje.getFullYear(),
+    String(hoje.getMonth() + 1).padStart(2, "0"),
+    "01"
+  ].join("-");
+  const ultimo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+  const fim = dataFim || [
+    ultimo.getFullYear(),
+    String(ultimo.getMonth() + 1).padStart(2, "0"),
+    String(ultimo.getDate()).padStart(2, "0")
+  ].join("-");
+
+  const contexto = construirContextoV13_(inicio, fim, false);
+  return contexto && Array.isArray(contexto.lista) ? contexto.lista : [];
+}
+
 function gerarConvocacaoIndividual(mat) {
-  const lista = lerFontePainel();
+  const lista = obterListaColaboradoresConvocacao_();
   const matricula = String(mat).trim();
 
   const colaborador = lista.find(c =>
@@ -230,26 +248,33 @@ function situacaoPermiteBaixarConvocacao(c) {
 }
 
 function motivoNaoBaixarConvocacao(c, dataInicio, dataFim) {
-  if (!c.dataAgendada) {
+  if (!c || !c.dataAgendada) {
     return "Sem data agendada";
   }
 
-  if (!noPeriodo(c.dataAgendada, dataInicio, dataFim)) {
-    return "Data agendada fora do período selecionado";
-  }
-
+  // A convocação pode ter origem em um mês e agendamento em outro.
+  // O período selecionado define a fila; não deve bloquear o PDF.
   if (!situacaoPermiteBaixarConvocacao(c)) {
     return "Situação diferente de Ativo/Férias";
+  }
+
+  if (c.asoRealizadoValido) {
+    return "ASO periódico já realizado";
   }
 
   return "";
 }
 
 function gerarConvocacoesPeriodo(dataInicio, dataFim) {
-  const lista = lerFontePainel()
+  const lista = gerarListaConvocar(
+    obterListaColaboradoresConvocacao_(dataInicio, dataFim),
+    dataInicio,
+    dataFim
+  )
+    .filter(c => !c.asoRealizadoValido)
     .sort((a, b) => {
-      const dataA = a.dataAgendada || "";
-      const dataB = b.dataAgendada || "";
+      const dataA = a.dataAgendada || a.dataConvocar || "";
+      const dataB = b.dataAgendada || b.dataConvocar || "";
       if (dataA !== dataB) return dataA.localeCompare(dataB);
       return String(a.nome || "").localeCompare(String(b.nome || ""));
     });
@@ -316,7 +341,7 @@ function gerarConvocacoesSelecionadasLote(matriculas, dataInicio, dataFim) {
 
   if (selecionadas.length === 0) return [];
 
-  const lista = lerFontePainel();
+  const lista = obterListaColaboradoresConvocacao_(dataInicio, dataFim);
   const dadosAgenda = lerAgendaDados();
   const turnosAgenda = montarUltimosTurnosAgenda(dadosAgenda);
   const mapa = new Map();
@@ -425,7 +450,7 @@ function enviarConvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInici
     throw new Error("Envie no máximo " + LIMITE_ANEXOS_EMAIL_GESTOR + " convocações por e-mail. O painel divide lotes maiores automaticamente.");
   }
 
-  const lista = lerFontePainel();
+  const lista = obterListaColaboradoresConvocacao_(dataInicio, dataFim);
   const dadosAgenda = lerAgendaDados();
   const turnosAgenda = montarUltimosTurnosAgenda(dadosAgenda);
   const mapa = new Map();
