@@ -873,11 +873,13 @@ function obterResumoSincronizacaoAgenda() {
     return "Aba " + CONFIG.ABA_AGENDA + " não encontrada.";
   }
 
-  const ultimaLinha = aba.getLastRow();
-  const ultimaColuna = aba.getLastColumn();
+  const ultimaSincronizacao = typeof obterUltimaSincronizacaoBaseV15_ === "function"
+    ? obterUltimaSincronizacaoBaseV15_()
+    : "";
 
-  return "Fonte: " + CONFIG.ABA_AGENDA + " | Linhas: " + ultimaLinha + " | Colunas: " + ultimaColuna + " | Leitura: " +
-    Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm:ss");
+  return "Base materializada | AGENDA: " + aba.getLastRow() +
+    " linhas" +
+    (ultimaSincronizacao ? " | Atualizada em " + ultimaSincronizacao : "");
 }
 
 function gerarListaConvocar(lista, dataInicio, dataFim) {
