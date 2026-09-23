@@ -52,7 +52,7 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
 
   const resumo = {
     meta: {
-      versao: "14.6",
+      versao: "14.7",
       cache: contexto.origemCache === "nova" ? "não" : "sim",
       origemCache: contexto.origemCache || "nova",
       duracaoProcessamentoMs: contexto.duracaoProcessamentoMs || 0,

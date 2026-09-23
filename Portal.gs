@@ -11,81 +11,95 @@ function lerFontePainel() {
   }
 
   const ultimaLinha = aba.getLastRow();
-  const ultimaColuna = COL.CONVOCACAO_BAIXADA;
-
   if (ultimaLinha < 2) return [];
 
-  const dados = aba.getRange(2, 1, ultimaLinha - 1, ultimaColuna).getValues();
+  const totalLinhas = ultimaLinha - 1;
 
-  return dados
-    .filter(l => valorTexto(l[COL.MAT - 1]))
-    .map((l, idx) => {
-      const periodicidade = Number(l[COL.PERIODICIDADE - 1]) || 0;
-      const dataPenultimoAso = formatarDataISO(l[COL.DATA_PENULTIMO_ASO - 1]);
-      const dataUltimoAso = formatarDataISO(l[COL.DATA_ULTIMO_ASO - 1]);
-      const dataPrevistaIndicador = adicionarMeses(dataPenultimoAso, periodicidade);
+  /* V14.7:
+     P:R possuem fórmulas pesadas sobre a AGENDA e não são mais necessárias
+     para montar o contexto. O painel reconstrói essas informações diretamente
+     da AGENDA. A leitura principal fica limitada a A:O e S é lida separadamente. */
+  const dadosBase = aba
+    .getRange(2, 1, totalLinhas, COL.DIAS_PARA_VENCER)
+    .getValues();
+  const marcacoesConvocacao = aba
+    .getRange(2, COL.CONVOCACAO_BAIXADA, totalLinhas, 1)
+    .getDisplayValues();
 
-      const diasRaw = l[COL.DIAS_PARA_VENCER - 1];
-      const diasParaVencer = diasRaw === "" || diasRaw === null
-        ? calcularDiferencaDias(formatarDataISO(l[COL.PROXIMO_VENCIMENTO - 1]), obterHojeISO())
-        : Number(diasRaw) || 0;
+  const hojeISO = obterHojeISO();
+  const saida = [];
 
-      const informacoesAgenda = valorTexto(l[COL.STATUS_AGENDA - 1]);
-      const statusAgenda = "";
-      const statusGeral = valorTexto(l[COL.STATUS_GERAL - 1]);
-      const situacao = valorTexto(l[COL.SITUACAO - 1]);
+  for (let idx = 0; idx < dadosBase.length; idx++) {
+    const l = dadosBase[idx];
+    if (!valorTexto(l[COL.MAT - 1])) continue;
 
-      return {
-        linha: idx + 2,
+    const periodicidade = Number(l[COL.PERIODICIDADE - 1]) || 0;
+    const dataPenultimoAso = formatarDataISO(l[COL.DATA_PENULTIMO_ASO - 1]);
+    const dataUltimoAso = formatarDataISO(l[COL.DATA_ULTIMO_ASO - 1]);
+    const proximoVencimento = formatarDataISO(l[COL.PROXIMO_VENCIMENTO - 1]);
+    const dataPrevistaIndicador = adicionarMeses(dataPenultimoAso, periodicidade);
 
-        mat: valorTexto(l[COL.MAT - 1]),
-        matricula: valorTexto(l[COL.MAT - 1]),
-        matriculaCompleta: valorTexto(l[COL.MATRICULA_COMPLETA - 1]),
+    const diasRaw = l[COL.DIAS_PARA_VENCER - 1];
+    const diasParaVencer = diasRaw === "" || diasRaw === null
+      ? calcularDiferencaDias(proximoVencimento, hojeISO)
+      : Number(diasRaw) || 0;
 
-        nome: valorTexto(l[COL.NOME - 1]),
-        funcao: valorTexto(l[COL.FUNCAO - 1]),
-        setor: valorTexto(l[COL.SETOR - 1]),
+    const situacao = valorTexto(l[COL.SITUACAO - 1]);
 
-        situacao: situacao,
-        situacaoNorm: normalizarTexto(situacao),
+    saida.push({
+      linha: idx + 2,
 
-        tipoExame: valorTexto(l[COL.TIPO_EXAME - 1]),
-        periodicidade: periodicidade,
+      mat: valorTexto(l[COL.MAT - 1]),
+      matricula: valorTexto(l[COL.MAT - 1]),
+      matriculaCompleta: valorTexto(l[COL.MATRICULA_COMPLETA - 1]),
 
-        dataPenultimoAso: dataPenultimoAso,
-        dataPenultimoAsoBR: formatarDataBR(l[COL.DATA_PENULTIMO_ASO - 1]),
+      nome: valorTexto(l[COL.NOME - 1]),
+      funcao: valorTexto(l[COL.FUNCAO - 1]),
+      setor: valorTexto(l[COL.SETOR - 1]),
 
-        dataUltimoAso: dataUltimoAso,
-        dataUltimoAsoBR: formatarDataBR(l[COL.DATA_ULTIMO_ASO - 1]),
+      situacao: situacao,
+      situacaoNorm: normalizarTexto(situacao),
 
-        dataPrevistaIndicador: dataPrevistaIndicador,
-        dataPrevistaIndicadorBR: formatarDataBR(dataPrevistaIndicador),
+      tipoExame: valorTexto(l[COL.TIPO_EXAME - 1]),
+      periodicidade: periodicidade,
 
-        proximoVencimento: formatarDataISO(l[COL.PROXIMO_VENCIMENTO - 1]),
-        proximoVencimentoBR: formatarDataBR(l[COL.PROXIMO_VENCIMENTO - 1]),
+      dataPenultimoAso: dataPenultimoAso,
+      dataPenultimoAsoBR: formatarDataBR(dataPenultimoAso),
 
-        dataConvocar: formatarDataISO(l[COL.DATA_CONVOCAR - 1]),
-        dataConvocarBR: formatarDataBR(l[COL.DATA_CONVOCAR - 1]),
+      dataUltimoAso: dataUltimoAso,
+      dataUltimoAsoBR: formatarDataBR(dataUltimoAso),
 
-        dataLimite: formatarDataISO(l[COL.DATA_LIMITE - 1]),
-        dataLimiteBR: formatarDataBR(l[COL.DATA_LIMITE - 1]),
+      dataPrevistaIndicador: dataPrevistaIndicador,
+      dataPrevistaIndicadorBR: formatarDataBR(dataPrevistaIndicador),
 
-        diasParaVencer: diasParaVencer,
-        prioridade: definirPrioridade(diasParaVencer),
+      proximoVencimento: proximoVencimento,
+      proximoVencimentoBR: formatarDataBR(proximoVencimento),
 
-        dataAgendada: formatarDataISO(l[COL.DATA_AGENDADA - 1]),
-        dataAgendadaBR: formatarDataBR(l[COL.DATA_AGENDADA - 1]),
+      dataConvocar: formatarDataISO(l[COL.DATA_CONVOCAR - 1]),
+      dataConvocarBR: formatarDataBR(l[COL.DATA_CONVOCAR - 1]),
 
-        statusAgenda: statusAgenda,
-        statusAgendaNorm: normalizarTexto(statusAgenda),
-        informacoesAgenda: informacoesAgenda,
+      dataLimite: formatarDataISO(l[COL.DATA_LIMITE - 1]),
+      dataLimiteBR: formatarDataBR(l[COL.DATA_LIMITE - 1]),
 
-        statusGeral: statusGeral,
-        statusGeralNorm: normalizarTexto(statusGeral),
+      diasParaVencer: diasParaVencer,
+      prioridade: definirPrioridade(diasParaVencer),
 
-        convocacaoBaixada: valorTexto(l[COL.CONVOCACAO_BAIXADA - 1])
-      };
+      // Derivados da AGENDA em aplicarAsoRealizadoAgenda().
+      dataAgendada: "",
+      dataAgendadaBR: "",
+      statusAgenda: "",
+      statusAgendaNorm: "",
+      informacoesAgenda: "",
+      statusGeral: "",
+      statusGeralNorm: "",
+
+      convocacaoBaixada: valorTexto(
+        marcacoesConvocacao[idx] && marcacoesConvocacao[idx][0]
+      )
     });
+  }
+
+  return saida;
 }
 
 /* =========================================================
@@ -354,24 +368,25 @@ function aplicarOcorrenciasAgenda(lista, eventosPorMatricula) {
   return lista || [];
 }
 function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
+  const hojeISO = obterHojeISO();
+
   (lista || []).forEach(c => {
     const eventos = obterEventosPorColaborador(eventosPorMatricula, c);
-    // obterEventosPorColaborador já devolve a lista ordenada.
-    const eventosOrdenados = eventos.filter(e => e.data);
-    const ultimoEvento = eventosOrdenados.length
-      ? eventosOrdenados[eventosOrdenados.length - 1]
+    const eventosComData = eventos.filter(e => e.data);
+    const periodicos = eventosComData.filter(ehEventoPeriodicoAgenda);
+    const ultimoPeriodico = periodicos.length
+      ? periodicos[periodicos.length - 1]
       : null;
 
-    // O status operacional reflete somente o último registro da agenda.
-    // Se o registro mais recente ainda não possui status, permanece vazio.
-    c.statusAgenda = ultimoEvento ? valorTexto(ultimoEvento.status) : "";
+    /* P (DATA AGENDADA) e o status operacional passam a ser derivados
+       diretamente do último registro PERIÓDICO da AGENDA. */
+    c.dataAgendada = ultimoPeriodico ? (ultimoPeriodico.data || "") : "";
+    c.dataAgendadaBR = formatarDataBR(c.dataAgendada);
+    c.statusAgenda = ultimoPeriodico ? valorTexto(ultimoPeriodico.status) : "";
     c.statusAgendaNorm = normalizarTexto(c.statusAgenda);
 
-    const realizadosTodos = eventos
-      .filter(e => e.ehAsoRealizado)
-      .filter(e => e.data);
-
-    const realizados = realizadosTodos.filter(ehEventoPeriodicoAgenda);
+    const realizadosTodos = eventosComData.filter(e => e.ehAsoRealizado);
+    const realizadosPeriodicos = realizadosTodos.filter(ehEventoPeriodicoAgenda);
 
     c.asosRealizadosNaoPeriodicos = realizadosTodos
       .filter(e => !ehEventoPeriodicoAgenda(e))
@@ -382,40 +397,91 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
         status: e.status || ""
       }));
 
-    /* A coluna Q já descreve periódicos, demissionais e retornos. Quando o
-       registro realizado veio com outro tipo (por exemplo, CONSULTA), a
-       planilha pode deixar a informação vazia e o painel acabava exibindo
-       apenas "ASO Realizado". Nesse caso, complementamos com a data real. */
-    if (!valorTexto(c.informacoesAgenda) && realizadosTodos.length) {
-      const ultimoRealizado = realizadosTodos[realizadosTodos.length - 1];
-      const tipoRealizado = normalizarTexto(ultimoRealizado.tipo || "");
-      const dataRealizadaBR = ultimoRealizado.dataBR || formatarDataBR(ultimoRealizado.data);
-      let descricaoRealizacao = "ASO realizado";
+    // Q (informações da agenda) é reconstruída em memória, sem SORT/FILTER na planilha.
+    const ultimosPorTipo = {
+      DEMISSIONAL: null,
+      RETORNO: null,
+      PERIODICO: null
+    };
 
-      if (tipoRealizado.includes("DEMISSIONAL")) descricaoRealizacao = "ASO demissional realizado";
-      else if (tipoRealizado.includes("RETORNO")) descricaoRealizacao = "ASO de retorno realizado";
-      else if (tipoRealizado.includes("PERIODICO")) descricaoRealizacao = "ASO periódico realizado";
+    realizadosTodos.forEach(e => {
+      const tipo = normalizarTexto(e.tipoNorm || e.tipo || "");
+      if (tipo.includes("DEMISSIONAL")) ultimosPorTipo.DEMISSIONAL = e;
+      else if (tipo.includes("RETORNO")) ultimosPorTipo.RETORNO = e;
+      else if (tipo.includes("PERIODIC")) ultimosPorTipo.PERIODICO = e;
+    });
 
-      c.informacoesAgenda = descricaoRealizacao + (dataRealizadaBR ? " em " + dataRealizadaBR : "");
+    const informacoes = [];
+    if (ultimosPorTipo.DEMISSIONAL) {
+      informacoes.push(
+        "ASO demissional realizado em " +
+        (ultimosPorTipo.DEMISSIONAL.dataBR || formatarDataBR(ultimosPorTipo.DEMISSIONAL.data))
+      );
+    }
+    if (ultimosPorTipo.RETORNO) {
+      informacoes.push(
+        "ASO de retorno realizado em " +
+        (ultimosPorTipo.RETORNO.dataBR || formatarDataBR(ultimosPorTipo.RETORNO.data))
+      );
+    }
+    if (ultimosPorTipo.PERIODICO) {
+      informacoes.push(
+        "ASO periódico realizado em " +
+        (ultimosPorTipo.PERIODICO.dataBR || formatarDataBR(ultimosPorTipo.PERIODICO.data))
+      );
     }
 
-    if (realizados.length === 0) {
+    if (!informacoes.length && realizadosTodos.length) {
+      const ultimoRealizado = realizadosTodos[realizadosTodos.length - 1];
+      informacoes.push(
+        "ASO realizado" +
+        (ultimoRealizado.data
+          ? " em " + (ultimoRealizado.dataBR || formatarDataBR(ultimoRealizado.data))
+          : "")
+      );
+    }
+    c.informacoesAgenda = informacoes.join("\n");
+
+    if (realizadosPeriodicos.length === 0) {
       c.temAsoRealizadoAgenda = false;
       c.dataAsoRealizadoAgenda = "";
       c.dataAsoRealizadoAgendaBR = "";
       c.tipoAsoRealizadoAgenda = "";
-      return;
+    } else {
+      const ultimoRealizado = realizadosPeriodicos[realizadosPeriodicos.length - 1];
+      c.temAsoRealizadoAgenda = true;
+      c.dataAsoRealizadoAgenda = ultimoRealizado.data;
+      c.dataAsoRealizadoAgendaBR =
+        ultimoRealizado.dataBR || formatarDataBR(ultimoRealizado.data);
+      c.tipoAsoRealizadoAgenda = ultimoRealizado.tipo || "Periódico";
     }
 
-    const ultimo = realizados[realizados.length - 1];
-
-    c.temAsoRealizadoAgenda = true;
-    c.dataAsoRealizadoAgenda = ultimo.data;
-    c.dataAsoRealizadoAgendaBR = ultimo.dataBR || formatarDataBR(ultimo.data);
-    c.tipoAsoRealizadoAgenda = ultimo.tipo || "Periódico";
+    // R (STATUS GERAL) também deixa de depender da fórmula da planilha.
+    c.statusGeral = calcularStatusGeralPortalV14_7_(c, hojeISO);
+    c.statusGeralNorm = normalizarTexto(c.statusGeral);
   });
 
   return lista || [];
+}
+
+function calcularStatusGeralPortalV14_7_(c, hojeISO) {
+  const dataPeriodico = c && c.dataAgendada ? String(c.dataAgendada) : "";
+  const vencimento = c && c.proximoVencimento ? String(c.proximoVencimento) : "";
+  const statusPeriodico = normalizarTexto(c && c.statusAgenda ? c.statusAgenda : "");
+
+  if (
+    dataPeriodico &&
+    vencimento &&
+    dataPeriodico.substring(0, 4) === vencimento.substring(0, 4)
+  ) {
+    if (statusPeriodico.includes("ASO REALIZADO")) return "REALIZADO";
+    return "AGENDADO";
+  }
+
+  if (vencimento && vencimento < hojeISO) return "VENCIDO";
+  if (c && c.dataLimite && c.dataLimite <= hojeISO) return "PRIORIDADE";
+  if (c && c.dataConvocar && c.dataConvocar <= hojeISO) return "CONVOCAR";
+  return "EM DIA";
 }
 
 function temAsoRealizadoValido(c) {

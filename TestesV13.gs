@@ -42,16 +42,34 @@ function executarRegressaoRegrasConvocacaoV14() {
   };
 
   const eventos = new Map();
-  eventos.set("TESTE_X", [{
-    mat: "TESTE_X",
-    data: "2026-08-07",
-    dataBR: "07/08/2026",
-    tipo: "DEMISSIONAL",
-    tipoNorm: "DEMISSIONAL",
-    status: "ASO Realizado",
-    statusNorm: "ASO REALIZADO",
-    ehAsoRealizado: true
-  }]);
+  eventos.set("TESTE_X", [
+    {
+      mat: "TESTE_X",
+      data: "2026-08-07",
+      dataBR: "07/08/2026",
+      tipo: "DEMISSIONAL",
+      tipoNorm: "DEMISSIONAL",
+      status: "ASO Realizado",
+      statusNorm: "ASO REALIZADO",
+      ehAsoRealizado: true
+    },
+    {
+      // Na V14.7 DATA AGENDADA é derivada da própria AGENDA.
+      // O cenário setembro -> outubro precisa, portanto, simular o
+      // agendamento periódico futuro na mesma fonte de verdade.
+      mat: "TESTE_X",
+      data: "2026-10-05",
+      dataBR: "05/10/2026",
+      tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO",
+      status: "",
+      statusNorm: "",
+      ehAsoRealizado: false,
+      ehNaoCompareceu: false,
+      ehReagendou: false,
+      ehCancelado: false
+    }
+  ]);
 
   aplicarAsoRealizadoAgenda([colaborador], eventos);
   prepararFlagsPortal([colaborador]);
@@ -61,6 +79,14 @@ function executarRegressaoRegrasConvocacaoV14() {
     colaborador.asoRealizadoValido === false,
     colaborador.asosRealizadosNaoPeriodicos
   );
+
+  testar(
+    "Data agendada é reconstruída a partir do periódico da AGENDA",
+    colaborador.dataAgendada === "2026-10-05",
+    colaborador.dataAgendada || "sem data"
+  );
+
+
 
   const outubro = gerarListaConvocar([colaborador], "2026-10-01", "2026-10-31");
   testar(
@@ -342,10 +368,10 @@ function executarRegressaoFaltaRealizadaV14_5() {
 
 
 /* =========================================================
-   V14.6 - DIAGNÓSTICO DETALHADO DE PERFORMANCE
+   V14.7 - DIAGNÓSTICO DETALHADO DE PERFORMANCE
    Mede as etapas do contexto sem depender do cache anterior.
 ========================================================= */
-function diagnosticarPerformanceDetalhadaV14_6() {
+function diagnosticarPerformanceDetalhadaV14_7() {
   const etapas = [];
   const totalInicio = Date.now();
 
@@ -400,7 +426,7 @@ function diagnosticarPerformanceDetalhadaV14_6() {
   });
 
   const resultado = {
-    versao: "14.6",
+    versao: "14.7",
     duracaoTotalMs: Date.now() - totalInicio,
     colaboradores: lista.length,
     pendenciasOperacionais: (pendencias.operacionais || []).length,
@@ -416,20 +442,20 @@ function diagnosticarPerformanceDetalhadaV14_6() {
 
 
 /* =========================================================
-   V14.6 - VALIDAÇÃO ÚNICA ANTES DA PUBLICAÇÃO
+   V14.7 - VALIDAÇÃO ÚNICA ANTES DA PUBLICAÇÃO
 ========================================================= */
-function validarAntesPublicarV14_6() {
+function validarAntesPublicarV14_7() {
   const inicio = Date.now();
 
   const regrasConvocacao = executarRegressaoRegrasConvocacaoV14();
   const faltaPosterior = executarRegressaoFaltaRealizadaV14_5();
-  const performanceDetalhada = diagnosticarPerformanceDetalhadaV14_6();
+  const performanceDetalhada = diagnosticarPerformanceDetalhadaV14_7();
 
   const resultado = {
     sucesso:
       !!regrasConvocacao && regrasConvocacao.sucesso === true &&
       !!faltaPosterior && faltaPosterior.sucesso === true,
-    versao: "14.6",
+    versao: "14.7",
     duracaoTotalValidacaoMs: Date.now() - inicio,
     regrasConvocacao: {
       sucesso: !!regrasConvocacao && regrasConvocacao.sucesso === true,

@@ -204,10 +204,21 @@ function montarItemAnaliseIndicador(c, evento, mesAnalise, mesVencimento, classi
 }
 
 function adicionarDiasIndicadorASO(dataISO, dias) {
-  const data = dataISOParaDate(dataISO);
-  if (!data) return "";
-  data.setDate(data.getDate() + Number(dias || 0));
-  return Utilities.formatDate(data, CONFIG.TIMEZONE, "yyyy-MM-dd");
+  const texto = formatarDataISO(dataISO);
+  if (!texto) return "";
+
+  const data = new Date(Date.UTC(
+    Number(texto.substring(0, 4)),
+    Number(texto.substring(5, 7)) - 1,
+    Number(texto.substring(8, 10))
+  ));
+  data.setUTCDate(data.getUTCDate() + Number(dias || 0));
+
+  return [
+    data.getUTCFullYear(),
+    String(data.getUTCMonth() + 1).padStart(2, "0"),
+    String(data.getUTCDate()).padStart(2, "0")
+  ].join("-");
 }
 
 function ordenarAnalisesPorMesIndicador(analisePorMes) {
