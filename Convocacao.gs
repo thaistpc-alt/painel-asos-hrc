@@ -211,6 +211,7 @@ function gerarConvocacaoPorColaborador(colaborador, dadosAgenda, opcoes) {
     }
 
     modeloTemp.getRange("E18").setValue(turno);
+    modeloTemp.getRange("G27").setValue(new Date()).setNumberFormat("dd/MM/yyyy");
 
     SpreadsheetApp.flush();
 
