@@ -16,60 +16,54 @@ function lerAgendaDados() {
   return aba.getRange(3, 4, ultimaLinha - 2, 6).getValues();
 }
 
-function buscarUltimoTurnoAgenda(mat, dadosAgenda) {
+function buscarUltimoTurnoAgenda(mat, dataAgendada, dadosAgenda) {
+  const matricula = String(mat || "").trim();
+  const dataAlvo = formatarDataISO(dataAgendada);
+
   if (dadosAgenda && typeof dadosAgenda.get === "function") {
-    return dadosAgenda.get(String(mat).trim()) || "";
+    if (dataAlvo && dadosAgenda.has(matricula + "|" + dataAlvo)) {
+      return dadosAgenda.get(matricula + "|" + dataAlvo) || "";
+    }
+    return dadosAgenda.get(matricula) || "";
   }
 
-  const dados = dadosAgenda || lerAgendaDados();
-
-  if (!dados || dados.length === 0) return "";
-
-  // lerAgendaDados devolve D:I => data=0, matrícula=4, turno=5.
-  const IDX_DATA = 0;
-  const IDX_MAT = 4;
-  const IDX_TURNO = 5;
-  const matricula = String(mat).trim();
-  let melhorData = new Date(0);
-  let turno = "";
-
-  dados.forEach(l => {
-    if (String(l[IDX_MAT] || "").trim() !== matricula || !l[IDX_DATA]) return;
-    const data = limparDataParaOrdenacao(l[IDX_DATA]);
-    if (data >= melhorData) {
-      melhorData = data;
-      turno = valorTexto(l[IDX_TURNO]);
-    }
-  });
-
-  return turno;
+  const mapa = montarUltimosTurnosAgenda(dadosAgenda || lerAgendaDados());
+  if (dataAlvo && mapa.has(matricula + "|" + dataAlvo)) {
+    return mapa.get(matricula + "|" + dataAlvo) || "";
+  }
+  return mapa.get(matricula) || "";
 }
 
 function montarUltimosTurnosAgenda(dadosAgenda) {
   const dados = dadosAgenda || lerAgendaDados();
-  const mapa = new Map();
+  const turnos = new Map();
+  const ultimoPeriodico = new Map();
 
+  // D:I => D data, G tipo, H matrícula, I turno.
   const IDX_DATA = 0;
+  const IDX_TIPO = 3;
   const IDX_MAT = 4;
   const IDX_TURNO = 5;
 
   dados.forEach(l => {
     const mat = String(l[IDX_MAT] || "").trim();
-    if (!mat) return;
+    const dataISO = formatarDataISO(l[IDX_DATA]);
+    const tipo = normalizarTexto(l[IDX_TIPO] || "");
+    if (!mat || !dataISO || !tipo.includes("PERIODIC")) return;
 
-    const data = limparDataParaOrdenacao(l[IDX_DATA]);
-    const atual = mapa.get(mat);
+    const turno = valorTexto(l[IDX_TURNO]);
+    turnos.set(mat + "|" + dataISO, turno);
 
-    if (!atual || data >= atual.data) {
-      mapa.set(mat, {
-        data: data,
-        turno: valorTexto(l[IDX_TURNO])
-      });
+    const atual = ultimoPeriodico.get(mat);
+    if (!atual || dataISO >= atual.dataISO) {
+      ultimoPeriodico.set(mat, { dataISO: dataISO, turno: turno });
     }
   });
 
-  const turnos = new Map();
-  mapa.forEach((item, mat) => turnos.set(mat, item.turno || ""));
+  ultimoPeriodico.forEach((item, mat) => {
+    turnos.set(mat, item.turno || "");
+  });
+
   return turnos;
 }
 
@@ -131,6 +125,9 @@ function gerarConvocacaoIndividual(mat) {
     throw new Error("Colaborador não encontrado: " + mat);
   }
 
+  const motivo = motivoNaoBaixarConvocacao(colaborador, "", "");
+  if (motivo) throw new Error(motivo);
+
   return gerarConvocacaoPorColaborador(colaborador, null);
 }
 
@@ -142,12 +139,32 @@ function criarContextoGeracaoConvocacoes() {
     throw new Error("Aba CONVOCAÇÃO não encontrada.");
   }
 
+  limparTemporariosConvocacaoV15_(ss);
   const nomeTemp = "TEMP_CONVOCACOES_" + new Date().getTime();
   return {
     ss: ss,
     modeloTemp: modeloOriginal.copyTo(ss).setName(nomeTemp),
     pasta: DriveApp.getFolderById(CONFIG.PASTA_PDFS_ID)
   };
+}
+
+function limparTemporariosConvocacaoV15_(ss) {
+  const agora = Date.now();
+  const limiteMs = 6 * 60 * 60 * 1000;
+
+  (ss.getSheets() || []).forEach(function(aba) {
+    const nome = String(aba.getName() || "");
+    if (!nome.startsWith("TEMP_CONVOCACOES_")) return;
+
+    const timestamp = Number(nome.substring("TEMP_CONVOCACOES_".length));
+    if (!timestamp || agora - timestamp < limiteMs) return;
+
+    try {
+      ss.deleteSheet(aba);
+    } catch (e) {
+      console.warn("Não foi possível remover temporário antigo " + nome + ": " + e.message);
+    }
+  });
 }
 
 function encerrarContextoGeracaoConvocacoes(contexto) {
@@ -167,7 +184,11 @@ function gerarConvocacaoPorColaborador(colaborador, dadosAgenda, opcoes) {
   const modeloTemp = contexto.modeloTemp;
 
   const turno = colaborador.dataAgendada
-    ? buscarUltimoTurnoAgenda(colaborador.mat, opcoes.turnosAgenda || dadosAgenda)
+    ? buscarUltimoTurnoAgenda(
+        colaborador.mat,
+        colaborador.dataAgendada,
+        opcoes.turnosAgenda || dadosAgenda
+      )
     : "";
 
   try {
