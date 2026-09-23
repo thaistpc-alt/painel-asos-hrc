@@ -991,6 +991,39 @@ function gerarListaConvocar(lista, dataInicio, dataFim) {
     });
 }
 
+function gerarListaRevisaoConvocar(lista, dataInicio, dataFim) {
+  return (lista || [])
+    .map(function(c) {
+      const avaliacao = avaliarElegibilidadeConvocacao(c, dataInicio, dataFim);
+      if (!avaliacao.grupoConvocacao) return null;
+      if (avaliacao.eventoQueEncerrouCiclo) return null;
+      if (avaliacao.elegivel && !avaliacao.revisaoDados) return null;
+
+      return {
+        mat: c.mat || "",
+        nome: c.nome || "",
+        funcao: c.funcao || "",
+        setor: c.setor || "",
+        situacao: c.situacao || "",
+        grupoConvocacao: avaliacao.grupoConvocacao,
+        statusOperacional: avaliacao.statusOperacional || "Revisar",
+        motivos: avaliacao.motivos || [],
+        revisaoDados: !!avaliacao.revisaoDados,
+        dataConvocar: c.dataConvocar || "",
+        dataConvocarBR: c.dataConvocarBR || "",
+        dataAgendada: c.dataAgendada || "",
+        dataAgendadaBR: c.dataAgendadaBR || ""
+      };
+    })
+    .filter(Boolean)
+    .sort(function(a, b) {
+      const dataA = a.dataConvocar || "";
+      const dataB = b.dataConvocar || "";
+      if (dataA !== dataB) return dataA.localeCompare(dataB);
+      return String(a.nome || "").localeCompare(String(b.nome || ""));
+    });
+}
+
 function ordenarPorDataAgendada(a, b) {
   const dataA = a.dataAgendada || "";
   const dataB = b.dataAgendada || "";
