@@ -623,14 +623,22 @@ function validarCasosCriticosV15() {
   );
 
   const c3738 = porMat("3738");
+  const pend3738 = (pendencias.operacionais || []).some(i =>
+    obterChavesMatricula(i.mat, i.matriculaCompleta).includes("3738")
+  );
   testar(
-    "3738 - demissional não encerra ciclo periódico",
+    "3738 - demissional não encerra ciclo e periódico cancelado exige nova ação",
     !!c3738 &&
       c3738.temAsoRealizadoAgenda === false &&
+      c3738.dataAgendada === "" &&
+      normalizarTexto(c3738.statusAgenda).includes("CANCELAD") &&
+      pend3738 === true &&
       (c3738.asosRealizadosNaoPeriodicos || []).some(e => normalizarTexto(e.tipo).includes("DEMISSIONAL")),
     c3738 ? {
       dataAgendada: c3738.dataAgendada,
+      ultimoEventoPeriodico: c3738.dataUltimoEventoPeriodico,
       statusAgenda: c3738.statusAgenda,
+      pendenteOperacional: pend3738,
       naoPeriodicos: c3738.asosRealizadosNaoPeriodicos
     } : "não encontrado"
   );
