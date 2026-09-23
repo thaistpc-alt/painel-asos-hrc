@@ -620,6 +620,41 @@ function obterUltimaSincronizacaoBaseV15_() {
   return cfg.ULTIMA_SINCRONIZACAO || "";
 }
 
+
+function obterGestoresV15() {
+  const chave = "GESTORES_V15";
+  const cache = CacheService.getScriptCache();
+
+  try {
+    const salvo = cache.get(chave);
+    if (salvo) return JSON.parse(salvo);
+  } catch (e) {}
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const aba = ss.getSheetByName("GESTORES");
+  if (!aba || aba.getLastRow() < 2) return [];
+
+  const dados = aba.getRange(2, 1, aba.getLastRow() - 1, Math.min(5, aba.getLastColumn()))
+    .getDisplayValues();
+
+  const gestores = dados
+    .map(linha => ({
+      nome: String(linha[0] || "").trim(),
+      setor: String(linha[1] || "").trim(),
+      email: String(linha[2] || "").trim(),
+      telefone: String(linha[3] || "").trim(),
+      observacao: String(linha[4] || "").trim()
+    }))
+    .filter(item => item.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.email))
+    .sort((a, b) => String(a.nome || "").localeCompare(String(b.nome || "")));
+
+  try {
+    cache.put(chave, JSON.stringify(gestores), 1800);
+  } catch (e) {}
+
+  return gestores;
+}
+
 function instalarAtualizacaoAutomaticaV15() {
   const nome = "sincronizarBaseAutomaticamenteV15";
   ScriptApp.getProjectTriggers()
