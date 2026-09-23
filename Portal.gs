@@ -597,9 +597,8 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
     // A lista já vem consolidada, sem duplicidades e em ordem cronológica.
     const eventos = obterEventosPorColaborador(eventosPorMatricula, colaborador);
     const eventosPendencia = eventos.filter(e =>
-      e.ehNaoCompareceu ||
-      e.ehReagendou ||
-      (e.ehCancelado && ehEventoPeriodicoAgenda(e))
+      ehEventoPeriodicoAgenda(e) &&
+      (e.ehNaoCompareceu || e.ehReagendou || e.ehCancelado)
     );
 
     // Fallback: quando a aba AGENDA não possui histórico/status legível, usa o status atual da FONTEpainel.
@@ -669,6 +668,7 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
 
     const proximoAgendamento = eventos.find(e =>
       e.data &&
+      ehEventoPeriodicoAgenda(e) &&
       dataMaiorQue(e.data, ultimaPendencia.data) &&
       !e.ehNaoCompareceu &&
       !e.ehReagendou &&
