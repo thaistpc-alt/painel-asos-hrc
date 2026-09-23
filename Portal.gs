@@ -828,7 +828,7 @@ function montarEventosAgendaPorMatricula() {
       mapaEventos.get(chave).push(evento);
     });
 
-    if (ehNaoCompareceu || ehReagendou) {
+    if (tipoNorm.includes("PERIODIC") && (ehNaoCompareceu || ehReagendou)) {
       chaves.forEach(chave => {
         mapaOcorrencias.set(chave, (Number(mapaOcorrencias.get(chave)) || 0) + 1);
       });
