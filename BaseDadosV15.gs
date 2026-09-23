@@ -287,3 +287,46 @@ function onOpen() {
     console.warn("Não foi possível criar o menu Painel ASOs: " + e.message);
   }
 }
+
+
+function obterGestoresV15() {
+  const cache = CacheService.getScriptCache();
+  const chave = "ASOS_V15_GESTORES";
+  const cacheado = cache.get(chave);
+  if (cacheado) {
+    try {
+      return JSON.parse(cacheado);
+    } catch (e) {}
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const aba = ss.getSheetByName("GESTORES");
+  if (!aba || aba.getLastRow() < 2) return [];
+
+  const valores = aba
+    .getRange(2, 1, aba.getLastRow() - 1, Math.min(5, aba.getLastColumn()))
+    .getDisplayValues();
+
+  const gestores = valores
+    .map(function(linha) {
+      return {
+        nome: String(linha[0] || "").trim(),
+        setor: String(linha[1] || "").trim(),
+        email: String(linha[2] || "").trim().toLowerCase(),
+        telefone: String(linha[3] || "").trim(),
+        observacao: String(linha[4] || "").trim()
+      };
+    })
+    .filter(function(item) {
+      return item.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.email);
+    })
+    .sort(function(a, b) {
+      return a.nome.localeCompare(b.nome);
+    });
+
+  try {
+    cache.put(chave, JSON.stringify(gestores), 21600);
+  } catch (e) {}
+
+  return gestores;
+}
