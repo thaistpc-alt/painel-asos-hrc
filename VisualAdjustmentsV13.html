@@ -38,9 +38,11 @@
 
   function carregarGeralSeguro(){const inicio=document.getElementById('dataInicio')?.value||'',fim=document.getElementById('dataFim')?.value||'';if(!inicio||!fim)return;const meuToken=++tokenGeral,div=document.getElementById('tabelaColaboradores');if(div)div.innerHTML='<div class="vazio">Carregando colaboradores...</div>';google.script.run.withSuccessHandler(r=>{if(meuToken!==tokenGeral)return;const ai=document.getElementById('dataInicio')?.value||'',af=document.getElementById('dataFim')?.value||'';if(ai!==inicio||af!==fim)return;dadosPortal=Object.assign(dadosPortal||{},r||{});filtrarColaboradores();quebrarCabecalhos()}).withFailureHandler(e=>{if(meuToken===tokenGeral&&div)div.innerHTML='<div class="vazio">Erro ao carregar colaboradores: '+escaparHtml(e.message||e)+'</div>'}).obterModuloPortalV13('COLABORADORES',inicio,fim,false);}
 
-  window.carregarFiltroSituacao=function(){montarFiltroSituacao();atualizarResumoSituacoes()};window.filtrarConvocacaoPorSituacao=aplicarSituacoes;window.filtrarComplementares=filtrarComplementaresAjustado;
-  const limparOriginal=window.limparFiltrosLocais;window.limparFiltrosLocais=function(){if(typeof limparOriginal==='function')limparOriginal();resetarSituacoes();resetarSituacoesComplementares()};
-  const abrirOriginal=window.abrirAba;window.abrirAba=function(id,botao){abrirOriginal(id,botao);removerLimparAntigo();setTimeout(()=>{montarFiltroSituacao();if(id==='complementares'){montarFiltroSituacaoComplementares();filtrarComplementaresAjustado()}quebrarCabecalhos();ajustarIndicadores()},0)};
+  // V15: o filtro operacional de situação é único e é montado pelo bloco final do code.gs.
+  // Mantemos apenas os ajustes visuais desta camada, evitando criar e remover um segundo filtro.
+  window.carregarFiltroSituacao=function(){};
+  const limparOriginal=window.limparFiltrosLocais;window.limparFiltrosLocais=function(){if(typeof limparOriginal==='function')limparOriginal()};
+  const abrirOriginal=window.abrirAba;window.abrirAba=function(id,botao){abrirOriginal(id,botao);removerLimparAntigo();setTimeout(()=>{quebrarCabecalhos();ajustarIndicadores()},0)};
 
   const renderComplementaresOriginal=window.renderizarComplementares;window.renderizarComplementares=function(lista){if(typeof renderComplementaresOriginal==='function')renderComplementaresOriginal(lista);const cards=document.getElementById('cardsComplementares');if(cards)cards.innerHTML='';const tabela=document.querySelector('#tabelaComplementares table');if(tabela&&!tabela.querySelector('th[data-situacao]')){tabela.querySelectorAll('tr').forEach((tr,idx)=>{const cel=document.createElement(idx===0?'th':'td');if(idx===0){cel.textContent='Situação';cel.dataset.situacao='1';tr.insertBefore(cel,tr.children[5]||null)}else{const item=(lista||[])[idx-1];cel.textContent=item&&item.situacao||'';tr.insertBefore(cel,tr.children[5]||null)}})}quebrarCabecalhos()};
 
