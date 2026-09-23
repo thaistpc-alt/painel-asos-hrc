@@ -370,9 +370,8 @@ function reduzirMatriculaV15_(matriculaCompleta) {
 
 function periodicidadeFonteV15_(funcao) {
   const f = normalizarTexto(funcao);
-  const radiologia = f.includes("RADIOLOGIA") &&
-    (f.includes("TECNICO") || f.includes("TECNOLOGO") || f.startsWith("TEC "));
-  return radiologia ? 6 : 12;
+  // Mantém exatamente a regra histórica da FONTEpainel.
+  return f.includes("TECNICO EM RADIOLOGIA") ? 6 : 12;
 }
 
 function calcularDataConvocarV15_(vencimento, periodicidade) {
