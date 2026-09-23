@@ -7,7 +7,7 @@
    - entrega cada módulo sob demanda.
 ========================================================= */
 
-const PERF13_PREFIXO = "ASOS_V14_7_";
+const PERF13_PREFIXO = "ASOS_V15_0_";
 const PERF13_TTL = 1800;
 const PERF13_PARTE = 80000;
 const PERF13_MAX_PARTES = 50;
@@ -230,7 +230,7 @@ function montarEventosAgendaPorMatriculaV13_() {
     obterChavesMatricula(mat, "").forEach(chave => {
       if (!mapaEventos.has(chave)) mapaEventos.set(chave, []);
       mapaEventos.get(chave).push(evento);
-      if (ehNaoCompareceu || ehReagendou) {
+      if (tipoNorm.includes("PERIODIC") && (ehNaoCompareceu || ehReagendou)) {
         mapaOcorrencias.set(chave, (Number(mapaOcorrencias.get(chave)) || 0) + 1);
       }
     });

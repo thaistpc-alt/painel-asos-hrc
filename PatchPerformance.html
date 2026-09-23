@@ -2,8 +2,8 @@
 :root{--menu:#0f172a;--menu2:#1e293b;--app:#f3f6fa;--borda:#dce4ee;--azul:#1d4ed8;--verde:#047857}
 *{box-sizing:border-box}body{margin:0!important;padding:82px 0 0 250px!important;background:var(--app)!important;min-height:100vh;transition:.2s}.topo{display:none!important}
 .painel-sidebar{position:fixed;inset:0 auto 0 0;width:250px;background:linear-gradient(180deg,var(--menu),var(--menu2));color:#fff;z-index:1000;display:flex;flex-direction:column}.painel-brand{height:82px;padding:18px;display:flex;gap:12px;align-items:center;border-bottom:1px solid rgba(255,255,255,.1)}.painel-logo{width:40px;height:40px;border-radius:10px;background:#fff;color:#0f766e;display:grid;place-items:center;font-weight:800}.painel-brand strong{display:block;font-size:16px}.painel-brand span{font-size:12px;color:#cbd5e1}.painel-sidebar .abas{position:static!important;display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;gap:5px!important;padding:14px 10px!important;margin:0!important;background:transparent!important;overflow:auto;flex:1}.painel-sidebar .aba{width:100%;display:flex;align-items:center;gap:10px;text-align:left;background:transparent!important;color:#dbeafe!important;padding:12px!important;border-radius:10px!important;box-shadow:none!important}.painel-sidebar .aba:hover,.painel-sidebar .aba.ativa{background:rgba(255,255,255,.14)!important;color:#fff!important}.menu-icone{width:24px;text-align:center;flex:0 0 24px}.painel-rodape{padding:10px;border-top:1px solid rgba(255,255,255,.1)}.painel-rodape button{width:100%;background:transparent!important;color:#dbeafe!important;text-align:left;box-shadow:none!important}
-.painel-topbar{position:fixed;left:250px;right:0;top:0;height:82px;padding:14px 24px;background:#fff;border-bottom:1px solid var(--borda);z-index:999;display:flex;align-items:center;justify-content:space-between}.painel-topbar h1{margin:0;font-size:22px}.painel-topbar p{margin:4px 0 0;font-size:12px;color:#64748b}.painel-atualizar{height:38px;background:var(--azul)!important;padding:0 14px!important}
-.filtros{position:sticky;top:94px;z-index:50;margin:16px 20px 0!important;padding:10px 12px!important;display:flex!important;flex-wrap:nowrap!important;align-items:end!important;gap:8px!important;overflow-x:auto;background:#fff!important;border:1px solid var(--borda)!important;border-radius:12px!important}.filtros>div{flex:0 0 auto;min-width:0!important}.filtros label,.linha-filtros label{font-size:10px!important;margin-bottom:3px!important}.filtros input,.filtros select,.linha-filtros input,.linha-filtros select{height:36px!important;padding:6px 8px!important;font-size:11px!important;min-width:0!important}.filtros>div:nth-child(1),.filtros>div:nth-child(2){width:145px}.filtros>button{height:36px!important;padding:0 11px!important;font-size:11px!important;white-space:nowrap}.filtros .azul[onclick*="atualizarDadosForcado"]{display:none!important}#toolbarModulo{display:flex;align-items:end;gap:8px;flex:0 0 auto}.linha-filtros{display:flex!important;flex-wrap:nowrap!important;align-items:end!important;gap:8px!important;margin:0!important}.linha-filtros>div{min-width:0!important;flex:0 0 auto}.linha-filtros .campo-pesquisa{width:260px!important;flex:0 0 260px!important}.linha-filtros .email-gestor{width:230px!important;min-width:230px!important}.linha-filtros .acoes-lote{display:flex!important;flex-wrap:nowrap!important;gap:6px!important;margin:0!important}.linha-filtros button{height:36px!important;padding:0 9px!important;font-size:10px!important;white-space:nowrap}.loading{font-size:11px!important;white-space:nowrap}.conteudo{margin:16px 20px 0!important;padding:18px!important;border-radius:12px!important}.rodape-info#infoVersao,.rodape-info#infoSincronizacaoAgenda{display:none!important}.tabela-container{max-height:64vh!important;overflow:auto!important}th{position:sticky;top:0}.dashboard-grafico{margin-top:18px}.dashboard-grafico h3{margin:0 0 10px}.grafico-vazio{padding:14px;color:#64748b;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px}
+.painel-topbar{position:fixed;left:250px;right:0;top:0;height:82px;padding:14px 24px;background:#fff;border-bottom:1px solid var(--borda);z-index:999;display:flex;align-items:center;justify-content:space-between}.painel-topbar h1{margin:0;font-size:22px}.painel-topbar p{margin:4px 0 0;font-size:12px;color:#64748b}.painel-atualizar{height:38px;background:var(--azul)!important;padding:0 14px!important}.painel-atualizar:disabled{opacity:.65;cursor:wait}.painel-sync{font-size:10px;color:#475569;background:#f8fafc;border:1px solid #e2e8f0;border-radius:999px;padding:6px 9px;white-space:nowrap}.painel-topbar-status{display:flex;align-items:center;gap:9px}
+.filtros{position:sticky;top:94px;z-index:50;margin:16px 20px 0!important;padding:10px 12px!important;display:flex!important;flex-wrap:nowrap!important;align-items:end!important;gap:8px!important;overflow-x:auto;background:#fff!important;border:1px solid var(--borda)!important;border-radius:12px!important}.filtros>div{flex:0 0 auto;min-width:0!important}.filtros label,.linha-filtros label{font-size:10px!important;margin-bottom:3px!important}.filtros input,.filtros select,.linha-filtros input,.linha-filtros select{height:36px!important;padding:6px 8px!important;font-size:11px!important;min-width:0!important}.filtros>div:nth-child(1),.filtros>div:nth-child(2){width:145px}.filtros>button{height:36px!important;padding:0 11px!important;font-size:11px!important;white-space:nowrap}.filtros .azul[onclick*="atualizarDadosForcado"]{display:none!important}#toolbarModulo{display:flex;align-items:end;gap:8px;flex:0 0 auto}.linha-filtros{display:flex!important;flex-wrap:nowrap!important;align-items:end!important;gap:8px!important;margin:0!important}.linha-filtros>div{min-width:0!important;flex:0 0 auto}.linha-filtros .campo-pesquisa{width:260px!important;flex:0 0 260px!important}.linha-filtros .email-gestor{width:230px!important;min-width:230px!important}.linha-filtros .acoes-lote{display:flex!important;flex-wrap:nowrap!important;gap:6px!important;margin:0!important}.linha-filtros button{height:36px!important;padding:0 9px!important;font-size:10px!important;white-space:nowrap}.loading{font-size:11px!important;white-space:nowrap}.conteudo{margin:16px 20px 0!important;padding:18px!important;border-radius:12px!important}.rodape-info#infoVersao,.rodape-info#infoSincronizacaoAgenda{display:none!important}.tabela-container{max-height:64vh!important;overflow:auto!important}th{position:sticky;top:0}.dashboard-grafico{margin-top:18px}.dashboard-grafico h3{margin:0 0 10px}.grafico-vazio{padding:14px;color:#64748b;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px}.paginacao-geral{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:10px;padding:9px 12px;background:#f8fafc;border:1px solid var(--borda);border-radius:9px;font-size:11px;color:#475569}.paginacao-acoes{display:flex;align-items:center;gap:8px}.paginacao-acoes label{display:flex;align-items:center;gap:5px}.paginacao-acoes select{height:30px}.paginacao-acoes button{height:30px;padding:0 10px!important}.paginacao-acoes button:disabled{opacity:.45;cursor:not-allowed}.periodo-atalho{height:32px!important;padding:0 8px!important;background:#f8fafc!important;color:#334155!important;border:1px solid #cbd5e1!important}.card[data-destino]{cursor:pointer;transition:transform .12s,box-shadow .12s}.card[data-destino]:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(15,23,42,.09)}
 body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{width:76px}.menu-fechado .painel-brand div:last-child,.menu-fechado .aba-texto,.menu-fechado .toggle-texto{display:none}.menu-fechado .painel-topbar{left:76px}
 @media(max-width:1000px){body{padding-left:76px!important}.painel-sidebar{width:76px}.painel-brand div:last-child,.aba-texto,.toggle-texto{display:none}.painel-topbar{left:76px}.filtros,.conteudo{margin-left:10px!important;margin-right:10px!important}}
 </style>
@@ -27,6 +27,20 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
     const mapa={pesquisaConvocar:()=>filtrarConvocacaoPorSituacao(),pesquisaFaltosos:()=>filtrarPendencias(),pesquisaPrioridade:()=>filtrarTabelaPorTexto('tabelaPrioridade','pesquisaPrioridade'),pesquisaVencidos:()=>filtrarTabelaPorTexto('tabelaVencidos','pesquisaVencidos'),pesquisaComplementares:()=>filtrarComplementares(),pesquisaColaboradores:()=>filtrarColaboradores()};
     Object.keys(mapa).forEach(id=>{const el=document.getElementById(id);if(!el)return;el.removeAttribute('oninput');el.oninput=debounce(mapa[id],250)});
     document.querySelectorAll('.linha-filtros label').forEach(l=>{const t=l.textContent.trim().toLowerCase();if(t.startsWith('filtrar situação'))l.textContent='Situação';if(t==='grupo')l.textContent='Grupo de exame'});
+  }
+
+  function prepararGestoresV15(){
+    const ids=['emailGestorConvocacao','emailGestorPendencia'];
+    if(!ids.some(id=>document.getElementById(id)))return;
+    google.script.run.withSuccessHandler(lista=>{
+      let dl=document.getElementById('gestoresV15Lista');
+      if(!dl){dl=document.createElement('datalist');dl.id='gestoresV15Lista';document.body.appendChild(dl)}
+      dl.innerHTML=(lista||[]).map(g=>{
+        const label=[g.nome,g.setor].filter(Boolean).join(' — ');
+        return '<option value="'+String(g.email||'').replace(/"/g,'&quot;')+'" label="'+String(label).replace(/"/g,'&quot;')+'"></option>'
+      }).join('');
+      ids.forEach(id=>{const el=document.getElementById(id);if(el){el.setAttribute('list','gestoresV15Lista');el.title='Digite ou selecione um gestor cadastrado'}})
+    }).withFailureHandler(()=>{}).obterGestoresV15();
   }
 
   function prepararGraficoDashboard(){
@@ -59,11 +73,35 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
     ['abaDashboard','abaColaboradores','abaFaltosos','abaPrioridade','abaConvocar','abaComplementares','abaVencidos','abaIndicadores'].forEach(id=>{const el=document.getElementById(id);if(el)abas.appendChild(el)});
     const sidebar=document.createElement('aside');sidebar.className='painel-sidebar';sidebar.innerHTML='<div class="painel-brand"><div class="painel-logo">S</div><div><strong>SESMT HRC</strong><span>Painel de ASOs</span></div></div>';sidebar.appendChild(abas);
     const rodape=document.createElement('div');rodape.className='painel-rodape';rodape.innerHTML='<button type="button"><span class="menu-icone">↤</span><span class="toggle-texto">Recolher menu</span></button>';sidebar.appendChild(rodape);document.body.appendChild(sidebar);
-    const top=document.createElement('header');top.className='painel-topbar';top.innerHTML='<div><h1>PAINEL DE ASOS SESMT HRC</h1><p>Gestão de exames ocupacionais e convocações</p></div><button class="painel-atualizar" type="button">Atualizar dados</button>';document.body.appendChild(top);
-    top.querySelector('button').onclick=()=>atualizarDadosForcado();rodape.querySelector('button').onclick=()=>document.body.classList.toggle('menu-fechado');
+    const top=document.createElement('header');top.className='painel-topbar';top.innerHTML='<div><h1>PAINEL DE ASOS SESMT HRC</h1><p>Gestão de exames ocupacionais e convocações</p></div><div class="painel-topbar-status"><span id="painelSync" class="painel-sync">Base: aguardando leitura</span><button class="painel-atualizar" type="button">Atualizar dados</button></div>';document.body.appendChild(top);
+    top.querySelector('.painel-atualizar').onclick=()=>atualizarDadosForcado();rodape.querySelector('button').onclick=()=>document.body.classList.toggle('menu-fechado');
     const barra=document.querySelector('.filtros'),area=document.createElement('div');area.id='toolbarModulo';barra.appendChild(area);barra.querySelectorAll('button').forEach(b=>{if(String(b.getAttribute('onclick')||'').includes('limparFiltrosLocais'))b.textContent='Limpar'});
     document.querySelectorAll('.conteudo .linha-filtros').forEach(el=>origens.set(el,{pai:el.parentNode,proximo:el.nextSibling}));
-    aplicarRotulosMenu();prepararGraficoDashboard();prepararPesquisas();
+    aplicarRotulosMenu();prepararGraficoDashboard();prepararPesquisas();prepararGestoresV15();
+  }
+
+  function atualizarStatusBase(meta){
+    const el=document.getElementById('painelSync');if(!el)return;
+    const ultima=meta&&meta.ultimaSincronizacaoBase?meta.ultimaSincronizacaoBase:'';
+    el.textContent=ultima?'Base atualizada: '+ultima:'Base materializada';
+    el.title=meta&&meta.geradoEm?'Painel processado em '+meta.geradoEm:'';
+  }
+
+  function definirAtualizandoBase(ativo){
+    const b=document.querySelector('.painel-atualizar');if(!b)return;
+    b.disabled=!!ativo;b.textContent=ativo?'Sincronizando...':'Atualizar dados';
+  }
+
+  function abrirDestinoCard(id){
+    const botao=document.getElementById(id);if(botao&&typeof window.abrirAba==='function')window.abrirAba(
+      {abaConvocar:'convocar',abaFaltosos:'faltosos',abaPrioridade:'prioridade',abaComplementares:'complementares',abaVencidos:'vencidos',abaColaboradores:'colaboradores'}[id]||'dashboard',
+      botao
+    );
+  }
+
+  function ativarCardsDashboard(){
+    const mapa={totalConvocar:'abaConvocar',totalAgendados:'abaConvocar',totalCompareceram:'abaColaboradores',totalFaltosos:'abaFaltosos',totalPrioridade:'abaPrioridade',totalComplementares:'abaComplementares',totalVencidos:'abaVencidos',totalVencidosAtivos:'abaVencidos'};
+    Object.keys(mapa).forEach(id=>{const n=document.getElementById(id),card=n&&n.closest('.card');if(!card||card.dataset.destino)return;card.dataset.destino=mapa[id];card.title='Abrir '+(document.getElementById(mapa[id])?.textContent||'detalhes');card.onclick=()=>abrirDestinoCard(mapa[id])});
   }
 
   function moverFiltro(id){
@@ -73,8 +111,8 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
 
   function carregarResumo(forcar){
     const p=periodo();if(!p.inicio||!p.fim){mostrarErro('Informe a data inicial e a data final.');return}
-    const token=++requisicao;mostrarLoading(true);limparMensagens();if(forcar){carregados.clear();dadosPortal=null;graficoCarregado=false;if(timerGrafico){clearTimeout(timerGrafico);timerGrafico=null}}
-    google.script.run.withSuccessHandler(r=>{if(token!==requisicao)return;dadosPortal={dashboard:r.dashboard};periodoCarregadoPortal=p.inicio+'|'+p.fim;atualizarDashboard(r.dashboard);atualizarNomesAbas(r.dashboard);aplicarRotulosMenu();mostrarLoading(false);if(abaAtual==='dashboard')agendarGrafico();else carregarModulo(abaAtual,forcar)}).withFailureHandler(e=>{mostrarLoading(false);mostrarErro(e.message||e)}).obterResumoPortalV13Leve(p.inicio,p.fim,!!forcar);
+    const token=++requisicao;mostrarLoading(true);limparMensagens();if(forcar){carregados.clear();dadosPortal=null;graficoCarregado=false;definirAtualizandoBase(true);if(timerGrafico){clearTimeout(timerGrafico);timerGrafico=null}}
+    google.script.run.withSuccessHandler(r=>{if(token!==requisicao)return;dadosPortal={dashboard:r.dashboard,meta:r.meta||{}};periodoCarregadoPortal=p.inicio+'|'+p.fim;atualizarDashboard(r.dashboard);atualizarNomesAbas(r.dashboard);aplicarRotulosMenu();atualizarStatusBase(r.meta||{});ativarCardsDashboard();mostrarLoading(false);definirAtualizandoBase(false);if(forcar)mostrarOk('Base sincronizada e painel atualizado.');if(abaAtual==='dashboard')agendarGrafico();else carregarModulo(abaAtual,forcar)}).withFailureHandler(e=>{mostrarLoading(false);definirAtualizandoBase(false);mostrarErro(e.message||e)}).obterResumoPortalV13Leve(p.inicio,p.fim,!!forcar);
   }
 
   function carregarModulo(id,forcar){

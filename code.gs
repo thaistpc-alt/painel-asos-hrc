@@ -51,7 +51,7 @@ function enviarConvocacoesSelecionadasGestorComCopia(matriculas, emailsGestor, d
     throw new Error("Envie no máximo " + LIMITE_ANEXOS_EMAIL_GESTOR + " convocações por e-mail. O painel divide lotes maiores automaticamente.");
   }
 
-  const lista = lerFontePainel();
+  const lista = obterListaColaboradoresConvocacao_(dataInicio, dataFim);
   const dadosAgenda = lerAgendaDados();
   const turnosAgenda = montarUltimosTurnosAgenda(dadosAgenda);
   const mapa = new Map();
@@ -450,11 +450,34 @@ function doGet() {
     return bloco;
   }
 
+  function montarFiltroGrupoConvocacaoV15() {
+    const referencia = document.getElementById('filtroSituacaoConvocar');
+    const linha = referencia && referencia.closest('.linha-filtros');
+    if (!linha || document.getElementById('filtroGrupoConvocacaoV15')) return;
+
+    const bloco = document.createElement('div');
+    bloco.className = 'filtro-grupo-convocacao-v15';
+    bloco.innerHTML =
+      '<label>Origem da convocação</label>' +
+      '<select id="filtroGrupoConvocacaoV15">' +
+        '<option value="">Todas</option>' +
+        '<option value="Agendado no período">Agendados no período</option>' +
+        '<option value="Convocação do período">Convocações do período</option>' +
+        '<option value="Pendência anterior">Pendências anteriores</option>' +
+      '</select>';
+
+    const pesquisa = document.getElementById('pesquisaConvocar');
+    const alvo = pesquisa && pesquisa.closest('div');
+    linha.insertBefore(bloco, alvo || null);
+    bloco.querySelector('select').addEventListener('change', filtrarConvocarEstavel);
+  }
+
   function montarFiltroConvocar() {
     const select = document.getElementById('filtroSituacaoConvocar');
     const lista = listaConvocar();
     if (!select || !lista.length) return;
     renderizarFiltro('convocar', lista, select);
+    montarFiltroGrupoConvocacaoV15();
   }
 
   function montarFiltroComplementares() {
@@ -471,9 +494,12 @@ function doGet() {
     const termo = typeof obterTermoPesquisa === 'function'
       ? obterTermoPesquisa('pesquisaConvocar')
       : '';
+    const grupoEl = document.getElementById('filtroGrupoConvocacaoV15');
+    const grupo = grupoEl ? grupoEl.value || '' : '';
 
     const filtrados = listaConvocar().filter(item =>
       estado.convocar.has(normalizar(item.situacao)) &&
+      (!grupo || item.grupoConvocacao === grupo) &&
       (!termo || correspondePesquisa(item, termo))
     );
 

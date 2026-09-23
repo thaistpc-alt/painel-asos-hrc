@@ -1,6 +1,11 @@
 /* Dashboard leve: não calcula indicadores anuais durante a abertura. */
 function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
   validarPeriodoV13_(dataInicio, dataFim);
+
+  // Atualização forçada = sincronização real das fontes antes de reconstruir o cache.
+  if (forcarAtualizacao && typeof sincronizarBaseV15_ === "function") {
+    sincronizarBaseV15_(false, true);
+  }
   if (forcarAtualizacao && typeof avancarRevisaoCacheV133_ === "function") {
     avancarRevisaoCacheV133_();
   }
@@ -52,13 +57,16 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
 
   const resumo = {
     meta: {
-      versao: "14.7",
+      versao: "15.0",
       cache: contexto.origemCache === "nova" ? "não" : "sim",
       origemCache: contexto.origemCache || "nova",
       duracaoProcessamentoMs: contexto.duracaoProcessamentoMs || 0,
       geradoEm: Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm:ss"),
       dataInicio: dataInicio,
-      dataFim: dataFim
+      dataFim: dataFim,
+      ultimaSincronizacaoBase: typeof obterUltimaSincronizacaoBaseV15_ === "function"
+        ? obterUltimaSincronizacaoBaseV15_()
+        : ""
     },
     dashboard: {
       totalColaboradores: lista.length,
