@@ -127,6 +127,7 @@ function sincronizarBaseV15_(invalidarCache, forcarAtualizacao) {
       const destino = ss.getSheetByName("GESTORES");
       if (destino && dadosGestores.length) {
         escreverMatrizV15_(destino, dadosGestores, Math.max(1, dadosGestores[0].length));
+        try { CacheService.getScriptCache().remove("GESTORES_V15"); } catch (e) {}
       }
     });
 
