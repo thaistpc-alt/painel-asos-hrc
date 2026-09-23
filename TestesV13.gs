@@ -588,6 +588,18 @@ function validarEstruturaBaseV15() {
         duplicadas: matriculasDestino.length - unicasDestino.size
       }
     );
+
+    const datasOperacionais = fonte.getRange(2, COL.DATA_CONVOCAR, totalFonteDestino, 2).getValues();
+    const limitesAntesConvocacao = datasOperacionais.filter(linha => {
+      const convocar = formatarDataISO(linha[0]);
+      const limite = formatarDataISO(linha[1]);
+      return convocar && limite && limite < convocar;
+    });
+    testar(
+      "Data limite nunca é anterior à data de convocação",
+      limitesAntesConvocacao.length === 0,
+      { inconsistencias: limitesAntesConvocacao.length }
+    );
   }
 
   const linhasAgendaOrigem = agendaOrigem ? agendaOrigem.getLastRow() : 0;
