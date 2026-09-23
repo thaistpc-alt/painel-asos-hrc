@@ -873,3 +873,68 @@
   });
 })();
 </script>
+
+
+<script>
+(function(){
+  'use strict';
+  const ids=['emailGestorConvocacao','emailGestorPendencia'];
+  let carregando=false,carregado=false;
+
+  function inputs(){
+    return ids.map(id=>document.getElementById(id)).filter(Boolean);
+  }
+
+  function aplicarValorSalvo(){
+    let salvo='';
+    try{salvo=localStorage.getItem('asosGestorEmailV15')||''}catch(e){}
+    if(!salvo)return;
+    inputs().forEach(el=>{if(!el.value)el.value=salvo});
+  }
+
+  function salvarValor(valor){
+    const texto=String(valor||'').trim();
+    if(!texto)return;
+    try{localStorage.setItem('asosGestorEmailV15',texto)}catch(e){}
+    inputs().forEach(el=>{if(document.activeElement!==el)el.value=texto});
+  }
+
+  function criarDatalist(gestores){
+    let lista=document.getElementById('gestoresV15Lista');
+    if(!lista){
+      lista=document.createElement('datalist');
+      lista.id='gestoresV15Lista';
+      document.body.appendChild(lista);
+    }
+    lista.innerHTML='';
+    (gestores||[]).forEach(g=>{
+      const opt=document.createElement('option');
+      opt.value=g.email||'';
+      opt.label=[g.nome,g.setor].filter(Boolean).join(' — ');
+      lista.appendChild(opt);
+    });
+    inputs().forEach(el=>el.setAttribute('list','gestoresV15Lista'));
+  }
+
+  function carregarGestores(){
+    if(carregado||carregando)return;
+    carregando=true;
+    google.script.run
+      .withSuccessHandler(g=>{carregando=false;carregado=true;criarDatalist(g||[])})
+      .withFailureHandler(()=>{carregando=false})
+      .obterGestoresV15();
+  }
+
+  function preparar(){
+    aplicarValorSalvo();
+    inputs().forEach(el=>{
+      el.placeholder='Digite ou selecione um gestor';
+      el.addEventListener('focus',carregarGestores,{once:false});
+      el.addEventListener('change',()=>salvarValor(el.value));
+      el.addEventListener('blur',()=>salvarValor(el.value));
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(preparar,450));
+})();
+</script>
