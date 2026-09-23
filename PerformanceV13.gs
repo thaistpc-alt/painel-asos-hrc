@@ -230,7 +230,7 @@ function montarEventosAgendaPorMatriculaV13_() {
     obterChavesMatricula(mat, "").forEach(chave => {
       if (!mapaEventos.has(chave)) mapaEventos.set(chave, []);
       mapaEventos.get(chave).push(evento);
-      if (ehNaoCompareceu || ehReagendou) {
+      if (tipoNorm.includes("PERIODIC") && (ehNaoCompareceu || ehReagendou)) {
         mapaOcorrencias.set(chave, (Number(mapaOcorrencias.get(chave)) || 0) + 1);
       }
     });
