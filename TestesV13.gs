@@ -475,3 +475,230 @@ function validarAntesPublicarV14_7() {
   console.log(JSON.stringify(resultado, null, 2));
   return resultado;
 }
+
+
+/* =========================================================
+   V15.0 - VALIDAÇÃO DA BASE MATERIALIZADA
+========================================================= */
+function validarEstruturaBaseV15() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const resultados = [];
+
+  function testar(nome, ok, detalhe) {
+    resultados.push({ teste: nome, ok: !!ok, detalhe: detalhe === undefined ? "" : detalhe });
+  }
+
+  const fonte = ss.getSheetByName(CONFIG.ABA_FONTE);
+  const agenda = ss.getSheetByName(CONFIG.ABA_AGENDA);
+  const escala = ss.getSheetByName("Escala médica");
+  const indicador = ss.getSheetByName(BASE_V15.ABA_INDICADOR);
+  const config = ss.getSheetByName(BASE_V15.ABA_CONFIG);
+
+  testar("FONTEpainel existe", !!fonte);
+  testar("AGENDA existe", !!agenda);
+  testar("Escala médica existe", !!escala);
+  testar("BASE_INDICADOR_ASO existe", !!indicador);
+  testar("_CONFIG_ASOS existe", !!config);
+
+  if (fonte && fonte.getLastRow() >= 2) {
+    const linhas = fonte.getLastRow() - 1;
+    const formulasA = fonte.getRange(2, 1, linhas, 1).getFormulas().flat().filter(Boolean);
+    const formulasJO = fonte.getRange(2, 10, linhas, 6).getFormulas().flat().filter(Boolean);
+    const formulasPR = fonte.getRange(2, 16, linhas, 3).getFormulas().flat().filter(Boolean);
+    const formulasTU = fonte.getRange(2, 20, linhas, 2).getFormulas().flat().filter(Boolean);
+
+    testar("FONTEpainel A materializada", formulasA.length === 0, formulasA.length + " fórmula(s)");
+    testar("FONTEpainel J:O materializadas", formulasJO.length === 0, formulasJO.length + " fórmula(s)");
+    testar("FONTEpainel P:R materializadas", formulasPR.length === 0, formulasPR.length + " fórmula(s)");
+    testar("FONTEpainel T:U materializadas", formulasTU.length === 0, formulasTU.length + " fórmula(s)");
+  }
+
+  if (agenda) {
+    const formulasAgenda = agenda
+      .getRange(1, 1, Math.max(1, agenda.getLastRow()), Math.min(20, agenda.getLastColumn()))
+      .getFormulas()
+      .flat()
+      .filter(Boolean);
+    testar("AGENDA sem IMPORTRANGE/fórmulas", formulasAgenda.length === 0, formulasAgenda.length + " fórmula(s)");
+  }
+
+  if (escala) {
+    const formulasEscala = escala
+      .getRange(1, 1, Math.max(1, escala.getLastRow()), Math.min(5, escala.getLastColumn()))
+      .getFormulas()
+      .flat()
+      .filter(Boolean);
+    testar("Escala médica sem IMPORTRANGE/fórmulas", formulasEscala.length === 0, formulasEscala.length + " fórmula(s)");
+  }
+
+  const cfg = typeof lerConfigBaseV15_ === "function" ? lerConfigBaseV15_() : {};
+  testar("Config registra versão 15.0", String(cfg.VERSAO_BASE || "") === "15.0", cfg.VERSAO_BASE || "");
+  testar("Config registra sincronização", !!String(cfg.ULTIMA_SINCRONIZACAO || ""), cfg.ULTIMA_SINCRONIZACAO || "");
+
+  const origem = SpreadsheetApp.openById(cfg.ORIGEM_AGENDA_ID || BASE_V15.ORIGEM_AGENDA_ID);
+  const fonteOrigem = origem.getSheetByName(BASE_V15.ORIGEM_FONTE_ABA);
+  const agendaOrigem = origem.getSheetByName(cfg.ORIGEM_AGENDA_ABA || BASE_V15.ORIGEM_AGENDA_ABA);
+
+  const totalFonteOrigem = fonteOrigem
+    ? fonteOrigem.getRange(2, 2, Math.max(0, fonteOrigem.getLastRow() - 1), 1)
+        .getDisplayValues().flat().filter(Boolean).length
+    : 0;
+  const totalFonteDestino = fonte ? Math.max(0, fonte.getLastRow() - 1) : 0;
+  testar(
+    "Quantidade de colaboradores confere com a origem",
+    totalFonteOrigem === totalFonteDestino,
+    { origem: totalFonteOrigem, destino: totalFonteDestino }
+  );
+
+  const linhasAgendaOrigem = agendaOrigem ? agendaOrigem.getLastRow() : 0;
+  const linhasAgendaDestino = agenda ? agenda.getLastRow() : 0;
+  testar(
+    "Quantidade de linhas da AGENDA confere com a origem",
+    linhasAgendaOrigem === linhasAgendaDestino,
+    { origem: linhasAgendaOrigem, destino: linhasAgendaDestino }
+  );
+
+  const falhas = resultados.filter(r => !r.ok);
+  const resumo = {
+    sucesso: falhas.length === 0,
+    total: resultados.length,
+    aprovados: resultados.length - falhas.length,
+    falhas: falhas.map(r => ({ teste: r.teste, detalhe: r.detalhe })),
+    resultados: resultados
+  };
+  console.log(JSON.stringify(resumo, null, 2));
+  return resumo;
+}
+
+
+/* =========================================================
+   V15.0 - CASOS REAIS CRÍTICOS
+========================================================= */
+function validarCasosCriticosV15() {
+  const lista = lerFontePainel();
+  const eventos = montarEventosAgendaPorMatriculaV13_();
+
+  aplicarOcorrenciasAgenda(lista, eventos);
+  aplicarAsoRealizadoAgenda(lista, eventos);
+  prepararFlagsPortal(lista);
+
+  const pendencias = gerarPendencias(lista, eventos);
+  const resultados = [];
+
+  function porMat(mat) {
+    return lista.find(c => obterChavesMatricula(c.mat, c.matriculaCompleta).includes(String(mat))) || null;
+  }
+
+  function testar(nome, ok, detalhe) {
+    resultados.push({ teste: nome, ok: !!ok, detalhe: detalhe === undefined ? "" : detalhe });
+  }
+
+  const c1883 = porMat("1883");
+  const geral1883 = c1883 ? gerarColaboradoresPortal([c1883])[0] : null;
+  const pend1883 = (pendencias.operacionais || []).some(i =>
+    obterChavesMatricula(i.mat, i.matriculaCompleta).includes("1883")
+  );
+  testar(
+    "1883 - falta anterior resolvida por periódico posterior",
+    !!c1883 &&
+      c1883.dataAsoRealizadoAgenda === "2026-07-28" &&
+      pend1883 === false &&
+      !!geral1883 &&
+      geral1883.dataUltimoAsoBR === "28/07/2026",
+    geral1883 ? {
+      ultimoAso: geral1883.dataUltimoAsoBR,
+      proximoVencimento: geral1883.proximoVencimentoBR,
+      pendente: pend1883
+    } : "não encontrado"
+  );
+
+  const c3738 = porMat("3738");
+  testar(
+    "3738 - demissional não encerra ciclo periódico",
+    !!c3738 &&
+      c3738.temAsoRealizadoAgenda === false &&
+      (c3738.asosRealizadosNaoPeriodicos || []).some(e => normalizarTexto(e.tipo).includes("DEMISSIONAL")),
+    c3738 ? {
+      dataAgendada: c3738.dataAgendada,
+      statusAgenda: c3738.statusAgenda,
+      naoPeriodicos: c3738.asosRealizadosNaoPeriodicos
+    } : "não encontrado"
+  );
+
+  const c2644 = porMat("2644");
+  testar(
+    "2644 - retorno não é tratado como periódico realizado",
+    !!c2644 &&
+      c2644.temAsoRealizadoAgenda === false &&
+      (c2644.asosRealizadosNaoPeriodicos || []).some(e => normalizarTexto(e.tipo).includes("RETORNO")),
+    c2644 ? {
+      situacao: c2644.situacao,
+      dataPeriodicoRealizado: c2644.dataAsoRealizadoAgenda,
+      naoPeriodicos: c2644.asosRealizadosNaoPeriodicos
+    } : "não encontrado"
+  );
+
+  const falhas = resultados.filter(r => !r.ok);
+  const resumo = {
+    sucesso: falhas.length === 0,
+    total: resultados.length,
+    aprovados: resultados.length - falhas.length,
+    falhas: falhas.map(r => r.teste),
+    resultados: resultados
+  };
+  console.log(JSON.stringify(resumo, null, 2));
+  return resumo;
+}
+
+
+/* =========================================================
+   V15.0 - PERFORMANCE
+========================================================= */
+function diagnosticarPerformanceV15() {
+  const base = diagnosticarPerformanceDetalhadaV14_7();
+  base.versao = "15.0";
+  base.baseMaterializada = true;
+  console.log(JSON.stringify(base, null, 2));
+  return base;
+}
+
+
+/* =========================================================
+   V15.0 - VALIDAÇÃO ÚNICA ANTES DA PUBLICAÇÃO
+========================================================= */
+function validarAntesPublicarV15() {
+  const inicio = Date.now();
+
+  const sincronizacao = atualizarBaseCompletaV15();
+  const base = validarEstruturaBaseV15();
+  const regras = executarRegressaoRegrasConvocacaoV14();
+  const casos = validarCasosCriticosV15();
+  const performance = diagnosticarPerformanceV15();
+
+  const resultado = {
+    sucesso:
+      sincronizacao && sincronizacao.sucesso === true &&
+      base && base.sucesso === true &&
+      regras && regras.sucesso === true &&
+      casos && casos.sucesso === true,
+    versao: "15.0",
+    duracaoTotalValidacaoMs: Date.now() - inicio,
+    sincronizacao: sincronizacao,
+    estruturaBase: {
+      sucesso: base ? base.sucesso : false,
+      falhas: base ? base.falhas : []
+    },
+    regrasConvocacao: {
+      sucesso: regras ? regras.sucesso : false,
+      falhas: regras ? regras.falhas : null
+    },
+    casosCriticos: {
+      sucesso: casos ? casos.sucesso : false,
+      falhas: casos ? casos.falhas : []
+    },
+    performance: performance
+  };
+
+  console.log(JSON.stringify(resultado, null, 2));
+  return resultado;
+}
