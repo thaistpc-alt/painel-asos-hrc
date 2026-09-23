@@ -76,11 +76,16 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
     }
   };
 
+  const revisoesConvocar = typeof gerarListaRevisaoConvocar === "function"
+    ? gerarListaRevisaoConvocar(lista, dataInicio, dataFim)
+    : [];
+
   salvarCacheV13_("MOD_CONVOCAR_" + dataInicio + "_" + dataFim, {
     convocar: {
       todos: convocar,
       pendentes: convocar.filter(c => !ehAsoRealizado(c)),
-      realizados: convocar.filter(ehAsoRealizado)
+      realizados: convocar.filter(ehAsoRealizado),
+      revisoes: revisoesConvocar
     },
     __contextoV13: contexto.origemCache || "nova"
   });
