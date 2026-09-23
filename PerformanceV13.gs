@@ -11,8 +11,6 @@ const PERF13_PREFIXO = "ASOS_V15_0_";
 const PERF13_TTL = 1800;
 const PERF13_PARTE = 80000;
 const PERF13_MAX_PARTES = 50;
-const PERF13_ABA_CACHE = "_CACHE_ASOS_V13";
-const PERF13_PARTE_PERSISTENTE = 45000;
 var PERF13_MEMORIA = {};
 
 function obterResumoPortalV13(dataInicio, dataFim, forcarAtualizacao) {
@@ -143,45 +141,6 @@ function obterIndicadoresPortalV15_(contexto) {
   const indicadores = gerarIndicadores(contexto && contexto.lista ? contexto.lista : []);
   salvarCacheV13_(chave, indicadores);
   return indicadores;
-}
-
-function construirContextoV13Legado_(dataInicio, dataFim, forcarAtualizacao) {
-  const chave = "CONTEXTO_" + dataInicio + "_" + dataFim;
-
-  if (!forcarAtualizacao) {
-    const cacheado = obterCacheV13_(chave);
-    if (cacheado && Array.isArray(cacheado.lista) && cacheado.pendencias) {
-      cacheado.origemCache = cacheado.__origemCacheV13 || "cache";
-      return cacheado;
-    }
-
-    const persistente = obterCachePersistenteV13_(chave);
-    if (persistente && Array.isArray(persistente.lista) && persistente.pendencias) {
-      persistente.origemCache = "persistente";
-      salvarCacheV13_(chave, persistente);
-      return persistente;
-    }
-  }
-
-  const inicio = Date.now();
-  const lista = lerFontePainel();
-  const eventos = montarEventosAgendaPorMatriculaV13_();
-  aplicarOcorrenciasAgenda(lista, eventos);
-  aplicarAsoRealizadoAgenda(lista, eventos);
-  prepararFlagsPortal(lista);
-  const pendencias = gerarPendencias(lista, eventos);
-
-  const contexto = {
-    lista: lista,
-    pendencias: pendencias,
-    origemCache: "nova",
-    processadoEm: Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm:ss"),
-    duracaoProcessamentoMs: Date.now() - inicio
-  };
-
-  salvarCacheV13_(chave, contexto);
-  salvarCachePersistenteV13_(chave, contexto);
-  return contexto;
 }
 
 function montarEventosAgendaPorMatriculaV13_() {
@@ -347,104 +306,5 @@ function obterCacheV13_(sufixo) {
   } catch (e) {
     return null;
   }
-}
-
-function obterAbaCachePersistenteV13_(criar) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let aba = ss.getSheetByName(PERF13_ABA_CACHE);
-  if (!aba && criar) {
-    aba = ss.insertSheet(PERF13_ABA_CACHE);
-    aba.getRange(1, 1, 1, 5).setValues([["CHAVE", "EXPIRA_EM", "PARTE", "TOTAL", "CONTEUDO"]]);
-    aba.hideSheet();
-  }
-  return aba;
-}
-
-function salvarCachePersistenteV13_(sufixo, objeto) {
-  const lock = LockService.getScriptLock();
-  if (!lock.tryLock(3000)) return false;
-
-  try {
-    const aba = obterAbaCachePersistenteV13_(true);
-    const chave = chaveCacheV13_(sufixo);
-    const base64 = serializarCacheV13_(objeto);
-    const total = Math.ceil(base64.length / PERF13_PARTE_PERSISTENTE);
-    const expira = Date.now() + PERF13_TTL * 1000;
-    const linhas = [];
-
-    for (let i = 0; i < total; i++) {
-      linhas.push([
-        chave,
-        expira,
-        i,
-        total,
-        base64.substring(i * PERF13_PARTE_PERSISTENTE, (i + 1) * PERF13_PARTE_PERSISTENTE)
-      ]);
-    }
-
-    /* A aba técnica mantém somente o contexto mais recente. Isso evita
-       crescimento contínuo e torna a leitura previsível. */
-    aba.clearContents();
-    aba.getRange(1, 1, 1, 5).setValues([["CHAVE", "EXPIRA_EM", "PARTE", "TOTAL", "CONTEUDO"]]);
-    if (linhas.length) aba.getRange(2, 1, linhas.length, 5).setValues(linhas);
-    if (!aba.isSheetHidden()) aba.hideSheet();
-    return true;
-  } catch (e) {
-    return false;
-  } finally {
-    lock.releaseLock();
-  }
-}
-
-function obterCachePersistenteV13_(sufixo) {
-  try {
-    const aba = obterAbaCachePersistenteV13_(false);
-    if (!aba || aba.getLastRow() < 2) return null;
-
-    const chave = chaveCacheV13_(sufixo);
-    const valores = aba.getRange(2, 1, aba.getLastRow() - 1, 5).getValues();
-    const linhas = valores
-      .filter(l => String(l[0] || "") === chave && Number(l[1]) > Date.now())
-      .sort((a, b) => Number(a[2]) - Number(b[2]));
-
-    if (!linhas.length) return null;
-    const total = Number(linhas[0][3]);
-    if (linhas.length !== total) return null;
-    return desserializarCacheV13_(linhas.map(l => String(l[4] || "")).join(""));
-  } catch (e) {
-    return null;
-  }
-}
-
-function diagnosticarCacheV13Legado_(dataInicio, dataFim) {
-  dataInicio = dataInicio || Utilities.formatDate(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    CONFIG.TIMEZONE,
-    "yyyy-MM-dd"
-  );
-  dataFim = dataFim || Utilities.formatDate(
-    new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
-    CONFIG.TIMEZONE,
-    "yyyy-MM-dd"
-  );
-
-  const chave = "CONTEXTO_" + dataInicio + "_" + dataFim;
-  const inicio = Date.now();
-  const contexto = construirContextoV13_(dataInicio, dataFim, false);
-  const base64 = serializarCacheV13_(contexto);
-  const resultado = {
-    origem: contexto.origemCache || contexto.__origemCacheV13 || "desconhecida",
-    duracaoMs: Date.now() - inicio,
-    colaboradores: (contexto.lista || []).length,
-    pendencias: contexto.pendencias && contexto.pendencias.operacionais
-      ? contexto.pendencias.operacionais.length
-      : 0,
-    tamanhoComprimidoCaracteres: base64.length,
-    partesCacheService: Math.ceil(base64.length / PERF13_PARTE),
-    partesPersistentes: Math.ceil(base64.length / PERF13_PARTE_PERSISTENTE),
-    chave: chaveCacheV13_(chave)
-  };
-  console.log(JSON.stringify(resultado, null, 2));
-  return resultado;
 }
 
