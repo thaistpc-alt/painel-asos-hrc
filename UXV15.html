@@ -684,7 +684,7 @@
 .v15-contagem{font-weight:600;color:#334155}
 .tabela-container tbody tr:hover{background:#f8fafc}
 .painel-atualizar[disabled]{opacity:.65;cursor:wait}
-.v15-chip{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:9px;font-weight:700;margin:0 0 3px}.v15-chip-revisao{background:#fff7ed;color:#9a3412}.v15-alerta-revisao{margin:0 0 14px;padding:10px 12px;border:1px solid #fed7aa;border-radius:9px;background:#fff7ed;color:#9a3412;font-size:10px}
+.v15-chip{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:9px;font-weight:700;margin:0 0 3px}.v15-chip-revisao{background:#fff7ed;color:#9a3412}.v15-alerta-revisao{margin:0 0 14px;padding:10px 12px;border:1px solid #fed7aa;border-radius:9px;background:#fff7ed;color:#9a3412;font-size:10px}.v15-revisao-exclusoes{margin-top:20px;padding-top:16px;border-top:1px solid #e2e8f0}.v15-revisao-exclusoes h3{display:flex;align-items:center;gap:8px;margin:0 0 4px;color:#9a3412}.v15-revisao-exclusoes .tabela-container{max-height:320px!important}.v15-motivo{color:#9a3412;font-weight:600}
 @media(max-width:1200px){.conteudo th,.conteudo td{font-size:9.4px!important}}
 </style>
 <script>
@@ -793,19 +793,42 @@
   };
 
   const renderizarConvocarAnterior=window.renderizarConvocar;
+
+  function montarTabelaRevisaoV15(itens){
+    if(!itens||!itens.length)return '';
+    let html='<section class="v15-revisao-exclusoes"><h3><span>Revisão / não incluídos automaticamente</span><span class="contador-secao">'+itens.length+'</span></h3><p class="v15-grupo-descricao">Registros na janela operacional que exigem conferência antes da convocação automática. O motivo é exibido para que ninguém desapareça silenciosamente da fila.</p><div class="tabela-container"><table><thead><tr><th>MAT</th><th>Nome</th><th>Setor</th><th>Situação</th><th>Origem</th><th>Data convocar</th><th>Data agendada</th><th>Motivo</th></tr></thead><tbody>';
+    itens.forEach(item=>{
+      const motivos=(item.motivos||[]).join(' • ')||'Revisar cadastro/regra';
+      html+='<tr><td>'+escaparHtml(item.mat||'')+'</td><td>'+escaparHtml(item.nome||'')+'</td><td>'+escaparHtml(item.setor||'')+'</td><td>'+escaparHtml(item.situacao||'')+'</td><td>'+escaparHtml(item.grupoConvocacao||'')+'</td><td>'+escaparHtml(item.dataConvocarBR||'')+'</td><td>'+escaparHtml(item.dataAgendadaBR||'')+'</td><td class="v15-motivo">'+escaparHtml(motivos)+'</td></tr>';
+    });
+    return html+'</tbody></table></div></section>';
+  }
+
   window.renderizarConvocar=function(lista){
-    // Executa o fluxo anterior para preservar filtros/estado de seleção.
+    // Executa o fluxo anterior para preservar seleção e componentes já consolidados.
     if(typeof renderizarConvocarAnterior==='function')renderizarConvocarAnterior(lista);
 
     const div=document.getElementById('tabelaConvocar');
-    if(!div||!Array.isArray(lista)||!lista.length)return;
+    if(!div)return;
+
+    lista=Array.isArray(lista)?lista:[];
+    const termo=typeof obterTermoPesquisa==='function'?obterTermoPesquisa('pesquisaConvocar'):'';
+    const revisoesBase=(typeof dadosPortal!=='undefined'&&dadosPortal&&dadosPortal.convocar&&Array.isArray(dadosPortal.convocar.revisoes))
+      ? dadosPortal.convocar.revisoes
+      : [];
+    const revisoes=revisoesBase.filter(item=>!termo||correspondePesquisa(item,termo));
+
+    if(!lista.length&&!revisoes.length){
+      div.innerHTML='<div class="vazio">Nenhum colaborador ou registro para revisão no período selecionado.</div>';
+      return;
+    }
 
     const grupos=[
       {
         chave:'Pendência anterior',
         titulo:'Pendências anteriores',
         classe:'v15-grupo-pendente',
-        descricao:'Convocações que já deveriam ter sido tratadas e ainda não tiveram periódico válido concluído.'
+        descricao:'Convocações originadas antes do período que continuam abertas até a realização de um periódico válido.'
       },
       {
         chave:'Convocação do período',
@@ -817,7 +840,7 @@
         chave:'Agendado no período',
         titulo:'Agendados no período',
         classe:'v15-grupo-agendado',
-        descricao:'Periódicos agendados no período, inclusive os originados em meses anteriores.'
+        descricao:'Periódicos agendados no período, inclusive quando a convocação se originou em mês anterior.'
       }
     ];
 
@@ -828,11 +851,16 @@
     }).join('');
 
     const semGrupo=lista.filter(i=>!grupos.some(g=>g.chave===String(i.grupoConvocacao||'')));
-    const revisoes=lista.filter(i=>i&&i.revisaoDados);
-    const alerta=revisoes.length
-      ? '<div class="v15-alerta-revisao"><strong>'+revisoes.length+' registro(s) para revisão:</strong> há ASO realizado sem tipo de exame informado. Esses casos permanecem na fila até a conferência.</div>'
+    const revisarTipo=lista.filter(i=>i&&i.revisaoDados);
+    const alerta=revisarTipo.length
+      ? '<div class="v15-alerta-revisao"><strong>'+revisarTipo.length+' registro(s) elegível(is) com dado incompleto:</strong> há ASO realizado sem tipo de exame informado; o ciclo não é encerrado automaticamente até a conferência.</div>'
       : '';
-    div.innerHTML=alerta+blocos+(semGrupo.length?'<section class="v15-grupo-convocar"><h3>Outros <span class="contador-secao">'+semGrupo.length+'</span></h3>'+montarTabelaConvocar(semGrupo)+'</section>':'');
+
+    div.innerHTML=
+      alerta+
+      blocos+
+      (semGrupo.length?'<section class="v15-grupo-convocar"><h3>Outros <span class="contador-secao">'+semGrupo.length+'</span></h3>'+montarTabelaConvocar(semGrupo)+'</section>':'')+
+      montarTabelaRevisaoV15(revisoes);
 
     const mapaItens=new Map(lista.map(i=>[String(i.mat||''),i]));
     div.querySelectorAll('tr[data-mat]').forEach(tr=>{
