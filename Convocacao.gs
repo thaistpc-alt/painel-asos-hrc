@@ -155,8 +155,31 @@ function gerarConvocacaoIndividual(mat) {
   return gerarConvocacaoPorColaborador(colaborador, null);
 }
 
+function limparAbasTemporariasConvocacao_(ss) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  const limiteMs = Date.now() - (12 * 60 * 60 * 1000);
+
+  ss.getSheets().forEach(aba => {
+    const nome = String(aba.getName() || "");
+    if (!/^TEMP_CONVOCACOES?_/.test(nome)) return;
+
+    const match = nome.match(/_(\d{12,})$/);
+    if (!match) return;
+
+    const criadoEm = Number(match[1]);
+    if (!criadoEm || criadoEm >= limiteMs) return;
+
+    try {
+      ss.deleteSheet(aba);
+    } catch (e) {
+      console.warn("Não foi possível excluir temporário antigo " + nome + ": " + e.message);
+    }
+  });
+}
+
 function criarContextoGeracaoConvocacoes() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  limparAbasTemporariasConvocacao_(ss);
   const modeloOriginal = ss.getSheetByName(CONFIG.ABA_MODELO);
 
   if (!modeloOriginal) {
