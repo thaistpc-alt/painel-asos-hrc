@@ -98,17 +98,23 @@ function adicionarMeses(dataISO, meses) {
   const texto = formatarDataISO(dataISO);
   if (!texto) return "";
 
-  const data = new Date(Date.UTC(
-    Number(texto.substring(0, 4)),
-    Number(texto.substring(5, 7)) - 1,
-    Number(texto.substring(8, 10))
-  ));
-  data.setUTCMonth(data.getUTCMonth() + Number(meses));
+  const ano = Number(texto.substring(0, 4));
+  const mesBase = Number(texto.substring(5, 7)) - 1;
+  const diaOriginal = Number(texto.substring(8, 10));
+  const deslocamento = Number(meses);
+
+  // Equivalente ao EDATE do Sheets: mantém o dia quando possível
+  // e, em meses menores, limita ao último dia (ex.: 29/02 + 12 = 28/02).
+  const primeiroDestino = new Date(Date.UTC(ano, mesBase + deslocamento, 1));
+  const anoDestino = primeiroDestino.getUTCFullYear();
+  const mesDestino = primeiroDestino.getUTCMonth();
+  const ultimoDiaDestino = new Date(Date.UTC(anoDestino, mesDestino + 1, 0)).getUTCDate();
+  const diaDestino = Math.min(diaOriginal, ultimoDiaDestino);
 
   return [
-    data.getUTCFullYear(),
-    String(data.getUTCMonth() + 1).padStart(2, "0"),
-    String(data.getUTCDate()).padStart(2, "0")
+    anoDestino,
+    String(mesDestino + 1).padStart(2, "0"),
+    String(diaDestino).padStart(2, "0")
   ].join("-");
 }
 
