@@ -378,9 +378,22 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
       ? periodicos[periodicos.length - 1]
       : null;
 
-    /* P (DATA AGENDADA) e o status operacional passam a ser derivados
-       diretamente do último registro PERIÓDICO da AGENDA. */
-    c.dataAgendada = ultimoPeriodico ? (ultimoPeriodico.data || "") : "";
+    c.dataUltimoEventoPeriodico = ultimoPeriodico ? (ultimoPeriodico.data || "") : "";
+    c.dataUltimoEventoPeriodicoBR = formatarDataBR(c.dataUltimoEventoPeriodico);
+    c.statusUltimoEventoPeriodico = ultimoPeriodico ? valorTexto(ultimoPeriodico.status) : "";
+    c.statusUltimoEventoPeriodicoNorm = normalizarTexto(c.statusUltimoEventoPeriodico);
+
+    /* DATA AGENDADA representa um agendamento utilizável pelo fluxo.
+       Cancelado, não compareceu ou reagendou permanecem como histórico/pendência,
+       mas não podem manter o colaborador como "Agendado no período". */
+    const eventoOperacionalValido = ultimoPeriodico &&
+      !ultimoPeriodico.ehCancelado &&
+      !ultimoPeriodico.ehNaoCompareceu &&
+      !ultimoPeriodico.ehReagendou
+        ? ultimoPeriodico
+        : null;
+
+    c.dataAgendada = eventoOperacionalValido ? (eventoOperacionalValido.data || "") : "";
     c.dataAgendadaBR = formatarDataBR(c.dataAgendada);
     c.statusAgenda = ultimoPeriodico ? valorTexto(ultimoPeriodico.status) : "";
     c.statusAgendaNorm = normalizarTexto(c.statusAgenda);
@@ -397,7 +410,6 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
         status: e.status || ""
       }));
 
-    // Q (informações da agenda) é reconstruída em memória, sem SORT/FILTER na planilha.
     const ultimosPorTipo = {
       DEMISSIONAL: null,
       RETORNO: null,
@@ -431,7 +443,12 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
       );
     }
 
-    if (!informacoes.length && realizadosTodos.length) {
+    if (ultimoPeriodico && !ultimoPeriodico.ehAsoRealizado && ultimoPeriodico.status) {
+      informacoes.push(
+        "Periódico " + String(ultimoPeriodico.status).toLowerCase() +
+        (ultimoPeriodico.data ? " em " + (ultimoPeriodico.dataBR || formatarDataBR(ultimoPeriodico.data)) : "")
+      );
+    } else if (!informacoes.length && realizadosTodos.length) {
       const ultimoRealizado = realizadosTodos[realizadosTodos.length - 1];
       informacoes.push(
         "ASO realizado" +
@@ -456,7 +473,6 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
       c.tipoAsoRealizadoAgenda = ultimoRealizado.tipo || "Periódico";
     }
 
-    // R (STATUS GERAL) também deixa de depender da fórmula da planilha.
     c.statusGeral = calcularStatusGeralPortalV14_7_(c, hojeISO);
     c.statusGeralNorm = normalizarTexto(c.statusGeral);
   });
@@ -580,7 +596,11 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
 
     // A lista já vem consolidada, sem duplicidades e em ordem cronológica.
     const eventos = obterEventosPorColaborador(eventosPorMatricula, colaborador);
-    const eventosPendencia = eventos.filter(e => e.ehNaoCompareceu || e.ehReagendou);
+    const eventosPendencia = eventos.filter(e =>
+      e.ehNaoCompareceu ||
+      e.ehReagendou ||
+      (e.ehCancelado && ehEventoPeriodicoAgenda(e))
+    );
 
     // Fallback: quando a aba AGENDA não possui histórico/status legível, usa o status atual da FONTEpainel.
     if (eventosPendencia.length === 0 && ehNaoCompareceuOuReagendou(colaborador)) {
@@ -701,16 +721,25 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
   };
 }
 function montarItemPendencia(colaborador, evento, qtdOcorrencias) {
+  let tipo = "Não compareceu";
+  let observacao = "Status agenda: NÃO COMPARECEU ASO. Gerar reconvocação.";
+
+  if (evento.ehReagendou) {
+    tipo = "Reagendamento";
+    observacao = "Status agenda: REAGENDOU. Gerar nova convocação com a nova data agendada exibida.";
+  } else if (evento.ehCancelado) {
+    tipo = "Cancelamento";
+    observacao = "Periódico cancelado. Necessária nova programação enquanto o ciclo permanecer aberto.";
+  }
+
   return Object.assign({}, colaborador, {
     dataUltimaPendencia: evento.data || "",
     dataUltimaPendenciaBR: evento.dataBR || formatarDataBR(evento.data),
     statusPendencia: evento.status || colaborador.statusAgenda || "",
-    tipoRegistroFaltoso: evento.ehReagendou ? "Reagendamento" : "Não compareceu",
+    tipoRegistroFaltoso: tipo,
     qtdOcorrencias: qtdOcorrencias || 1,
-    ocorrencias: qtdOcorrencias || 1,
-    observacaoFaltoso: evento.ehReagendou
-      ? "Status agenda: REAGENDOU. Gerar nova convocação com a nova data agendada exibida."
-      : "Status agenda: NÃO COMPARECEU ASO. Gerar reconvocação."
+    ocorrencias: colaborador.qtdOcorrencias || colaborador.ocorrencias || (qtdOcorrencias || 1),
+    observacaoFaltoso: observacao
   });
 }
 
