@@ -51,7 +51,7 @@ function enviarConvocacoesSelecionadasGestorComCopia(matriculas, emailsGestor, d
     throw new Error("Envie no máximo " + LIMITE_ANEXOS_EMAIL_GESTOR + " convocações por e-mail. O painel divide lotes maiores automaticamente.");
   }
 
-  const lista = lerFontePainel();
+  const lista = obterListaColaboradoresConvocacao_(dataInicio, dataFim);
   const dadosAgenda = lerAgendaDados();
   const turnosAgenda = montarUltimosTurnosAgenda(dadosAgenda);
   const mapa = new Map();
