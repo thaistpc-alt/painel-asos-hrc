@@ -1,10 +1,10 @@
 /* =========================================================
-   V14.7 - CONTEXTO GLOBAL COMPARTILHADO
+   V15 - CONTEXTO GLOBAL COMPARTILHADO
    Fonte + Agenda não dependem do período selecionado.
    Os módulos continuam armazenados por período.
 ========================================================= */
 
-const PERF133_PREFIXO = "ASOS_V14_7_";
+const PERF133_PREFIXO = "ASOS_V15_0_";
 const PERF133_PARTE_PROPRIEDADE = 8000;
 const PERF133_MAX_PARTES = 55;
 const PERF133_TTL_MS = 30 * 60 * 1000;
@@ -15,12 +15,12 @@ var PERF133_REVISAO_MEMORIA = "";
 function obterRevisaoCacheV133_() {
   if (PERF133_REVISAO_MEMORIA) return PERF133_REVISAO_MEMORIA;
   const propriedades = PropertiesService.getScriptProperties();
-  PERF133_REVISAO_MEMORIA = propriedades.getProperty(PERF133_PROP_REVISAO) || "V14_INICIAL";
+  PERF133_REVISAO_MEMORIA = propriedades.getProperty(PERF133_PROP_REVISAO) || "V15_INICIAL";
   return PERF133_REVISAO_MEMORIA;
 }
 
 function avancarRevisaoCacheV133_() {
-  const revisao = "V14_" + new Date().getTime();
+  const revisao = "V15_" + new Date().getTime();
   PropertiesService.getScriptProperties().setProperty(PERF133_PROP_REVISAO, revisao);
   PERF133_REVISAO_MEMORIA = revisao;
   PERF13_MEMORIA = {};
@@ -133,21 +133,41 @@ function construirContextoV13_(dataInicio, dataFim, forcarAtualizacao) {
     }
   }
 
+  const contextoOperacional = typeof construirContextoOperacionalV15_ === "function"
+    ? construirContextoOperacionalV15_()
+    : null;
+
   const inicio = Date.now();
-  const lista = lerFontePainel();
-  const eventos = montarEventosAgendaPorMatriculaV13_();
-  aplicarOcorrenciasAgenda(lista, eventos);
-  aplicarAsoRealizadoAgenda(lista, eventos);
-  prepararFlagsPortal(lista);
-  const pendencias = gerarPendencias(lista, eventos);
+  const lista = contextoOperacional
+    ? contextoOperacional.lista
+    : lerFontePainel();
+  let pendencias;
+
+  if (contextoOperacional) {
+    pendencias = contextoOperacional.pendencias;
+  } else {
+    const eventos = montarEventosAgendaPorMatriculaV13_();
+    aplicarOcorrenciasAgenda(lista, eventos);
+    aplicarAsoRealizadoAgenda(lista, eventos);
+    prepararFlagsPortal(lista);
+    pendencias = gerarPendencias(lista, eventos);
+  }
 
   const contexto = {
     lista: lista,
     pendencias: pendencias,
     origemCache: "nova",
-    processadoEm: Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm:ss"),
-    duracaoProcessamentoMs: Date.now() - inicio
+    processadoEm: contextoOperacional
+      ? contextoOperacional.processadoEm
+      : Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm:ss"),
+    duracaoProcessamentoMs: contextoOperacional
+      ? contextoOperacional.duracaoProcessamentoMs
+      : Date.now() - inicio
   };
+
+  if (forcarAtualizacao && typeof materializarContextoBaseV15_ === "function") {
+    materializarContextoBaseV15_(contexto);
+  }
 
   // CacheService é o caminho rápido. O fallback persistente só é gravado
   // quando o cache principal realmente não comporta o contexto.

@@ -74,12 +74,22 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
   function carregarResumo(forcar){
     const p=periodo();if(!p.inicio||!p.fim){mostrarErro('Informe a data inicial e a data final.');return}
     const token=++requisicao;mostrarLoading(true);limparMensagens();if(forcar){carregados.clear();dadosPortal=null;graficoCarregado=false;if(timerGrafico){clearTimeout(timerGrafico);timerGrafico=null}}
-    google.script.run.withSuccessHandler(r=>{if(token!==requisicao)return;dadosPortal={dashboard:r.dashboard};periodoCarregadoPortal=p.inicio+'|'+p.fim;atualizarDashboard(r.dashboard);atualizarNomesAbas(r.dashboard);aplicarRotulosMenu();mostrarLoading(false);if(abaAtual==='dashboard')agendarGrafico();else carregarModulo(abaAtual,forcar)}).withFailureHandler(e=>{mostrarLoading(false);mostrarErro(e.message||e)}).obterResumoPortalV13Leve(p.inicio,p.fim,!!forcar);
+    google.script.run.withSuccessHandler(r=>{if(token!==requisicao)return;dadosPortal={dashboard:r.dashboard,meta:r.meta||{}};periodoCarregadoPortal=p.inicio+'|'+p.fim;atualizarDashboard(r.dashboard);atualizarNomesAbas(r.dashboard);aplicarRotulosMenu();if(typeof atualizarStatusDadosV15==='function')atualizarStatusDadosV15(r.meta||{});mostrarLoading(false);if(abaAtual==='dashboard')agendarGrafico();else carregarModulo(abaAtual,forcar)}).withFailureHandler(e=>{mostrarLoading(false);mostrarErro(e.message||e)}).obterResumoPortalV13Leve(p.inicio,p.fim,!!forcar);
   }
 
   function carregarModulo(id,forcar){
     const nome=MODULOS[id];if(!nome||id==='dashboard')return;const chave=chaveModulo(id);if(!forcar&&carregados.has(chave)){renderizarModulo(id);return}
-    const p=periodo();mostrarLoading(true);google.script.run.withSuccessHandler(r=>{dadosPortal=Object.assign(dadosPortal||{},r||{});carregados.add(chave);mostrarLoading(false);renderizarModulo(id)}).withFailureHandler(e=>{mostrarLoading(false);mostrarErro(e.message||e)}).obterModuloPortalV13(nome,p.inicio,p.fim,!!forcar);
+    const p=periodo(),chaveSolicitada=chave;mostrarLoading(true);
+    google.script.run.withSuccessHandler(r=>{
+      if(chaveModulo(id)!==chaveSolicitada)return;
+      dadosPortal=Object.assign(dadosPortal||{},r||{});
+      carregados.add(chaveSolicitada);
+      mostrarLoading(false);
+      renderizarModulo(id);
+    }).withFailureHandler(e=>{
+      if(chaveModulo(id)!==chaveSolicitada)return;
+      mostrarLoading(false);mostrarErro(e.message||e)
+    }).obterModuloPortalV13(nome,p.inicio,p.fim,!!forcar);
   }
 
   function renderizarModulo(id){

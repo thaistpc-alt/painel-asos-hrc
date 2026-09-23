@@ -286,6 +286,14 @@ function prepararFlagsPortal(lista) {
     c.ativoAtual = ehAtivo(c);
     c.asoRealizadoAgendaAtual = !!c.temAsoRealizadoAgenda;
     c.asoRealizadoValido = temAsoRealizadoValido(c);
+    c.eventoQueEncerrouCiclo = c.asoRealizadoValido
+      ? {
+          data: c.dataAsoRealizadoAgenda || "",
+          dataBR: c.dataAsoRealizadoAgendaBR || formatarDataBR(c.dataAsoRealizadoAgenda),
+          tipo: c.tipoAsoRealizadoAgenda || "Periódico",
+          status: "ASO Realizado"
+        }
+      : null;
     c.vencidoAtual = ehVencido(c);
     c.atrasadoAtivo = c.ativoAtual && c.vencidoAtual;
   });
@@ -388,6 +396,14 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
     const realizadosTodos = eventosComData.filter(e => e.ehAsoRealizado);
     const realizadosPeriodicos = realizadosTodos.filter(ehEventoPeriodicoAgenda);
 
+    c.asosRealizadosTipoIncompleto = realizadosTodos
+      .filter(e => !normalizarTexto(e.tipoNorm || e.tipo || ""))
+      .map(e => ({
+        data: e.data || "",
+        dataBR: e.dataBR || formatarDataBR(e.data),
+        status: e.status || ""
+      }));
+
     c.asosRealizadosNaoPeriodicos = realizadosTodos
       .filter(e => !ehEventoPeriodicoAgenda(e))
       .map(e => ({
@@ -457,24 +473,20 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
     }
 
     // R (STATUS GERAL) também deixa de depender da fórmula da planilha.
-    c.statusGeral = calcularStatusGeralPortalV14_7_(c, hojeISO);
+    c.statusGeral = calcularStatusGeralPortalV15_(c, hojeISO);
     c.statusGeralNorm = normalizarTexto(c.statusGeral);
   });
 
   return lista || [];
 }
 
-function calcularStatusGeralPortalV14_7_(c, hojeISO) {
+function calcularStatusGeralPortalV15_(c, hojeISO) {
   const dataPeriodico = c && c.dataAgendada ? String(c.dataAgendada) : "";
   const vencimento = c && c.proximoVencimento ? String(c.proximoVencimento) : "";
-  const statusPeriodico = normalizarTexto(c && c.statusAgenda ? c.statusAgenda : "");
 
-  if (
-    dataPeriodico &&
-    vencimento &&
-    dataPeriodico.substring(0, 4) === vencimento.substring(0, 4)
-  ) {
-    if (statusPeriodico.includes("ASO REALIZADO")) return "REALIZADO";
+  if (temAsoRealizadoValido(c)) return "REALIZADO";
+
+  if (dataPeriodico && dataPertenceAoCicloPeriodicoAtual(c, dataPeriodico)) {
     return "AGENDADO";
   }
 
@@ -484,28 +496,103 @@ function calcularStatusGeralPortalV14_7_(c, hojeISO) {
   return "EM DIA";
 }
 
-function temAsoRealizadoValido(c) {
-  if (!c) return false;
+function dataPertenceAoCicloPeriodicoAtual(c, dataEvento) {
+  if (!c || !dataEvento) return false;
 
-  const dataRealizado = c.dataAsoRealizadoAgenda || "";
-  if (!dataRealizado) return false;
+  const data = String(dataEvento);
+  const dataUltimoFonte = String(c.dataUltimoAso || "");
+  const dataConvocar = String(c.dataConvocar || "");
+  const proximoVencimento = String(c.proximoVencimento || "");
 
-  const dataUltimoFonte = c.dataUltimoAso || "";
-  const dataConvocar = c.dataConvocar || "";
-  const proximoVencimento = c.proximoVencimento || "";
-
-  if (dataUltimoFonte && dataMaiorQue(dataRealizado, dataUltimoFonte)) return true;
-
-  if (dataConvocar && (dataRealizado >= dataConvocar)) return true;
+  if (dataUltimoFonte && data <= dataUltimoFonte) return false;
+  if (dataConvocar && data >= dataConvocar) return true;
 
   if (proximoVencimento) {
-    const diasAntesDoVencimento = calcularDiferencaDias(proximoVencimento, dataRealizado);
-    if (diasAntesDoVencimento !== null && diasAntesDoVencimento >= 0 && diasAntesDoVencimento <= 120) {
-      return true;
-    }
+    const diasAntesDoVencimento = calcularDiferencaDias(proximoVencimento, data);
+    return diasAntesDoVencimento !== null &&
+      diasAntesDoVencimento >= 0 &&
+      diasAntesDoVencimento <= 120;
   }
 
-  return false;
+  return !!dataUltimoFonte && data > dataUltimoFonte;
+}
+
+function temAsoRealizadoValido(c) {
+  if (!c) return false;
+  return dataPertenceAoCicloPeriodicoAtual(c, c.dataAsoRealizadoAgenda || "");
+}
+
+function avaliarElegibilidadeConvocacao(c, dataInicio, dataFim) {
+  const motivos = [];
+  if (!c) {
+    return {
+      elegivel: false,
+      motivos: ["Colaborador não encontrado"],
+      grupoConvocacao: "",
+      statusOperacional: "",
+      revisaoDados: false,
+      eventoQueEncerrouCiclo: null
+    };
+  }
+
+  const realizadoValido = temAsoRealizadoValido(c);
+  const eventoQueEncerrouCiclo = realizadoValido
+    ? {
+        data: c.dataAsoRealizadoAgenda || "",
+        dataBR: c.dataAsoRealizadoAgendaBR || formatarDataBR(c.dataAsoRealizadoAgenda),
+        tipo: c.tipoAsoRealizadoAgenda || "Periódico",
+        status: "ASO Realizado"
+      }
+    : null;
+
+  if (realizadoValido) motivos.push("ASO periódico do ciclo já realizado");
+
+  const situacaoPermitida = situacaoPermiteBaixarConvocacao(c);
+  if (!situacaoPermitida) {
+    motivos.push("Situação funcional diferente de Ativo/Férias");
+  }
+
+  const revisaoDados = Array.isArray(c.asosRealizadosTipoIncompleto) &&
+    c.asosRealizadosTipoIncompleto.length > 0;
+
+  if (revisaoDados) {
+    motivos.push("Há ASO realizado sem tipo de exame informado — revisar cadastro");
+  }
+
+  let grupo = "";
+  let dataReferencia = "";
+
+  if (noPeriodo(c.dataAgendada, dataInicio, dataFim)) {
+    grupo = "Agendado no período";
+    dataReferencia = c.dataAgendada;
+  } else if (noPeriodo(c.dataConvocar, dataInicio, dataFim)) {
+    grupo = "Convocação do período";
+    dataReferencia = c.dataConvocar;
+  } else if (c.dataConvocar && c.dataConvocar < dataInicio) {
+    // Fila persistente: continua visível até existir periódico realizado válido,
+    // mesmo quando o agendamento foi marcado para um mês futuro.
+    grupo = "Pendência anterior";
+    dataReferencia = c.dataConvocar;
+  }
+
+  let statusOperacional = "";
+  if (realizadoValido) statusOperacional = "Realizado";
+  else if (revisaoDados) statusOperacional = "Revisar dados";
+  else if (normalizarTexto(c.situacao).includes("FERIAS")) {
+    statusOperacional = c.dataAgendada ? "Adiado por férias / agendado" : "Adiado por férias";
+  } else if (c.dataAgendada) statusOperacional = "Agendado";
+  else if (grupo === "Pendência anterior") statusOperacional = "Pendente";
+  else if (grupo) statusOperacional = "A convocar";
+
+  return {
+    elegivel: !!grupo && !realizadoValido && situacaoPermitida,
+    motivos: motivos,
+    grupoConvocacao: grupo,
+    dataReferenciaConvocacao: dataReferencia,
+    statusOperacional: statusOperacional,
+    revisaoDados: revisaoDados,
+    eventoQueEncerrouCiclo: eventoQueEncerrouCiclo
+  };
 }
 
 function dataMaiorQue(dataA, dataB) {
@@ -882,41 +969,58 @@ function obterResumoSincronizacaoAgenda() {
 
 function gerarListaConvocar(lista, dataInicio, dataFim) {
   return (lista || [])
-    .filter(c => situacaoPermiteBaixarConvocacao(c))
     .map(c => {
-      let grupo = "";
-      let dataReferencia = "";
-
-      if (noPeriodo(c.dataAgendada, dataInicio, dataFim)) {
-        grupo = "Agendado no período";
-        dataReferencia = c.dataAgendada;
-      } else if (noPeriodo(c.dataConvocar, dataInicio, dataFim)) {
-        grupo = "Convocação do período";
-        dataReferencia = c.dataConvocar;
-      } else if (
-        c.dataConvocar &&
-        c.dataConvocar < dataInicio &&
-        (!c.dataAgendada || c.dataAgendada < dataInicio)
-      ) {
-        grupo = "Pendência anterior";
-        dataReferencia = c.dataConvocar;
-      }
-
-      if (!grupo) return null;
+      const avaliacao = avaliarElegibilidadeConvocacao(c, dataInicio, dataFim);
+      if (!avaliacao.elegivel) return null;
 
       return Object.assign({}, c, {
-        grupoConvocacao: grupo,
-        dataReferenciaConvocacao: dataReferencia,
-        dataReferenciaConvocacaoBR: formatarDataBR(dataReferencia)
+        grupoConvocacao: avaliacao.grupoConvocacao,
+        dataReferenciaConvocacao: avaliacao.dataReferenciaConvocacao,
+        dataReferenciaConvocacaoBR: formatarDataBR(avaliacao.dataReferenciaConvocacao),
+        statusOperacional: avaliacao.statusOperacional,
+        revisaoDados: avaliacao.revisaoDados,
+        motivosElegibilidade: avaliacao.motivos
       });
     })
     .filter(Boolean)
     .sort((a, b) => {
       const dataA = a.dataReferenciaConvocacao || a.dataConvocar || "";
       const dataB = b.dataReferenciaConvocacao || b.dataConvocar || "";
-
       if (dataA !== dataB) return dataA.localeCompare(dataB);
+      return String(a.nome || "").localeCompare(String(b.nome || ""));
+    });
+}
 
+function gerarListaRevisaoConvocar(lista, dataInicio, dataFim) {
+  return (lista || [])
+    .map(function(c) {
+      const avaliacao = avaliarElegibilidadeConvocacao(c, dataInicio, dataFim);
+      if (!avaliacao.grupoConvocacao) return null;
+      if (avaliacao.eventoQueEncerrouCiclo) return null;
+      if (avaliacao.elegivel && !avaliacao.revisaoDados) return null;
+
+      return {
+        mat: c.mat || "",
+        nome: c.nome || "",
+        funcao: c.funcao || "",
+        setor: c.setor || "",
+        situacao: c.situacao || "",
+        grupoConvocacao: avaliacao.grupoConvocacao,
+        statusOperacional: avaliacao.statusOperacional || "Revisar",
+        motivos: avaliacao.motivos || [],
+        revisaoDados: !!avaliacao.revisaoDados,
+        incluidoAutomaticamente: !!avaliacao.elegivel,
+        dataConvocar: c.dataConvocar || "",
+        dataConvocarBR: c.dataConvocarBR || "",
+        dataAgendada: c.dataAgendada || "",
+        dataAgendadaBR: c.dataAgendadaBR || ""
+      };
+    })
+    .filter(Boolean)
+    .sort(function(a, b) {
+      const dataA = a.dataConvocar || "";
+      const dataB = b.dataConvocar || "";
+      if (dataA !== dataB) return dataA.localeCompare(dataB);
       return String(a.nome || "").localeCompare(String(b.nome || ""));
     });
 }
