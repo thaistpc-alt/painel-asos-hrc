@@ -555,16 +555,40 @@ function validarEstruturaBaseV15() {
   const fonteOrigem = origem.getSheetByName(BASE_V15.ORIGEM_FONTE_ABA);
   const agendaOrigem = origem.getSheetByName(cfg.ORIGEM_AGENDA_ABA || BASE_V15.ORIGEM_AGENDA_ABA);
 
-  const totalFonteOrigem = fonteOrigem
-    ? fonteOrigem.getRange(2, 2, Math.max(0, fonteOrigem.getLastRow() - 1), 1)
-        .getDisplayValues().flat().filter(Boolean).length
-    : 0;
+  const fonteBruta = fonteOrigem && fonteOrigem.getLastRow() >= 2
+    ? fonteOrigem.getRange(2, 2, fonteOrigem.getLastRow() - 1, 8).getValues()
+        .filter(linha => valorTexto(linha[0]))
+    : [];
+  const fonteUnica = typeof deduplicarFonteV15_ === "function"
+    ? deduplicarFonteV15_(fonteBruta)
+    : fonteBruta;
+  const totalFonteOrigem = fonteUnica.length;
   const totalFonteDestino = fonte ? Math.max(0, fonte.getLastRow() - 1) : 0;
   testar(
-    "Quantidade de colaboradores confere com a origem",
+    "Quantidade de colaboradores confere com a origem deduplicada",
     totalFonteOrigem === totalFonteDestino,
-    { origem: totalFonteOrigem, destino: totalFonteDestino }
+    {
+      origemBruta: fonteBruta.length,
+      origemUnica: totalFonteOrigem,
+      destino: totalFonteDestino,
+      duplicidadesRemovidas: fonteBruta.length - totalFonteOrigem
+    }
   );
+
+  if (fonte && totalFonteDestino > 0) {
+    const matriculasDestino = fonte.getRange(2, 2, totalFonteDestino, 1)
+      .getDisplayValues().flat().filter(Boolean);
+    const unicasDestino = new Set(matriculasDestino);
+    testar(
+      "FONTEpainel não contém matrículas duplicadas",
+      matriculasDestino.length === unicasDestino.size,
+      {
+        total: matriculasDestino.length,
+        unicas: unicasDestino.size,
+        duplicadas: matriculasDestino.length - unicasDestino.size
+      }
+    );
+  }
 
   const linhasAgendaOrigem = agendaOrigem ? agendaOrigem.getLastRow() : 0;
   const linhasAgendaDestino = agenda ? agenda.getLastRow() : 0;
