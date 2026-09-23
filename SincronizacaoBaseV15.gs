@@ -287,7 +287,7 @@ function montarEventosAgendaDeMatrizV15_(valores) {
     obterChavesMatricula(mat, "").forEach(chave => {
       if (!mapaEventos.has(chave)) mapaEventos.set(chave, []);
       mapaEventos.get(chave).push(evento);
-      if (evento.ehNaoCompareceu || evento.ehReagendou) {
+      if (tipoNorm.includes("PERIODIC") && (evento.ehNaoCompareceu || evento.ehReagendou)) {
         mapaOcorrencias.set(chave, (Number(mapaOcorrencias.get(chave)) || 0) + 1);
       }
     });
