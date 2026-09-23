@@ -462,6 +462,10 @@ function gravarFontePainelV15_(ss, lista) {
     });
     aba.getRange(2, 15, linhas.length, 1).setNumberFormat("0");
   }
+
+  const filtro = aba.getFilter();
+  if (filtro) filtro.remove();
+  aba.getRange(1, 1, Math.max(2, linhas.length + 1), cabecalho.length).createFilter();
 }
 
 function dateOuVazioV15_(iso) {
