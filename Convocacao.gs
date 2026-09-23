@@ -117,7 +117,9 @@ function marcarEmailsAgostoEnviados() {
 }
 
 function gerarConvocacaoIndividual(mat) {
-  const lista = lerFontePainel();
+  const lista = typeof obterListaOperacionalV15_ === "function"
+    ? obterListaOperacionalV15_()
+    : lerFontePainel();
   const matricula = String(mat).trim();
 
   const colaborador = lista.find(c =>
@@ -230,23 +232,33 @@ function situacaoPermiteBaixarConvocacao(c) {
 }
 
 function motivoNaoBaixarConvocacao(c, dataInicio, dataFim) {
-  if (!c.dataAgendada) {
-    return "Sem data agendada";
+  if (!c) return "Colaborador não encontrado";
+
+  if (c.asoRealizadoValido) {
+    return "ASO periódico do ciclo já realizado";
   }
 
-  if (!noPeriodo(c.dataAgendada, dataInicio, dataFim)) {
-    return "Data agendada fora do período selecionado";
+  if (!c.dataAgendada) {
+    return "Sem data agendada";
   }
 
   if (!situacaoPermiteBaixarConvocacao(c)) {
     return "Situação diferente de Ativo/Férias";
   }
 
+  /* O período selecionado define a fila exibida, não a validade do PDF.
+     Assim, uma convocação originada em setembro e agendada em outubro
+     pode ser emitida em setembro já com a data futura correta. */
   return "";
 }
 
 function gerarConvocacoesPeriodo(dataInicio, dataFim) {
-  const lista = lerFontePainel()
+  const base = typeof obterListaOperacionalV15_ === "function"
+    ? obterListaOperacionalV15_()
+    : lerFontePainel();
+
+  const lista = gerarListaConvocar(base, dataInicio, dataFim)
+    .filter(c => !c.asoRealizadoValido)
     .sort((a, b) => {
       const dataA = a.dataAgendada || "";
       const dataB = b.dataAgendada || "";
@@ -316,7 +328,9 @@ function gerarConvocacoesSelecionadasLote(matriculas, dataInicio, dataFim) {
 
   if (selecionadas.length === 0) return [];
 
-  const lista = lerFontePainel();
+  const lista = typeof obterListaOperacionalV15_ === "function"
+    ? obterListaOperacionalV15_()
+    : lerFontePainel();
   const dadosAgenda = lerAgendaDados();
   const turnosAgenda = montarUltimosTurnosAgenda(dadosAgenda);
   const mapa = new Map();
@@ -425,7 +439,9 @@ function enviarConvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInici
     throw new Error("Envie no máximo " + LIMITE_ANEXOS_EMAIL_GESTOR + " convocações por e-mail. O painel divide lotes maiores automaticamente.");
   }
 
-  const lista = lerFontePainel();
+  const lista = typeof obterListaOperacionalV15_ === "function"
+    ? obterListaOperacionalV15_()
+    : lerFontePainel();
   const dadosAgenda = lerAgendaDados();
   const turnosAgenda = montarUltimosTurnosAgenda(dadosAgenda);
   const mapa = new Map();
