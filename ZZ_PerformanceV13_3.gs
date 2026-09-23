@@ -15,12 +15,12 @@ var PERF133_REVISAO_MEMORIA = "";
 function obterRevisaoCacheV133_() {
   if (PERF133_REVISAO_MEMORIA) return PERF133_REVISAO_MEMORIA;
   const propriedades = PropertiesService.getScriptProperties();
-  PERF133_REVISAO_MEMORIA = propriedades.getProperty(PERF133_PROP_REVISAO) || "V14_INICIAL";
+  PERF133_REVISAO_MEMORIA = propriedades.getProperty(PERF133_PROP_REVISAO) || "V15_INICIAL";
   return PERF133_REVISAO_MEMORIA;
 }
 
 function avancarRevisaoCacheV133_() {
-  const revisao = "V14_" + new Date().getTime();
+  const revisao = "V15_" + new Date().getTime();
   PropertiesService.getScriptProperties().setProperty(PERF133_PROP_REVISAO, revisao);
   PERF133_REVISAO_MEMORIA = revisao;
   PERF13_MEMORIA = {};
