@@ -147,6 +147,11 @@ function gerarConvocacaoIndividual(mat) {
     throw new Error("Colaborador não encontrado: " + mat);
   }
 
+  const motivo = motivoNaoBaixarConvocacao(colaborador);
+  if (motivo) {
+    throw new Error("Convocação não disponível: " + motivo);
+  }
+
   return gerarConvocacaoPorColaborador(colaborador, null);
 }
 
