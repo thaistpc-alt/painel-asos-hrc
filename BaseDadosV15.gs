@@ -32,16 +32,9 @@ function atualizarBaseDerivadaV15_(opcoes) {
   const inicio = Date.now();
 
   try {
-    const lista = lerFontePainel();
-    const eventos = typeof montarEventosAgendaPorMatriculaV13_ === "function"
-      ? montarEventosAgendaPorMatriculaV13_()
-      : montarEventosAgendaPorMatricula();
-
-    aplicarOcorrenciasAgenda(lista, eventos);
-    aplicarAsoRealizadoAgenda(lista, eventos);
-    prepararFlagsPortal(lista);
-
-    const pendencias = gerarPendencias(lista, eventos);
+    const contextoOperacional = construirContextoOperacionalV15_();
+    const lista = contextoOperacional.lista;
+    const pendencias = contextoOperacional.pendencias;
 
     materializarFontePainelV15_(lista);
     const totalLinhasIndicador = materializarBaseIndicadorV15_(lista);
@@ -84,6 +77,56 @@ function atualizarBaseDerivadaV15_(opcoes) {
   } finally {
     lock.releaseLock();
   }
+}
+
+function construirContextoOperacionalV15_() {
+  const inicio = Date.now();
+  const lista = lerFontePainel();
+  const eventos = typeof montarEventosAgendaPorMatriculaV13_ === "function"
+    ? montarEventosAgendaPorMatriculaV13_()
+    : montarEventosAgendaPorMatricula();
+
+  aplicarOcorrenciasAgenda(lista, eventos);
+  aplicarAsoRealizadoAgenda(lista, eventos);
+  prepararFlagsPortal(lista);
+  const pendencias = gerarPendencias(lista, eventos);
+
+  return {
+    lista: lista,
+    pendencias: pendencias,
+    eventos: eventos,
+    origemCache: "nova",
+    processadoEm: formatarTimestampBaseV15_(new Date()),
+    duracaoProcessamentoMs: Date.now() - inicio
+  };
+}
+
+function obterListaOperacionalV15_() {
+  const hoje = obterHojeISO();
+  if (typeof construirContextoV13_ === "function") {
+    const contexto = construirContextoV13_(hoje, hoje, false);
+    if (contexto && Array.isArray(contexto.lista)) return contexto.lista;
+  }
+  return construirContextoOperacionalV15_().lista;
+}
+
+function materializarContextoBaseV15_(contexto) {
+  if (!contexto || !Array.isArray(contexto.lista)) return null;
+
+  const inicio = Date.now();
+  materializarFontePainelV15_(contexto.lista);
+  const totalLinhasIndicador = materializarBaseIndicadorV15_(contexto.lista);
+
+  atualizarConfigBaseV15_({
+    totalColaboradores: contexto.lista.length,
+    totalPendencias: contexto.pendencias && contexto.pendencias.operacionais
+      ? contexto.pendencias.operacionais.length
+      : 0,
+    totalLinhasIndicador: totalLinhasIndicador,
+    duracaoMs: Date.now() - inicio
+  });
+
+  return totalLinhasIndicador;
 }
 
 function materializarFontePainelV15_(lista) {
