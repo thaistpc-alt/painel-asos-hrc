@@ -796,10 +796,10 @@
 
   function montarTabelaRevisaoV15(itens){
     if(!itens||!itens.length)return '';
-    let html='<section class="v15-revisao-exclusoes"><h3><span>Revisão / não incluídos automaticamente</span><span class="contador-secao">'+itens.length+'</span></h3><p class="v15-grupo-descricao">Registros na janela operacional que exigem conferência antes da convocação automática. O motivo é exibido para que ninguém desapareça silenciosamente da fila.</p><div class="tabela-container"><table><thead><tr><th>MAT</th><th>Nome</th><th>Setor</th><th>Situação</th><th>Origem</th><th>Data convocar</th><th>Data agendada</th><th>Motivo</th></tr></thead><tbody>';
+    let html='<section class="v15-revisao-exclusoes"><h3><span>Revisão / exceções</span><span class="contador-secao">'+itens.length+'</span></h3><p class="v15-grupo-descricao">Registros na janela operacional que exigem conferência. Alguns permanecem na fila; outros ficam fora da convocação automática por situação funcional.</p><div class="tabela-container"><table><thead><tr><th>MAT</th><th>Nome</th><th>Setor</th><th>Situação</th><th>Origem</th><th>Data convocar</th><th>Data agendada</th><th>Tratamento</th><th>Motivo</th></tr></thead><tbody>';
     itens.forEach(item=>{
       const motivos=(item.motivos||[]).join(' • ')||'Revisar cadastro/regra';
-      html+='<tr><td>'+escaparHtml(item.mat||'')+'</td><td>'+escaparHtml(item.nome||'')+'</td><td>'+escaparHtml(item.setor||'')+'</td><td>'+escaparHtml(item.situacao||'')+'</td><td>'+escaparHtml(item.grupoConvocacao||'')+'</td><td>'+escaparHtml(item.dataConvocarBR||'')+'</td><td>'+escaparHtml(item.dataAgendadaBR||'')+'</td><td class="v15-motivo">'+escaparHtml(motivos)+'</td></tr>';
+      html+='<tr><td>'+escaparHtml(item.mat||'')+'</td><td>'+escaparHtml(item.nome||'')+'</td><td>'+escaparHtml(item.setor||'')+'</td><td>'+escaparHtml(item.situacao||'')+'</td><td>'+escaparHtml(item.grupoConvocacao||'')+'</td><td>'+escaparHtml(item.dataConvocarBR||'')+'</td><td>'+escaparHtml(item.dataAgendadaBR||'')+'</td><td>'+(item.incluidoAutomaticamente?'<span class="v15-chip v15-chip-revisao">Na fila + revisar</span>':'Fora da fila automática')+'</td><td class="v15-motivo">'+escaparHtml(motivos)+'</td></tr>';
     });
     return html+'</tbody></table></div></section>';
   }
