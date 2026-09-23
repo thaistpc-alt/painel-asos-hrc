@@ -22,10 +22,14 @@ const BASE_V15 = {
 };
 
 function atualizarBaseCompletaV15() {
-  return sincronizarBaseV15_(true);
+  return sincronizarBaseV15_(true, true);
 }
 
-function sincronizarBaseV15_(invalidarCache) {
+function sincronizarBaseAutomaticamenteV15() {
+  return sincronizarBaseV15_(true, false);
+}
+
+function sincronizarBaseV15_(invalidarCache, forcarAtualizacao) {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(30000)) {
     throw new Error("Já existe uma atualização da base em andamento. Aguarde alguns instantes.");
@@ -49,6 +53,27 @@ function sincronizarBaseV15_(invalidarCache) {
     const abaAgendaOrigem = config.ORIGEM_AGENDA_ABA || BASE_V15.ORIGEM_AGENDA_ABA;
     const idEscala = config.ORIGEM_ESCALA_ID || BASE_V15.ORIGEM_ESCALA_ID;
     const abaEscalaOrigem = config.ORIGEM_ESCALA_ABA || BASE_V15.ORIGEM_ESCALA_ABA;
+
+    const modAgendaMs = DriveApp.getFileById(idAgenda).getLastUpdated().getTime();
+    const modEscalaMs = DriveApp.getFileById(idEscala).getLastUpdated().getTime();
+    const hoje = obterHojeISO();
+    const ultimaData = String(config.ULTIMA_SINCRONIZACAO_ISO || "").substring(0, 10);
+    const fontesIguais =
+      String(config.ORIGEM_AGENDA_MODIFICADA_MS || "") === String(modAgendaMs) &&
+      String(config.ORIGEM_ESCALA_MODIFICADA_MS || "") === String(modEscalaMs);
+
+    if (!forcarAtualizacao && fontesIguais && ultimaData === hoje) {
+      const resultadoIgnorado = {
+        sucesso: true,
+        ignorado: true,
+        motivo: "Fontes sem alteração desde a última sincronização",
+        atualizadoEm: config.ULTIMA_SINCRONIZACAO || "",
+        duracaoTotalMs: Date.now() - inicioTotal,
+        etapas: etapas
+      };
+      console.log(JSON.stringify(resultadoIgnorado, null, 2));
+      return resultadoIgnorado;
+    }
 
     const origemAgenda = medir("Abrir fonte agenda", function() {
       return SpreadsheetApp.openById(idAgenda);
@@ -130,17 +155,24 @@ function sincronizarBaseV15_(invalidarCache) {
       gravarBaseIndicadorV15_(ss, colaboradores);
     });
 
-    const agora = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm:ss");
-    definirConfigBaseV15_("VERSAO_BASE", "15.0", "Estrutura materializada da base do Painel de ASOs", "Apps Script");
-    definirConfigBaseV15_("ULTIMA_SINCRONIZACAO", agora, "Última sincronização completa da base", "Apps Script");
-    definirConfigBaseV15_("FONTE_DERIVADA", "GERENCIADO_POR_SCRIPT", "A, J:U são materializados pelo Apps Script", "Apps Script");
-    definirConfigBaseV15_("AGENDA", "ESPELHO_POR_SCRIPT", "Sem IMPORTRANGE; origem AGENDA da planilha médica", "Apps Script");
-    definirConfigBaseV15_("GESTORES", "ESPELHO_POR_SCRIPT", "Sincronizado da planilha médica", "Apps Script");
-    definirConfigBaseV15_("ESCALA_MEDICA", "ESPELHO_POR_SCRIPT", "Sem IMPORTRANGE; sincronizada da planilha de escala", "Apps Script");
-    definirConfigBaseV15_("ORIGEM_ESCALA_ID", idEscala, "Planilha ESCALA MÉDICA SESMT", "Google Sheets");
-    definirConfigBaseV15_("ORIGEM_ESCALA_ABA", abaEscalaOrigem, "Aba usada no espelho da escala", "Google Sheets");
-    definirConfigBaseV15_("LINHAS_AGENDA", String(dadosAgenda.length), "Quantidade de linhas materializadas", "Apps Script");
-    definirConfigBaseV15_("COLABORADORES_ATIVOS_BASE", String(colaboradores.length), "Registros materializados na FONTEpainel", "Apps Script");
+    const agoraDate = new Date();
+    const agora = Utilities.formatDate(agoraDate, CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm:ss");
+    const agoraISO = Utilities.formatDate(agoraDate, CONFIG.TIMEZONE, "yyyy-MM-dd'T'HH:mm:ss");
+    definirConfigsBaseV15EmLote_([
+      ["VERSAO_BASE", "15.0", "Estrutura materializada da base do Painel de ASOs", "Apps Script"],
+      ["ULTIMA_SINCRONIZACAO", agora, "Última sincronização completa da base", "Apps Script"],
+      ["ULTIMA_SINCRONIZACAO_ISO", agoraISO, "Controle técnico de atualização", "Apps Script"],
+      ["FONTE_DERIVADA", "GERENCIADO_POR_SCRIPT", "A, J:U são materializados pelo Apps Script", "Apps Script"],
+      ["AGENDA", "ESPELHO_POR_SCRIPT", "Sem IMPORTRANGE; origem AGENDA da planilha médica", "Apps Script"],
+      ["GESTORES", "ESPELHO_POR_SCRIPT", "Sincronizado da planilha médica", "Apps Script"],
+      ["ESCALA_MEDICA", "ESPELHO_POR_SCRIPT", "Sem IMPORTRANGE; sincronizada da planilha de escala", "Apps Script"],
+      ["ORIGEM_ESCALA_ID", idEscala, "Planilha ESCALA MÉDICA SESMT", "Google Sheets"],
+      ["ORIGEM_ESCALA_ABA", abaEscalaOrigem, "Aba usada no espelho da escala", "Google Sheets"],
+      ["ORIGEM_AGENDA_MODIFICADA_MS", String(modAgendaMs), "Última modificação detectada na Agenda Médica", "Apps Script"],
+      ["ORIGEM_ESCALA_MODIFICADA_MS", String(modEscalaMs), "Última modificação detectada na Escala Médica", "Apps Script"],
+      ["LINHAS_AGENDA", String(dadosAgenda.length), "Quantidade de linhas materializadas", "Apps Script"],
+      ["COLABORADORES_ATIVOS_BASE", String(colaboradores.length), "Registros materializados na FONTEpainel", "Apps Script"]
+    ]);
 
     if (invalidarCache !== false && typeof avancarRevisaoCacheV133_ === "function") {
       avancarRevisaoCacheV133_();
@@ -515,6 +547,43 @@ function lerConfigBaseV15_() {
   return obj;
 }
 
+function definirConfigsBaseV15EmLote_(registros) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let aba = ss.getSheetByName(BASE_V15.ABA_CONFIG);
+
+  if (!aba) {
+    aba = ss.insertSheet(BASE_V15.ABA_CONFIG);
+    aba.getRange(1, 1, 1, 4).setValues([["CHAVE", "VALOR", "DESCRIÇÃO", "RESPONSÁVEL"]]);
+  }
+
+  const existentes = aba.getLastRow() >= 2
+    ? aba.getRange(2, 1, aba.getLastRow() - 1, 4).getDisplayValues()
+    : [];
+  const mapa = new Map();
+
+  existentes.forEach(linha => {
+    const chave = String(linha[0] || "").trim();
+    if (chave) mapa.set(chave, linha);
+  });
+
+  (registros || []).forEach(registro => {
+    const chave = String(registro[0] || "").trim();
+    if (!chave) return;
+    mapa.set(chave, [
+      chave,
+      registro[1] === null || registro[1] === undefined ? "" : String(registro[1]),
+      String(registro[2] || ""),
+      String(registro[3] || "")
+    ]);
+  });
+
+  const linhas = Array.from(mapa.values());
+  const limparAte = Math.max(aba.getLastRow(), linhas.length + 1);
+  aba.getRange(2, 1, Math.max(1, limparAte - 1), 4).clearContent();
+  if (linhas.length) aba.getRange(2, 1, linhas.length, 4).setValues(linhas);
+  if (!aba.isSheetHidden()) aba.hideSheet();
+}
+
 function definirConfigBaseV15_(chave, valor, descricao, responsavel) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let aba = ss.getSheetByName(BASE_V15.ABA_CONFIG);
@@ -548,7 +617,7 @@ function obterUltimaSincronizacaoBaseV15_() {
 }
 
 function instalarAtualizacaoAutomaticaV15() {
-  const nome = "atualizarBaseCompletaV15";
+  const nome = "sincronizarBaseAutomaticamenteV15";
   ScriptApp.getProjectTriggers()
     .filter(t => t.getHandlerFunction() === nome)
     .forEach(t => ScriptApp.deleteTrigger(t));
@@ -565,11 +634,11 @@ function instalarAtualizacaoAutomaticaV15() {
 }
 
 function removerAtualizacaoAutomaticaV15() {
-  const nome = "atualizarBaseCompletaV15";
+  const nomes = new Set(["sincronizarBaseAutomaticamenteV15", "atualizarBaseCompletaV15"]);
   let removidos = 0;
 
   ScriptApp.getProjectTriggers()
-    .filter(t => t.getHandlerFunction() === nome)
+    .filter(t => nomes.has(t.getHandlerFunction()))
     .forEach(t => {
       ScriptApp.deleteTrigger(t);
       removidos++;
