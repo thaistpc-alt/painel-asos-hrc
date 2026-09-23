@@ -102,6 +102,12 @@ function executarRegressaoRegrasConvocacaoV14() {
     setembro.length ? setembro[0].grupoConvocacao : "não listado"
   );
 
+  testar(
+    "PDF não é bloqueado quando convocação nasce em setembro e agenda é outubro",
+    motivoNaoBaixarConvocacao(colaborador, "2026-09-01", "2026-09-30") === "",
+    motivoNaoBaixarConvocacao(colaborador, "2026-09-01", "2026-09-30")
+  );
+
   const periodico = Object.assign({}, colaborador, {
     mat: "TESTE_PERIODICO",
     dataAgendada: "2026-10-06"
