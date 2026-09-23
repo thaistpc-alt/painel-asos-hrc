@@ -29,6 +29,20 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
     document.querySelectorAll('.linha-filtros label').forEach(l=>{const t=l.textContent.trim().toLowerCase();if(t.startsWith('filtrar situação'))l.textContent='Situação';if(t==='grupo')l.textContent='Grupo de exame'});
   }
 
+  function prepararGestoresV15(){
+    const ids=['emailGestorConvocacao','emailGestorPendencia'];
+    if(!ids.some(id=>document.getElementById(id)))return;
+    google.script.run.withSuccessHandler(lista=>{
+      let dl=document.getElementById('gestoresV15Lista');
+      if(!dl){dl=document.createElement('datalist');dl.id='gestoresV15Lista';document.body.appendChild(dl)}
+      dl.innerHTML=(lista||[]).map(g=>{
+        const label=[g.nome,g.setor].filter(Boolean).join(' — ');
+        return '<option value="'+String(g.email||'').replace(/"/g,'&quot;')+'" label="'+String(label).replace(/"/g,'&quot;')+'"></option>'
+      }).join('');
+      ids.forEach(id=>{const el=document.getElementById(id);if(el){el.setAttribute('list','gestoresV15Lista');el.title='Digite ou selecione um gestor cadastrado'}})
+    }).withFailureHandler(()=>{}).obterGestoresV15();
+  }
+
   function prepararGraficoDashboard(){
     const d=document.getElementById('dashboard');if(!d||document.getElementById('dashboardGrafico'))return;
     const bloco=document.createElement('div');bloco.id='dashboardGrafico';bloco.className='dashboard-grafico';bloco.innerHTML='<h3>Desempenho mensal da meta</h3><div id="dashboardGraficoConteudo" class="grafico-vazio">Carregando gráfico...</div>';d.appendChild(bloco);
@@ -63,7 +77,7 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
     top.querySelector('.painel-atualizar').onclick=()=>atualizarDadosForcado();rodape.querySelector('button').onclick=()=>document.body.classList.toggle('menu-fechado');
     const barra=document.querySelector('.filtros'),area=document.createElement('div');area.id='toolbarModulo';barra.appendChild(area);barra.querySelectorAll('button').forEach(b=>{if(String(b.getAttribute('onclick')||'').includes('limparFiltrosLocais'))b.textContent='Limpar'});
     document.querySelectorAll('.conteudo .linha-filtros').forEach(el=>origens.set(el,{pai:el.parentNode,proximo:el.nextSibling}));
-    aplicarRotulosMenu();prepararGraficoDashboard();prepararPesquisas();
+    aplicarRotulosMenu();prepararGraficoDashboard();prepararPesquisas();prepararGestoresV15();
   }
 
   function atualizarStatusBase(meta){
