@@ -7,7 +7,7 @@
    - entrega cada módulo sob demanda.
 ========================================================= */
 
-const PERF13_PREFIXO = "ASOS_V14_7_";
+const PERF13_PREFIXO = "ASOS_V15_0_";
 const PERF13_TTL = 1800;
 const PERF13_PARTE = 80000;
 const PERF13_MAX_PARTES = 50;
@@ -94,16 +94,18 @@ function obterModuloPortalV13(modulo, dataInicio, dataFim, forcarAtualizacao) {
       break;
     case "COLABORADORES":
       resultado = {
-        colaboradores: gerarColaboradoresPortal(lista).sort((a, b) => {
-          const diasA = Number(a.diasStatusAso);
-          const diasB = Number(b.diasStatusAso);
-          if (diasA !== diasB) return diasA - diasB;
-          return String(a.nome || "").localeCompare(String(b.nome || ""));
-        })
+        colaboradores: gerarColaboradoresPortal(lista)
+          .sort((a, b) => {
+            const diasA = Number(a.diasStatusAso);
+            const diasB = Number(b.diasStatusAso);
+            if (diasA !== diasB) return diasA - diasB;
+            return String(a.nome || "").localeCompare(String(b.nome || ""));
+          })
+          .map(projetarColaboradorGeralV15_)
       };
       break;
     case "INDICADORES":
-      resultado = { indicadores: obterIndicadoresPortalV14_6_(contexto) };
+      resultado = { indicadores: obterIndicadoresPortalV15_(contexto) };
       break;
     default:
       throw new Error("Módulo inválido: " + modulo);
@@ -114,7 +116,22 @@ function obterModuloPortalV13(modulo, dataInicio, dataFim, forcarAtualizacao) {
   return resultado;
 }
 
-function obterIndicadoresPortalV14_6_(contexto) {
+function projetarColaboradorGeralV15_(c) {
+  return {
+    mat: c.mat || "",
+    nome: c.nome || "",
+    funcao: c.funcao || "",
+    setor: c.setor || "",
+    situacao: c.situacao || "",
+    dataUltimoAsoBR: c.dataUltimoAsoBR || "",
+    proximoVencimentoBR: c.proximoVencimentoBR || "",
+    diasStatusAso: c.diasStatusAso === null || c.diasStatusAso === undefined ? "" : c.diasStatusAso,
+    statusAso: c.statusAso || "",
+    statusAsoClasse: c.statusAsoClasse || ""
+  };
+}
+
+function obterIndicadoresPortalV15_(contexto) {
   const chave = "INDICADORES_GLOBAL_" + obterAnoVigente();
   const cacheado = obterCacheV13_(chave);
   if (cacheado && Array.isArray(cacheado.resumoMensal)) return cacheado;
