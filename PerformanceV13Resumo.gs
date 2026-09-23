@@ -52,7 +52,7 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
 
   const resumo = {
     meta: {
-      versao: "14.7",
+      versao: "15.0",
       cache: contexto.origemCache === "nova" ? "não" : "sim",
       origemCache: contexto.origemCache || "nova",
       duracaoProcessamentoMs: contexto.duracaoProcessamentoMs || 0,
@@ -103,7 +103,7 @@ function obterGraficoPortalV13(dataInicio, dataFim) {
   if (cacheado) return cacheado;
 
   const contexto = construirContextoV13_(dataInicio, dataFim, false);
-  const indicadores = obterIndicadoresPortalV14_6_(contexto);
+  const indicadores = obterIndicadoresPortalV15_(contexto);
   const mesAtual = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "yyyy-MM");
   const resumoAteMesAtual = (indicadores.resumoMensal || []).filter(function(item) {
     const mes = String(item.mesAnalise || item.mes || "");
