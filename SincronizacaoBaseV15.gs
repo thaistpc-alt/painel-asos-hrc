@@ -418,7 +418,21 @@ function calcularDataConvocarV15_(vencimento, periodicidade) {
 
 function calcularDataLimiteV15_(vencimento, periodicidade) {
   if (!vencimento) return "";
-  return adicionarDiasV15_(vencimento, Number(periodicidade) === 6 ? -15 : -30);
+
+  if (Number(periodicidade) === 6) {
+    return adicionarDiasV15_(vencimento, -15);
+  }
+
+  const limiteNormal = adicionarDiasV15_(vencimento, -30);
+  const dataConvocar = calcularDataConvocarV15_(vencimento, periodicidade);
+
+  // Quando a convocação anual é deslocada para 01/01 para não cair
+  // no ano anterior, a data limite também não pode permanecer antes dela.
+  if (dataConvocar && limiteNormal && limiteNormal < dataConvocar) {
+    return dataConvocar;
+  }
+
+  return limiteNormal;
 }
 
 function adicionarDiasV15_(dataISO, dias) {
