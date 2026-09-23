@@ -1513,6 +1513,7 @@
               <th>Função</th>
               <th>Setor</th>
               <th>Situação</th>
+              <th>Origem</th>
               <th>Data convocar</th>
               <th>Data limite</th>
               <th>Data agendada</th>
@@ -1529,7 +1530,6 @@
       lista.forEach(item => {
         const realizado = ehAsoRealizadoNoPortal(item);
         const dataAgendadaPortal = formatarDataAgendadaConvocar(item);
-        const statusAgendaPortal = formatarStatusAgendaConvocar(item);
         const matEsc = escaparAtributo(item.mat);
         const idStatus = idSeguroPortal(item.mat);
         const checked = selecaoConvocacoes.has(String(item.mat)) ? "checked" : "";
@@ -1551,6 +1551,7 @@
             <td>${escaparHtml(item.funcao)}</td>
             <td>${escaparHtml(item.setor)}</td>
             <td>${escaparHtml(item.situacao)}</td>
+            <td><span class="badge-origem-convocacao">${escaparHtml(item.grupoConvocacao || "")}</span></td>
             <td>${escaparHtml(item.dataConvocarBR)}</td>
             <td>${escaparHtml(item.dataLimiteBR)}</td>
             <td>${dataAgendadaPortal}</td>
