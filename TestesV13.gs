@@ -42,16 +42,34 @@ function executarRegressaoRegrasConvocacaoV14() {
   };
 
   const eventos = new Map();
-  eventos.set("TESTE_X", [{
-    mat: "TESTE_X",
-    data: "2026-08-07",
-    dataBR: "07/08/2026",
-    tipo: "DEMISSIONAL",
-    tipoNorm: "DEMISSIONAL",
-    status: "ASO Realizado",
-    statusNorm: "ASO REALIZADO",
-    ehAsoRealizado: true
-  }]);
+  eventos.set("TESTE_X", [
+    {
+      mat: "TESTE_X",
+      data: "2026-08-07",
+      dataBR: "07/08/2026",
+      tipo: "DEMISSIONAL",
+      tipoNorm: "DEMISSIONAL",
+      status: "ASO Realizado",
+      statusNorm: "ASO REALIZADO",
+      ehAsoRealizado: true
+    },
+    {
+      // Na V14.7 DATA AGENDADA é derivada da própria AGENDA.
+      // O cenário setembro -> outubro precisa, portanto, simular o
+      // agendamento periódico futuro na mesma fonte de verdade.
+      mat: "TESTE_X",
+      data: "2026-10-05",
+      dataBR: "05/10/2026",
+      tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO",
+      status: "",
+      statusNorm: "",
+      ehAsoRealizado: false,
+      ehNaoCompareceu: false,
+      ehReagendou: false,
+      ehCancelado: false
+    }
+  ]);
 
   aplicarAsoRealizadoAgenda([colaborador], eventos);
   prepararFlagsPortal([colaborador]);
@@ -61,6 +79,14 @@ function executarRegressaoRegrasConvocacaoV14() {
     colaborador.asoRealizadoValido === false,
     colaborador.asosRealizadosNaoPeriodicos
   );
+
+  testar(
+    "Data agendada é reconstruída a partir do periódico da AGENDA",
+    colaborador.dataAgendada === "2026-10-05",
+    colaborador.dataAgendada || "sem data"
+  );
+
+
 
   const outubro = gerarListaConvocar([colaborador], "2026-10-01", "2026-10-31");
   testar(
