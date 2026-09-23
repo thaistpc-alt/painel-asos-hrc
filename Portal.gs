@@ -473,24 +473,20 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
     }
 
     // R (STATUS GERAL) também deixa de depender da fórmula da planilha.
-    c.statusGeral = calcularStatusGeralPortalV14_7_(c, hojeISO);
+    c.statusGeral = calcularStatusGeralPortalV15_(c, hojeISO);
     c.statusGeralNorm = normalizarTexto(c.statusGeral);
   });
 
   return lista || [];
 }
 
-function calcularStatusGeralPortalV14_7_(c, hojeISO) {
+function calcularStatusGeralPortalV15_(c, hojeISO) {
   const dataPeriodico = c && c.dataAgendada ? String(c.dataAgendada) : "";
   const vencimento = c && c.proximoVencimento ? String(c.proximoVencimento) : "";
-  const statusPeriodico = normalizarTexto(c && c.statusAgenda ? c.statusAgenda : "");
 
-  if (
-    dataPeriodico &&
-    vencimento &&
-    dataPeriodico.substring(0, 4) === vencimento.substring(0, 4)
-  ) {
-    if (statusPeriodico.includes("ASO REALIZADO")) return "REALIZADO";
+  if (temAsoRealizadoValido(c)) return "REALIZADO";
+
+  if (dataPeriodico && dataPertenceAoCicloPeriodicoAtual(c, dataPeriodico)) {
     return "AGENDADO";
   }
 
