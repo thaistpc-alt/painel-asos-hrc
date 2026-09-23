@@ -530,11 +530,14 @@ function validarEstruturaBaseV15() {
     ? modelo.getDataRange().getFormulas().flat().filter(Boolean)
     : [];
   testar(
-    "Modelo CONVOCAÇÃO sem fórmulas externas",
-    formulasModelo.every(f => !normalizarTexto(f).includes("IMPORTRANGE")) &&
-      formulasModelo.every(f => !normalizarTexto(f).includes("VLOOKUP")) &&
-      formulasModelo.every(f => !normalizarTexto(f).includes("XLOOKUP")),
+    "Modelo CONVOCAÇÃO totalmente preenchido por script",
+    formulasModelo.length === 0,
     formulasModelo
+  );
+  testar(
+    "Modelo CONVOCAÇÃO usa cidade correta do HRC",
+    !!modelo && normalizarTexto(modelo.getRange("F27").getDisplayValue()).includes("JUAZEIRO DO NORTE"),
+    modelo ? modelo.getRange("F27").getDisplayValue() : "aba ausente"
   );
   testar(
     "Cópia redundante de CONVOCAÇÃO removida",
