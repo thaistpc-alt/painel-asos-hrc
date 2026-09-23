@@ -1009,6 +1009,7 @@ function gerarListaRevisaoConvocar(lista, dataInicio, dataFim) {
         statusOperacional: avaliacao.statusOperacional || "Revisar",
         motivos: avaliacao.motivos || [],
         revisaoDados: !!avaliacao.revisaoDados,
+        incluidoAutomaticamente: !!avaliacao.elegivel,
         dataConvocar: c.dataConvocar || "",
         dataConvocarBR: c.dataConvocarBR || "",
         dataAgendada: c.dataAgendada || "",
