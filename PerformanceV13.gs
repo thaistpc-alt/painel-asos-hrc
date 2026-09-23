@@ -48,11 +48,15 @@ function obterModuloPortalV13(modulo, dataInicio, dataFim, forcarAtualizacao) {
     case "CONVOCAR": {
       const todos = gerarListaConvocar(lista, dataInicio, dataFim)
         .filter(c => !c.asoRealizadoValido);
+      const revisoes = typeof gerarListaRevisaoConvocar === "function"
+        ? gerarListaRevisaoConvocar(lista, dataInicio, dataFim)
+        : [];
       resultado = {
         convocar: {
           todos: todos,
           pendentes: todos.filter(c => !ehAsoRealizado(c)),
-          realizados: todos.filter(ehAsoRealizado)
+          realizados: todos.filter(ehAsoRealizado),
+          revisoes: revisoes
         }
       };
       break;
