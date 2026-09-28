@@ -1,0 +1,292 @@
+<style>
+/* =========================================================
+   CONVOCAÇÃO UI V14 - fila operacional única
+========================================================= */
+.filtro-situacao-check { display: none !important; }
+#filtroSituacaoConvocar { display: block !important; }
+.fila-v14-secao { margin: 12px 0 18px; }
+.fila-v14-secao > h3 { margin: 0 0 8px !important; display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:14px !important; }
+.fila-v14-explicacao { color:#64748b; font-size:10.5px; margin:0 0 8px; }
+.fila-v14-status { font-weight:700; color:#0f172a; }
+.fila-v14-observacao { display:block; margin-top:3px; color:#64748b; font-size:9px; line-height:1.25; }
+.fila-v14-revisao .tabela-container { border-color:#f59e0b; }
+.fila-v14-revisao h3 { border-left-color:#f59e0b !important; }
+.fila-v14-revisao td { background:#fffbeb; }
+.fila-v14-badge { display:inline-block; margin-top:3px; padding:2px 5px; border-radius:999px; background:#fef3c7; color:#92400e; font-size:8.5px; font-weight:700; }
+.fila-v14-badge.ok { background:#dcfce7; color:#166534; }
+#tabelaConvocar button:disabled { opacity:.45; cursor:not-allowed; transform:none; }
+</style>
+<script>
+(function () {
+  'use strict';
+
+  const TITULOS = {
+    CONVOCACOES_PERIODO: 'Convocações do período',
+    AGENDADOS_PERIODO: 'Agendados no período',
+    PENDENCIAS_ANTERIORES: 'Pendências anteriores'
+  };
+
+  const EXPLICACOES = {
+    CONVOCACOES_PERIODO: 'Data para convocar dentro do período selecionado. Se o agendamento estiver em outro mês, a pessoa permanece na fila até o ciclo ser encerrado.',
+    AGENDADOS_PERIODO: 'Data agendada dentro do período selecionado, inclusive quando a convocação se originou em mês anterior.',
+    PENDENCIAS_ANTERIORES: 'Deveriam ter sido tratadas antes e continuam abertas porque não existe ASO periódico realizado válido.'
+  };
+
+  function portalV14() {
+    return typeof dadosPortal !== 'undefined' && dadosPortal && dadosPortal.convocar ? dadosPortal.convocar : { todos: [], revisao: [] };
+  }
+
+  function pesquisaV14() {
+    return typeof obterTermoPesquisa === 'function' ? obterTermoPesquisa('pesquisaConvocar') : '';
+  }
+
+  function correspondeV14(item, termo) {
+    if (!termo) return true;
+    if (typeof correspondePesquisa === 'function') return correspondePesquisa(item, termo);
+    return true;
+  }
+
+  function dataAgendadaV14(item) {
+    if (!item.dataAgendada) return '<span class="pendente-agendamento">Pendente agendamento</span>';
+    const data = escaparHtml(item.dataAgendadaBR || item.dataAgendada);
+    const inicio = document.getElementById('dataInicio')?.value || '';
+    const fim = document.getElementById('dataFim')?.value || '';
+    const fora = inicio && fim && (item.dataAgendada < inicio || item.dataAgendada > fim);
+    return fora ? data + '<span class="fila-v14-badge">outro período</span>' : data;
+  }
+
+  function observacaoV14(item) {
+    const partes = [];
+    if (item.observacaoConvocacao) partes.push(item.observacaoConvocacao);
+    if (Array.isArray(item.motivosGeracao) && item.motivosGeracao.length) partes.push(item.motivosGeracao.join(' '));
+    return partes.join(' ').trim();
+  }
+
+  function montarTabelaFilaV14(lista, revisao) {
+    if (!lista || !lista.length) return '<div class="vazio">Nenhum registro encontrado.</div>';
+    let html = '<div class="tabela-container"><table><thead><tr>' +
+      '<th class="check-coluna">' + (revisao ? '' : '<input type="checkbox" onclick="alternarSelecaoTodasVisiveis(this)">') + '</th>' +
+      '<th>Matrícula</th><th>Nome</th><th>Função</th><th>Setor</th><th>Situação</th>' +
+      '<th>Data convocar</th><th>Data limite</th><th>Data agendada</th><th>Status operacional</th>' +
+      '<th>Dias</th><th>Prior.</th><th>PDF</th><th>OK</th></tr></thead><tbody>';
+
+    lista.forEach(item => {
+      const mat = escaparAtributo(item.mat || '');
+      const id = idSeguroPortal(item.mat || '');
+      const checked = typeof selecaoConvocacoes !== 'undefined' && selecaoConvocacoes.has(String(item.mat)) ? 'checked' : '';
+      const obs = revisao ? (item.motivoRevisao || item.observacaoConvocacao || '') : observacaoV14(item);
+      const status = revisao ? (item.apenasAviso ? 'Dados incompletos para revisão' : 'Excluído da fila automática') : (item.statusOperacional || 'A convocar');
+      const checkbox = revisao ? '' : '<input type="checkbox" class="check-lote" data-mat="' + mat + '" ' + checked + ' onchange="atualizarSelecaoConvocacao(this)">';
+      const pode = !revisao && item.podeGerarConvocacao;
+      const pdf = revisao
+        ? ''
+        : '<button title="' + escaparAtributo(pode ? 'Gerar PDF' : (obs || 'Revisar antes de gerar')) + '" ' + (pode ? '' : 'disabled ') + 'onclick="gerarIndividual(\'' + mat + '\')">PDF</button>';
+
+      html += '<tr data-mat="' + mat + '">' +
+        '<td class="check-coluna">' + checkbox + '</td>' +
+        '<td>' + escaparHtml(item.mat || '') + '</td>' +
+        '<td>' + escaparHtml(item.nome || '') + '</td>' +
+        '<td>' + escaparHtml(item.funcao || '') + '</td>' +
+        '<td>' + escaparHtml(item.setor || '') + '</td>' +
+        '<td>' + escaparHtml(item.situacao || '') + '</td>' +
+        '<td>' + escaparHtml(item.dataConvocarBR || '') + '</td>' +
+        '<td>' + escaparHtml(item.dataLimiteBR || '') + '</td>' +
+        '<td>' + dataAgendadaV14(item) + '</td>' +
+        '<td><span class="fila-v14-status">' + escaparHtml(status) + '</span>' + (obs ? '<span class="fila-v14-observacao">' + escaparHtml(obs) + '</span>' : '') + '</td>' +
+        '<td>' + escaparHtml(item.diasParaVencer ?? '') + '</td>' +
+        '<td>' + (typeof badgePrioridade === 'function' ? badgePrioridade(item.prioridade) : escaparHtml(item.prioridade || '')) + '</td>' +
+        '<td>' + pdf + '</td>' +
+        '<td>' + (revisao ? '' : '<span class="status-lote" id="statusLote_' + id + '"></span>') + '</td>' +
+        '</tr>';
+    });
+    return html + '</tbody></table></div>';
+  }
+
+  function renderizarConvocarV14(lista) {
+    const div = document.getElementById('tabelaConvocar');
+    if (!div) return;
+    const termo = pesquisaV14();
+    const grupos = { CONVOCACOES_PERIODO: [], AGENDADOS_PERIODO: [], PENDENCIAS_ANTERIORES: [] };
+    (lista || []).forEach(item => {
+      const grupo = item.grupoConvocacao || 'PENDENCIAS_ANTERIORES';
+      if (grupos[grupo]) grupos[grupo].push(item);
+    });
+
+    let html = '';
+    ['CONVOCACOES_PERIODO', 'AGENDADOS_PERIODO', 'PENDENCIAS_ANTERIORES'].forEach(grupo => {
+      const itens = grupos[grupo] || [];
+      html += '<section class="fila-v14-secao"><h3><span>' + TITULOS[grupo] + '</span><span class="contador-secao">' + itens.length + '</span></h3>' +
+        '<div class="fila-v14-explicacao">' + EXPLICACOES[grupo] + '</div>' + montarTabelaFilaV14(itens, false) + '</section>';
+    });
+
+    const revisao = (portalV14().revisao || []).filter(item => correspondeV14(item, termo));
+    if (revisao.length) {
+      html += '<section class="fila-v14-secao fila-v14-revisao"><h3><span>Revisão / exclusões justificadas</span><span class="contador-secao">' + revisao.length + '</span></h3>' +
+        '<div class="fila-v14-explicacao">Nenhuma exclusão é silenciosa: o motivo fica registrado aqui. Avisos de tipo de exame vazio também aparecem para conferência.</div>' +
+        montarTabelaFilaV14(revisao, true) + '</section>';
+    }
+
+    if (!html) html = '<div class="vazio">Nenhum colaborador para convocar no período selecionado.</div>';
+    div.innerHTML = html;
+    if (typeof ativarOrdenacaoTabelas === 'function') ativarOrdenacaoTabelas('tabelaConvocar');
+    if (typeof atualizarTextoSelecaoLote === 'function') atualizarTextoSelecaoLote();
+  }
+
+  window.renderizarConvocar = renderizarConvocarV14;
+  window.filtrarConvocacaoPorSituacao = function () {
+    const portal = portalV14();
+    const situacao = document.getElementById('filtroSituacaoConvocar')?.value || '';
+    const termo = pesquisaV14();
+    const lista = (portal.todos || []).filter(item =>
+      (!situacao || item.situacao === situacao) && correspondeV14(item, termo)
+    );
+    renderizarConvocarV14(lista);
+  };
+
+  window.gerarIndividual = function (mat) {
+    limparMensagens();
+    mostrarLoading(true);
+    const inicio = document.getElementById('dataInicio').value;
+    const fim = document.getElementById('dataFim').value;
+    google.script.run
+      .withSuccessHandler(function (r) {
+        mostrarLoading(false);
+        mostrarOk('Convocação gerada: ' + r.arquivo);
+        window.open(r.url, '_blank');
+      })
+      .withFailureHandler(function (e) {
+        mostrarLoading(false);
+        mostrarErro(e.message || e);
+      })
+      .gerarConvocacaoIndividualV14(mat, inicio, fim);
+  };
+
+  window.gerarLoteConvocacoes = function (matriculas) {
+    if (loteEmProcessamento) {
+      mostrarErro('Já existe uma geração em lote em andamento. Aguarde finalizar.');
+      return;
+    }
+    const inicio = document.getElementById('dataInicio').value;
+    const fim = document.getElementById('dataFim').value;
+    const lista = [...new Set((matriculas || []).map(String).filter(Boolean))];
+    if (!lista.length) return mostrarErro('Nenhuma matrícula válida para gerar.');
+
+    limparMensagens();
+    limparStatusLote();
+    loteEmProcessamento = true;
+    mostrarLoading(true);
+    const tamanho = 10;
+    let indice = 0, sucesso = 0, ignorados = 0, falhas = 0;
+    const motivos = {};
+    atualizarProgressoLote(0, lista.length, 'Gerando convocações V14');
+    lista.forEach(m => definirStatusLote(m, 'aguardando-lote', '...', 'Aguardando geração'));
+
+    function proximo() {
+      const lote = lista.slice(indice, indice + tamanho);
+      if (!lote.length) {
+        loteEmProcessamento = false;
+        mostrarLoading(false);
+        atualizarProgressoLote(lista.length, lista.length, 'Geração concluída');
+        const resumo = Object.keys(motivos).map(m => m + ': ' + motivos[m]).join(' | ');
+        mostrarOk(sucesso + ' convocação(ões) gerada(s). ' + ignorados + ' ignorado(s). ' + falhas + ' falha(s).' + (resumo ? ' Motivos: ' + resumo + '.' : ''));
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(function (resultados) {
+          (resultados || []).forEach(r => {
+            const mat = String(r.matricula || '');
+            if (r.sucesso) { sucesso++; definirStatusLote(mat, 'ok-lote', 'OK', r.arquivo || 'Gerada'); }
+            else if (r.ignorado) { ignorados++; const m = r.motivo || 'Ignorado'; motivos[m] = (motivos[m] || 0) + 1; definirStatusLote(mat, 'erro-lote', '!', m); }
+            else { falhas++; definirStatusLote(mat, 'erro-lote', 'X', r.erro || 'Falha'); }
+          });
+          indice += lote.length;
+          atualizarProgressoLote(Math.min(indice, lista.length), lista.length, 'Gerando convocações V14');
+          setTimeout(proximo, 200);
+        })
+        .withFailureHandler(function (e) {
+          lote.forEach(m => definirStatusLote(m, 'erro-lote', 'X', e.message || e));
+          falhas += lote.length;
+          indice += lote.length;
+          setTimeout(proximo, 400);
+        })
+        .gerarConvocacoesSelecionadasLoteV14(lote, inicio, fim);
+    }
+    proximo();
+  };
+
+  window.enviarLoteGestor = function (matriculas, emailGestor) {
+    if (loteEmProcessamento) return mostrarErro('Já existe uma geração/envio em lote em andamento. Aguarde finalizar.');
+    const inicio = document.getElementById('dataInicio').value;
+    const fim = document.getElementById('dataFim').value;
+    const lista = [...new Set((matriculas || []).map(String).filter(Boolean))];
+    if (!lista.length) return mostrarErro('Nenhuma matrícula válida para enviar.');
+
+    limparMensagens();
+    limparStatusLote();
+    loteEmProcessamento = true;
+    mostrarLoading(true);
+    const tamanho = 10;
+    let indice = 0, sucesso = 0, ignorados = 0, falhas = 0;
+    const motivos = {};
+    atualizarProgressoLote(0, lista.length, 'Enviando convocações V14');
+    lista.forEach(m => definirStatusLote(m, 'aguardando-lote', '...', 'Aguardando envio'));
+
+    function proximo() {
+      const lote = lista.slice(indice, indice + tamanho);
+      if (!lote.length) {
+        loteEmProcessamento = false;
+        mostrarLoading(false);
+        atualizarProgressoLote(lista.length, lista.length, 'Envio concluído');
+        const resumo = Object.keys(motivos).map(m => m + ': ' + motivos[m]).join(' | ');
+        mostrarOk(sucesso + ' convocação(ões) enviada(s) para ' + emailGestor + ', com cópia para thais.tpc@isgh.org.br. ' + ignorados + ' ignorado(s). ' + falhas + ' falha(s).' + (resumo ? ' Motivos: ' + resumo + '.' : ''));
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(function (resultados) {
+          (resultados || []).forEach(r => {
+            const mat = String(r.matricula || '');
+            if (r.sucesso) { sucesso++; definirStatusLote(mat, 'ok-lote', '@', r.arquivo || 'Enviada'); }
+            else if (r.ignorado) { ignorados++; const m = r.motivo || 'Ignorado'; motivos[m] = (motivos[m] || 0) + 1; definirStatusLote(mat, 'erro-lote', '!', m); }
+            else { falhas++; definirStatusLote(mat, 'erro-lote', 'X', r.erro || 'Falha'); }
+          });
+          indice += lote.length;
+          atualizarProgressoLote(Math.min(indice, lista.length), lista.length, 'Enviando convocações V14');
+          setTimeout(proximo, 250);
+        })
+        .withFailureHandler(function (e) {
+          lote.forEach(m => definirStatusLote(m, 'erro-lote', 'X', e.message || e));
+          falhas += lote.length;
+          indice += lote.length;
+          setTimeout(proximo, 500);
+        })
+        .enviarConvocacoesSelecionadasGestorComCopiaV14(lote, emailGestor, inicio, fim);
+    }
+    proximo();
+  };
+
+  window.enviarPendenciaGestor = function (mat, dataAnteriorBR) {
+    if (loteEmProcessamento) return mostrarErro('Já existe uma geração/envio em lote em andamento. Aguarde finalizar.');
+    const emails = typeof obterEmailsGestor === 'function' ? obterEmailsGestor() : [];
+    if (!emails.length) return mostrarErro('Informe o e-mail do gestor antes de enviar a pendência.');
+    const inicio = document.getElementById('dataInicio').value;
+    const fim = document.getElementById('dataFim').value;
+    mostrarLoading(true);
+    loteEmProcessamento = true;
+    google.script.run
+      .withSuccessHandler(function (resultados) {
+        loteEmProcessamento = false;
+        mostrarLoading(false);
+        const r = (resultados || [])[0] || {};
+        if (r.sucesso) { mostrarOk('Nova convocação enviada ao gestor, com cópia para thais.tpc@isgh.org.br.'); carregarDados(true); }
+        else if (r.ignorado) mostrarErro(r.motivo || 'Convocação ignorada.');
+        else mostrarErro(r.erro || 'Falha ao enviar nova convocação.');
+      })
+      .withFailureHandler(function (e) {
+        loteEmProcessamento = false;
+        mostrarLoading(false);
+        mostrarErro(e.message || e);
+      })
+      .enviarReconvocacaoPendenciaGestorComCopiaV14(mat, emails.join('; '), inicio, fim, dataAnteriorBR);
+  };
+})();
+</script>
