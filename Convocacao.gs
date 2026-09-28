@@ -569,24 +569,35 @@ function enviarConvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInici
     const thread = opcoes.responderThreadId ? obterThreadGmailPorId(opcoes.responderThreadId) : null;
 
     if (thread) {
-      const destinatariosOriginais = obterDestinatariosOriginaisThread(thread);
-      const destinatariosEnvio = Array.from(new Set(
-        emails.concat(destinatariosOriginais)
-          .map(email => String(email || "").trim().toLowerCase())
-          .filter(email => email && email !== EMAIL_COPIA_CONVOCACOES_GESTOR.toLowerCase())
-      ));
+      // GmailApp.sendEmail cria uma mensagem nova e não assegura a continuidade
+      // da conversa. replyAll preserva a thread original na reconvocação.
+      const destinatariosOriginais = obterDestinatariosOriginaisThread(thread)
+        .map(email => String(email || "").trim().toLowerCase());
+      const solicitados = emails
+        .map(email => String(email || "").trim().toLowerCase())
+        .filter(email => email !== EMAIL_COPIA_CONVOCACOES_GESTOR.toLowerCase());
+      const participantes = new Set(destinatariosOriginais);
 
-      if (destinatariosEnvio.length === 0) {
-        throw new Error("Não foi possível identificar os e-mails dos coordenadores.");
+      if (destinatariosOriginais.length === 0) {
+        throw new Error("Não foi possível confirmar os destinatários da conversa original. Nenhum e-mail foi enviado.");
       }
 
-      GmailApp.sendEmail(destinatariosEnvio.join(","), assunto, corpo.texto, {
+      const novos = solicitados.filter(email => !participantes.has(email));
+      if (novos.length) {
+        throw new Error(
+          "A reconvocação em cadeia só pode ser enviada aos participantes originais. " +
+          "E-mails não presentes na conversa: " + novos.join(", ") +
+          ". Inicie uma nova convocação para alterar os destinatários."
+        );
+      }
+
+      thread.replyAll(corpo.texto, {
         htmlBody: corpo.html,
         attachments: anexos,
         cc: EMAIL_COPIA_CONVOCACOES_GESTOR
       });
 
-      emails.splice(0, emails.length, ...destinatariosEnvio);
+      emails.splice(0, emails.length, ...destinatariosOriginais);
     } else {
       GmailApp.sendEmail(emails.join(","), assunto, corpo.texto, {
         htmlBody: corpo.html,
