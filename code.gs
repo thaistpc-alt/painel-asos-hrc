@@ -583,7 +583,7 @@ function doGet() {
       if (!lote.length) {
         definirProcessamento(false);
         mostrarLoading(false);
-        atualizarProgressoLote(lista.length, lista.length, 'Envio concluído');
+        atualizarProgressoLote(lista.length, lista.length, sucesso ? 'Envio finalizado: ' + sucesso + ' enviada(s)' : 'Nenhum e-mail enviado');
 
         const resumo = Object.keys(motivos)
           .map(motivo => motivo + ': ' + motivos[motivo])
@@ -594,7 +594,8 @@ function doGet() {
           ignorados + ' ignorado(s). ' + falhas + ' falha(s).';
 
         if (resumo) texto += ' Motivos: ' + resumo + '.';
-        mostrarOk(texto);
+        if (sucesso === 0) mostrarErro(texto);
+        else mostrarOk(texto);
         return;
       }
 
