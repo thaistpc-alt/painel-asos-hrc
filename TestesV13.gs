@@ -762,3 +762,56 @@ function validarAntesPublicarV15() {
   console.log(JSON.stringify(resultado, null, 2));
   return resultado;
 }
+
+
+/**
+ * HOTFIX V14.8 — prévia SEM envio, sem PDF e sem alterar marcações.
+ * Confere diretamente os agendamentos periódicos de outubro
+ * que aparecem na lista mas estavam sendo ignorados pelo envio.
+ */
+function diagnosticarEnvioConvocacoesOutubroV14_8() {
+  const colaboradores = obterListaAtualizadaParaConvocacao_("2026-10-01", "2026-10-31");
+  const esperados = [
+    { mat: "3676", data: "2026-10-01" },
+    { mat: "1644", data: "2026-10-01" },
+    { mat: "1772", data: "2026-10-01" },
+    { mat: "656", data: "2026-10-02" }
+  ];
+
+  const resultados = esperados.map(item => {
+    const c = colaboradores.find(p =>
+      String(p.mat || "").trim() === item.mat
+    );
+    const motivo = c
+      ? motivoNaoBaixarConvocacao(c, "2026-10-01", "2026-10-31")
+      : "Matrícula não encontrada";
+    return {
+      matricula: item.mat,
+      colaborador: c ? c.nome : "",
+      dataEsperada: item.data,
+      dataAgenda: c ? c.dataAgendada : "",
+      situacao: c ? c.situacao : "",
+      motivo: motivo,
+      aptoParaPDFEEmail: !!c && c.dataAgendada === item.data && !motivo
+    };
+  });
+
+  const historicoRealizado = colaboradores.find(c =>
+    String(c.mat || "").trim() === "1883"
+  );
+  const bloqueioRealizado = historicoRealizado
+    ? motivoNaoBaixarConvocacao(historicoRealizado, "2026-10-01", "2026-10-31")
+    : "Matrícula 1883 não encontrada";
+
+  const resumo = {
+    sucesso: resultados.every(c => c.aptoParaPDFEEmail) &&
+      !!bloqueioRealizado && bloqueioRealizado.includes("já realizado"),
+    aprovados: resultados.filter(c => c.aptoParaPDFEEmail).length,
+    total: resultados.length,
+    bloqueioAsoJaRealizado: bloqueioRealizado,
+    resultados: resultados,
+    observacao: "Prévia apenas. Nenhum PDF ou e-mail gerado."
+  };
+  console.log(JSON.stringify(resumo, null, 2));
+  return resumo;
+}
