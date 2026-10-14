@@ -48,6 +48,10 @@ function sincronizarBaseV15_(invalidarCache, forcarAtualizacao) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const config = lerConfigBaseV15_();
+    const dadosFonte = medir("Ler FONTEpainel", function() {
+      return lerDadosFontePainelV15_(ss);
+    });
+    const assinaturaFonte = assinarDadosFontePainelV15_(dadosFonte);
 
     const idAgenda = config.ORIGEM_AGENDA_ID || BASE_V15.ORIGEM_AGENDA_ID;
     const abaAgendaOrigem = config.ORIGEM_AGENDA_ABA || BASE_V15.ORIGEM_AGENDA_ABA;
@@ -62,7 +66,8 @@ function sincronizarBaseV15_(invalidarCache, forcarAtualizacao) {
       String(config.ORIGEM_AGENDA_MODIFICADA_MS || "") === String(modAgendaMs) &&
       String(config.ORIGEM_ESCALA_MODIFICADA_MS || "") === String(modEscalaMs);
 
-    if (!forcarAtualizacao && fontesIguais && ultimaData === hoje) {
+    if (!forcarAtualizacao && fontesIguais && ultimaData === hoje &&
+        config.ASSINATURA_FONTEPAINEL === assinaturaFonte) {
       const resultadoIgnorado = {
         sucesso: true,
         ignorado: true,
@@ -85,16 +90,6 @@ function sincronizarBaseV15_(invalidarCache, forcarAtualizacao) {
       const ultimaLinha = aba.getLastRow();
       if (ultimaLinha < 1) return [];
       return aba.getRange(1, 1, ultimaLinha, BASE_V15.COLUNAS_AGENDA).getValues();
-    });
-
-    const dadosFonte = medir("Ler FONTE origem", function() {
-      const aba = origemAgenda.getSheetByName(BASE_V15.ORIGEM_FONTE_ABA);
-      if (!aba) throw new Error("Aba FONTE da origem não encontrada.");
-      const ultimaLinha = aba.getLastRow();
-      if (ultimaLinha < 2) return [];
-      const brutos = aba.getRange(2, 2, ultimaLinha - 1, 8).getValues()
-        .filter(linha => valorTexto(linha[0]));
-      return deduplicarFonteV15_(brutos);
     });
 
     const dadosGestores = medir("Ler GESTORES origem", function() {
@@ -161,10 +156,12 @@ function sincronizarBaseV15_(invalidarCache, forcarAtualizacao) {
     const agora = Utilities.formatDate(agoraDate, CONFIG.TIMEZONE, "dd/MM/yyyy HH:mm:ss");
     const agoraISO = Utilities.formatDate(agoraDate, CONFIG.TIMEZONE, "yyyy-MM-dd'T'HH:mm:ss");
     definirConfigsBaseV15EmLote_([
+      ["ASSINATURA_FONTEPAINEL", assinarDadosFontePainelV15_(lerDadosFontePainelV15_(ss)), "Controle dos dados cadastrais da FONTEpainel", "Apps Script"],
+      ["ORIGEM_DADOS_COLABORADORES", "FONTEpainel!B:O", "Cadastro e datas de ASO lidos exclusivamente da base do painel", "SESMT"],
       ["VERSAO_BASE", "15.0", "Estrutura materializada da base do Painel de ASOs", "Apps Script"],
       ["ULTIMA_SINCRONIZACAO", agora, "Última sincronização completa da base", "Apps Script"],
       ["ULTIMA_SINCRONIZACAO_ISO", agoraISO, "Controle técnico de atualização", "Apps Script"],
-      ["FONTE_DERIVADA", "GERENCIADO_POR_SCRIPT", "A, J:U são materializados pelo Apps Script", "Apps Script"],
+      ["FONTE_DERIVADA", "GERENCIADO_POR_SCRIPT", "Somente A, P:R e T:U são materializados; B:O e S preservados", "Apps Script"],
       ["AGENDA", "ESPELHO_POR_SCRIPT", "Sem IMPORTRANGE; origem AGENDA da planilha médica", "Apps Script"],
       ["GESTORES", "ESPELHO_POR_SCRIPT", "Sincronizado da planilha médica", "Apps Script"],
       ["ESCALA_MEDICA", "ESPELHO_POR_SCRIPT", "Sem IMPORTRANGE; sincronizada da planilha de escala", "Apps Script"],
@@ -228,6 +225,33 @@ function garantirDimensoesV15_(aba, linhas, colunas) {
   if (aba.getMaxColumns() < colunas) {
     aba.insertColumnsAfter(aba.getMaxColumns(), colunas - aba.getMaxColumns());
   }
+}
+
+
+/** Cadastro e datas da base local; a agenda não substitui estes campos. */
+function lerDadosFontePainelV15_(ss) {
+  const aba = ss.getSheetByName(CONFIG.ABA_FONTE);
+  if (!aba) throw new Error("Aba FONTEpainel não encontrada.");
+  if (aba.getLastRow() < 2) return [];
+  const dados = aba.getRange(2, 2, aba.getLastRow() - 1, 14).getValues(); // B:O
+  const matriculas = new Set();
+  dados.forEach(linha => {
+    const matricula = valorTexto(linha[0]);
+    if (!matricula) return;
+    if (matriculas.has(matricula)) {
+      throw new Error("Matrícula duplicada na FONTEpainel: " + matricula);
+    }
+    matriculas.add(matricula);
+  });
+  return dados;
+}
+
+function assinarDadosFontePainelV15_(dados) {
+  const linhas = (dados || []).slice().sort((a, b) =>
+    valorTexto(a[0]).localeCompare(valorTexto(b[0])));
+  return Utilities.base64Encode(Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256, JSON.stringify(linhas), Utilities.Charset.UTF_8
+  ));
 }
 
 function mapearConvocacaoEnviadaV15_(ss) {
@@ -342,11 +366,15 @@ function montarColaboradoresFonteV15_(dadosFonte, enviadosPorMatricula, eventos)
     const tipoExame = valorTexto(linha[7]);
 
     const mat = reduzirMatriculaV15_(matriculaCompleta);
-    const periodicidade = periodicidadeFonteV15_(funcao);
-    const proximoVencimento = adicionarMeses(dataUltimoAso, periodicidade);
-    const dataConvocar = calcularDataConvocarV15_(proximoVencimento, periodicidade);
-    const dataLimite = calcularDataLimiteV15_(proximoVencimento, periodicidade);
-    const diasParaVencer = calcularDiferencaDias(proximoVencimento, hojeISO);
+    const periodicidade = Number(linha[8]) || 0;
+    const dataBase = formatarDataISO(linha[9]);
+    const proximoVencimento = formatarDataISO(linha[10]);
+    const dataConvocar = formatarDataISO(linha[11]);
+    const dataLimite = formatarDataISO(linha[12]);
+    const diasRaw = linha[13];
+    const diasParaVencer = diasRaw === "" || diasRaw == null
+      ? calcularDiferencaDias(proximoVencimento, hojeISO)
+      : Number(diasRaw);
 
     lista.push({
       linha: idx + 2,
@@ -364,7 +392,7 @@ function montarColaboradoresFonteV15_(dadosFonte, enviadosPorMatricula, eventos)
       dataUltimoAsoBR: formatarDataBR(dataUltimoAso),
       tipoExame: tipoExame,
       periodicidade: periodicidade,
-      dataBase: dataUltimoAso,
+      dataBase: dataBase,
       proximoVencimento: proximoVencimento,
       proximoVencimentoBR: formatarDataBR(proximoVencimento),
       dataConvocar: dataConvocar,
@@ -456,59 +484,26 @@ function adicionarDiasV15_(dataISO, dias) {
 function gravarFontePainelV15_(ss, lista) {
   const aba = ss.getSheetByName(CONFIG.ABA_FONTE);
   if (!aba) throw new Error("Aba FONTEpainel não encontrada.");
-
-  const cabecalho = [
-    "MAT", "MATRICULA", "NOME", "FUNCAO", "NOME_DA_SECAO", "SITUACAO",
-    "DATA_DO_PENULTIMO_ASO", "DATA_DO_ASO", "TIPO_DO_EXAME", "PERIODICIDADE ",
-    "DATA BASE DO ASO", "PRÓXIMO VENCIMENTO", "DATA PARA CONVOCAR (60 dias)",
-    "DATA LIMITE \n(30 dias)", "DIAS PARA VENCER", "DATA AGENDADA",
-    "INFORMAÇÕES DA AGENDA", "STATUS GERAL", "CONVOCAÇÃO ENVIADA", "mês", "ano"
-  ];
-
-  const linhas = (lista || []).map(c => [
-    numeroOuTextoV15_(c.mat),
-    numeroOuTextoV15_(c.matriculaCompleta),
-    c.nome || "",
-    c.funcao || "",
-    c.setor || "",
-    c.situacao || "",
-    dateOuVazioV15_(c.dataPenultimoAso),
-    dateOuVazioV15_(c.dataUltimoAso),
-    c.tipoExame || "",
-    Number(c.periodicidade) || "",
-    dateOuVazioV15_(c.dataBase),
-    dateOuVazioV15_(c.proximoVencimento),
-    dateOuVazioV15_(c.dataConvocar),
-    dateOuVazioV15_(c.dataLimite),
-    c.diasParaVencer === "" ? "" : Number(c.diasParaVencer),
-    dateOuVazioV15_(c.dataAgendada),
-    c.informacoesAgenda || "",
-    c.statusGeral || "",
-    c.convocacaoBaixada || "",
-    c.dataConvocar ? Number(c.dataConvocar.substring(5, 7)) : "",
-    c.dataUltimoAso ? Number(c.dataUltimoAso.substring(0, 4)) : ""
-  ]);
-
-  garantirDimensoesV15_(aba, linhas.length + 1, cabecalho.length);
-  const limparLinhas = Math.max(aba.getLastRow(), linhas.length + 1);
-  aba.getRange(1, 1, limparLinhas, cabecalho.length).clearContent();
-  aba.getRange(1, 1, 1, cabecalho.length).setValues([cabecalho]);
-  if (linhas.length) aba.getRange(2, 1, linhas.length, cabecalho.length).setValues(linhas);
-
-  // Datas G:H, K:N e P.
-  if (linhas.length) {
-    ["G:H", "K:N", "P:P"].forEach(ref => {
-      const partes = ref.split(":");
-      const c1 = colunaNumeroV15_(partes[0]);
-      const c2 = colunaNumeroV15_(partes[1]);
-      aba.getRange(2, c1, linhas.length, c2 - c1 + 1).setNumberFormat("dd/MM/yyyy");
-    });
-    aba.getRange(2, 15, linhas.length, 1).setNumberFormat("0");
-  }
-
-  const filtro = aba.getFilter();
-  if (filtro) filtro.remove();
-  aba.getRange(1, 1, Math.max(2, linhas.length + 1), cabecalho.length).createFilter();
+  const total = aba.getLastRow() - 1;
+  if (total < 1) return;
+  const mats = Array.from({length: total}, () => [""]);
+  const agenda = Array.from({length: total}, () => ["", "", ""]);
+  const periodo = Array.from({length: total}, () => ["", ""]);
+  (lista || []).forEach(c => {
+    const idx = c.linha - 2;
+    if (idx < 0 || idx >= total) throw new Error("Linha inválida da FONTEpainel.");
+    mats[idx] = [numeroOuTextoV15_(c.mat)];
+    agenda[idx] = [dateOuVazioV15_(c.dataAgendada), c.informacoesAgenda || "", c.statusGeral || ""];
+    periodo[idx] = [
+      c.dataConvocar ? Number(c.dataConvocar.substring(5, 7)) : "",
+      c.dataUltimoAso ? Number(c.dataUltimoAso.substring(0, 4)) : ""
+    ];
+  });
+  // Nunca apagar/regravar o cadastro B:O ou o histórico S.
+  aba.getRange(2, 1, total, 1).setValues(mats);
+  aba.getRange(2, 16, total, 3).setValues(agenda);
+  aba.getRange(2, 20, total, 2).setValues(periodo);
+  aba.getRange(2, 16, total, 1).setNumberFormat("dd/MM/yyyy");
 }
 
 function dateOuVazioV15_(iso) {
