@@ -650,6 +650,20 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
 
     const itemBase = montarItemPendencia(colaborador, ultimaPendencia, eventosPendencia.length);
 
+    // Cancelamento de marcação duplicada após realização no mesmo ciclo.
+    // Não encerra falta/reagendamento ou cancelamento do próximo ciclo.
+    const realizadoAntesCancelamento = resolverCancelamentoAposPeriodico_(colaborador, ultimaPendencia, eventos);
+    if (realizadoAntesCancelamento) {
+      resolvidos.push(Object.assign({}, itemBase, {
+        grupoPendencia: "Resolvido",
+        dataResolucao: realizadoAntesCancelamento,
+        dataResolucaoBR: formatarDataBR(realizadoAntesCancelamento),
+        acaoPendencia: "Periódico já realizado antes do cancelamento"
+      }));
+      return;
+    }
+
+
     if (realizadosPosteriores.length > 0) {
       const realizado = realizadosPosteriores[realizadosPosteriores.length - 1];
 
@@ -720,6 +734,29 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
     todos: operacionais
   };
 }
+/**
+ * Retorna a realização somente quando o cancelamento pertence ao ciclo já
+ * atendido. Cancelamentos na janela do próximo ciclo permanecem pendentes.
+ */
+function resolverCancelamentoAposPeriodico_(colaborador, pendencia, eventos) {
+  if (!colaborador || !pendencia || !pendencia.ehCancelado || !pendencia.data) return "";
+  const periodicidade = Number(colaborador.periodicidade);
+  if (!(periodicidade > 0)) return "";
+  const hoje = obterHojeISO();
+  const datas = (eventos || [])
+    .filter(e => e.ehAsoRealizado && ehEventoPeriodicoAgenda(e))
+    .map(e => e.data);
+  if (normalizarTexto(colaborador.tipoExame).includes("PERIODIC")) {
+    datas.push(colaborador.dataUltimoAso);
+  }
+  const realizadas = datas.filter(d => d && d <= hoje && d <= pendencia.data).sort();
+  if (!realizadas.length) return "";
+  const realizado = realizadas[realizadas.length - 1];
+  const vencimentoSeguinte = adicionarMeses(realizado, periodicidade);
+  const inicioProximoCiclo = calcularDataConvocarV15_(vencimentoSeguinte, periodicidade);
+  return inicioProximoCiclo && pendencia.data < inicioProximoCiclo ? realizado : "";
+}
+
 function montarItemPendencia(colaborador, evento, qtdOcorrencias) {
   let tipo = "Não compareceu";
   let observacao = "Status agenda: NÃO COMPARECEU ASO. Gerar reconvocação.";
