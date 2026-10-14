@@ -2482,7 +2482,7 @@
         if (lote.length === 0) {
           loteEmProcessamento = false;
           mostrarLoading(false);
-          atualizarProgressoLote(lista.length, lista.length, "Envio concluído");
+          atualizarProgressoLote(lista.length, lista.length, sucesso ? "Envio finalizado: " + sucesso + " enviada(s)" : "Nenhum e-mail enviado");
 
           const resumoMotivos = Object.keys(motivos)
             .map(m => m + ": " + motivos[m])
@@ -2493,7 +2493,8 @@
                       falhas + " falha(s).";
 
           if (resumoMotivos) texto += " Motivos: " + resumoMotivos + ".";
-          mostrarOk(texto);
+          if (sucesso === 0) mostrarErro(texto);
+          else mostrarOk(texto);
           return;
         }
 

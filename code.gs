@@ -51,7 +51,7 @@ function enviarConvocacoesSelecionadasGestorComCopia(matriculas, emailsGestor, d
     throw new Error("Envie no máximo " + LIMITE_ANEXOS_EMAIL_GESTOR + " convocações por e-mail. O painel divide lotes maiores automaticamente.");
   }
 
-  const lista = obterListaColaboradoresConvocacao_(dataInicio, dataFim);
+  const lista = obterListaAtualizadaParaConvocacao_(dataInicio, dataFim);
   const dadosAgenda = lerAgendaDados();
   const turnosAgenda = montarUltimosTurnosAgenda(dadosAgenda);
   const mapa = new Map();
@@ -609,7 +609,7 @@ function doGet() {
       if (!lote.length) {
         definirProcessamento(false);
         mostrarLoading(false);
-        atualizarProgressoLote(lista.length, lista.length, 'Envio concluído');
+        atualizarProgressoLote(lista.length, lista.length, sucesso ? 'Envio finalizado: ' + sucesso + ' enviada(s)' : 'Nenhum e-mail enviado');
 
         const resumo = Object.keys(motivos)
           .map(motivo => motivo + ': ' + motivos[motivo])
@@ -620,7 +620,8 @@ function doGet() {
           ignorados + ' ignorado(s). ' + falhas + ' falha(s).';
 
         if (resumo) texto += ' Motivos: ' + resumo + '.';
-        mostrarOk(texto);
+        if (sucesso === 0) mostrarErro(texto);
+        else mostrarOk(texto);
         return;
       }
 

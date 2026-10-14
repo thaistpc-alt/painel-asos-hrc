@@ -54,6 +54,28 @@
 </script>
 
 <style>
+/* A coluna de informações foi acrescentada ao Convocar após as larguras V14.
+   O quadro precisa de espaço próprio e rolagem horizontal em telas menores. */
+#tabelaConvocar .tabela-container{overflow-x:auto!important}
+#tabelaConvocar table{width:1800px!important;min-width:1800px!important}
+#tabelaConvocar table th:nth-child(1),#tabelaConvocar table td:nth-child(1){width:2.5%!important}
+#tabelaConvocar table th:nth-child(2),#tabelaConvocar table td:nth-child(2){width:4%!important}
+#tabelaConvocar table th:nth-child(3),#tabelaConvocar table td:nth-child(3){width:12%!important}
+#tabelaConvocar table th:nth-child(4),#tabelaConvocar table td:nth-child(4){width:9%!important}
+#tabelaConvocar table th:nth-child(5),#tabelaConvocar table td:nth-child(5){width:11%!important}
+#tabelaConvocar table th:nth-child(6),#tabelaConvocar table td:nth-child(6){width:5%!important}
+#tabelaConvocar table th:nth-child(7),#tabelaConvocar table td:nth-child(7){width:7%!important}
+#tabelaConvocar table th:nth-child(8),#tabelaConvocar table td:nth-child(8){width:6%!important}
+#tabelaConvocar table th:nth-child(9),#tabelaConvocar table td:nth-child(9){width:6%!important}
+#tabelaConvocar table th:nth-child(10),#tabelaConvocar table td:nth-child(10){width:8%!important}
+#tabelaConvocar table th:nth-child(11),#tabelaConvocar table td:nth-child(11){width:17%!important;text-align:left!important}
+#tabelaConvocar table th:nth-child(12),#tabelaConvocar table td:nth-child(12){width:3.5%!important;text-align:center!important}
+#tabelaConvocar table th:nth-child(13),#tabelaConvocar table td:nth-child(13){width:4%!important;text-align:center!important}
+#tabelaConvocar table th:nth-child(14),#tabelaConvocar table td:nth-child(14){width:5%!important;text-align:center!important}
+#tabelaConvocar .info-agenda{min-width:0!important;max-width:none!important;overflow-wrap:break-word!important;word-break:normal!important}
+</style>
+
+<style>
 /* Dropdown de Situação em camada fixa, sem alterar a altura da barra de filtros. */
 .filtro-situacao-check-lista{
   position:fixed!important;

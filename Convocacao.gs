@@ -116,7 +116,7 @@ function marcarEmailsAgostoEnviados() {
   return reconstruirHistoricoEnviosAgosto2026();
 }
 
-function obterListaColaboradoresConvocacao_(dataInicio, dataFim) {
+function obterListaAtualizadaParaConvocacao_(dataInicio, dataFim) {
   const hoje = new Date();
   const inicio = dataInicio || [
     hoje.getFullYear(),
@@ -130,12 +130,15 @@ function obterListaColaboradoresConvocacao_(dataInicio, dataFim) {
     String(ultimo.getDate()).padStart(2, "0")
   ].join("-");
 
-  const contexto = construirContextoV13_(inicio, fim, false);
-  return contexto && Array.isArray(contexto.lista) ? contexto.lista : [];
+  const contexto = construirContextoV13_(inicio, fim, true);
+  if (!contexto || !Array.isArray(contexto.lista)) {
+    throw new Error("Não foi possível atualizar os dados da AGENDA para a convocação.");
+  }
+  return contexto.lista;
 }
 
 function gerarConvocacaoIndividual(mat) {
-  const lista = obterListaColaboradoresConvocacao_();
+  const lista = obterListaAtualizadaParaConvocacao_();
   const matricula = String(mat).trim();
 
   const colaborador = lista.find(c =>
@@ -295,7 +298,7 @@ function motivoNaoBaixarConvocacao(c, dataInicio, dataFim) {
 
 function gerarConvocacoesPeriodo(dataInicio, dataFim) {
   const lista = gerarListaConvocar(
-    obterListaColaboradoresConvocacao_(dataInicio, dataFim),
+    obterListaAtualizadaParaConvocacao_(dataInicio, dataFim),
     dataInicio,
     dataFim
   )
@@ -369,7 +372,7 @@ function gerarConvocacoesSelecionadasLote(matriculas, dataInicio, dataFim) {
 
   if (selecionadas.length === 0) return [];
 
-  const lista = obterListaColaboradoresConvocacao_(dataInicio, dataFim);
+  const lista = obterListaAtualizadaParaConvocacao_(dataInicio, dataFim);
   const dadosAgenda = lerAgendaDados();
   const turnosAgenda = montarUltimosTurnosAgenda(dadosAgenda);
   const mapa = new Map();
@@ -478,7 +481,7 @@ function enviarConvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInici
     throw new Error("Envie no máximo " + LIMITE_ANEXOS_EMAIL_GESTOR + " convocações por e-mail. O painel divide lotes maiores automaticamente.");
   }
 
-  const lista = obterListaColaboradoresConvocacao_(dataInicio, dataFim);
+  const lista = obterListaAtualizadaParaConvocacao_(dataInicio, dataFim);
   const dadosAgenda = lerAgendaDados();
   const turnosAgenda = montarUltimosTurnosAgenda(dadosAgenda);
   const mapa = new Map();
