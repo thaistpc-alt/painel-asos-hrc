@@ -366,10 +366,13 @@ function montarColaboradoresFonteV15_(dadosFonte, enviadosPorMatricula, eventos)
     const tipoExame = valorTexto(linha[7]);
 
     const mat = reduzirMatriculaV15_(matriculaCompleta);
-    // Cadastro e periodicidade vêm da FONTEpainel; K:O são cálculos do ciclo.
-    const periodicidade = Number(linha[8]) || 0;
+    // A periodicidade é definida exclusivamente pela função, nunca pela matrícula
+    // nem por um valor residual previamente gravado na FONTEpainel.
+    const periodicidade = periodicidadeFonteV15_(funcao);
+    // O ciclo sempre parte do ASO mais recente informado na base.
+    // Portanto, se o último exame foi Retorno ao Trabalho, ele reinicia o ciclo.
     const dataBase = dataUltimoAso;
-    const proximoVencimento = adicionarMeses(dataUltimoAso, periodicidade);
+    const proximoVencimento = adicionarMeses(dataBase, periodicidade);
     const dataConvocar = calcularDataConvocarV15_(proximoVencimento, periodicidade);
     const dataLimite = calcularDataLimiteV15_(proximoVencimento, periodicidade);
     const diasParaVencer = calcularDiferencaDias(proximoVencimento, hojeISO);
@@ -426,7 +429,8 @@ function reduzirMatriculaV15_(matriculaCompleta) {
 
 function periodicidadeFonteV15_(funcao) {
   const f = normalizarTexto(funcao);
-  // Mantém exatamente a regra histórica da FONTEpainel.
+  // Regra institucional do painel: somente Técnico(a) em Radiologia = 6 meses.
+  // Todas as demais funções = 12 meses.
   return f.includes("TECNICO EM RADIOLOGIA") ? 6 : 12;
 }
 
