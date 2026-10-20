@@ -40,7 +40,7 @@ function gerarIndicadores(lista) {
   lista.forEach(c => {
     if (!ehAtivoIndicadorASO(c)) return;
     if (!ehTipoPeriodicoIndicadorASO(c)) return;
-    if (!c.periodicidade) return;
+    if (!periodicidadeFonteV15_(c.funcao)) return;
 
     const eventos = obterEventosIndicadorASO(c);
     const radiologia = ehRadiologiaIndicadorASO(c);
@@ -101,7 +101,7 @@ function gerarIndicadores(lista) {
 }
 
 function obterEventosIndicadorASO(c) {
-  const periodicidade = Number(c.periodicidade) || 0;
+  const periodicidade = periodicidadeFonteV15_(c.funcao);
   if (!periodicidade) return [];
 
   const dataPenultimo = c.dataPenultimoAso || "";
