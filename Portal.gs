@@ -618,13 +618,49 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
 
     const ultimaPendencia = eventosPendencia[eventosPendencia.length - 1];
 
+    // Um ASO posterior de retorno ou de mudança de riscos também encerra
+    // a pendência operacional. Consultas e demissionais não encerram.
+    const ehAsoQueResolvePendencia = e => {
+      if (!e || !e.ehAsoRealizado) return false;
+      const tipo = normalizarTexto(e.tipoNorm || e.tipo || "");
+      return tipo.includes("PERIODIC") ||
+        tipo.includes("RETORNO") ||
+        tipo.includes("MUDANCA") ||
+        tipo.includes("ADMISSIONAL");
+    };
+
     const realizadosPosteriores = eventos
-      .filter(e => e.ehAsoRealizado)
-      .filter(ehEventoPeriodicoAgenda)
+      .filter(ehAsoQueResolvePendencia)
       .filter(e => dataMaiorQue(e.data, ultimaPendencia.data));
 
-    /* Fallback baseado no periódico validado pela própria rotina da AGENDA.
-       Evita que retorno/demissional/consulta resolvam uma pendência periódica. */
+    // A base de ASOs pode estar atualizada mesmo que o evento ainda não
+    // esteja no espelho da agenda. Não transformar uma pendência histórica
+    // em reconvocação quando o ASO mais recente já é posterior a ela.
+    if (colaborador.dataUltimoAso && !normalizarTexto(colaborador.tipoExame).includes("DEMISSIONAL") && dataMaiorQue(colaborador.dataUltimoAso, ultimaPendencia.data)) {
+      const registrado = realizadosPosteriores.some(e => e.data === colaborador.dataUltimoAso);
+      if (!registrado) realizadosPosteriores.push({
+        mat: mat,
+        data: colaborador.dataUltimoAso,
+        dataBR: formatarDataBR(colaborador.dataUltimoAso),
+        tipo: colaborador.tipoExame || "ASO",
+        status: "ASO realizado na base",
+        ehAsoRealizado: true
+      });
+    }
+
+    // ASO válido já realizado: o agendamento periódico cancelado depois
+    // não reabre o ciclo quando ainda não chegou a data de convocação.
+    // Dentro da janela de convocação, pendências novas continuam visíveis.
+    const cicloRegularForaDaConvocacao =
+      !!colaborador.dataUltimoAso &&
+      !!colaborador.dataConvocar &&
+      !!colaborador.proximoVencimento &&
+      colaborador.proximoVencimento > obterHojeISO() &&
+      ultimaPendencia.data < colaborador.dataConvocar &&
+      colaborador.dataUltimoAso <= ultimaPendencia.data;
+    if (cicloRegularForaDaConvocacao) return;
+
+    /* Fallback baseado no periódico validado pela própria rotina da AGENDA. */
     if (
       colaborador.temAsoRealizadoAgenda &&
       colaborador.dataAsoRealizadoAgenda &&
