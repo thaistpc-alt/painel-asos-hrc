@@ -33,7 +33,7 @@ function lerFontePainel() {
     const l = dadosBase[idx];
     if (!valorTexto(l[COL.MAT - 1])) continue;
 
-    const periodicidade = Number(l[COL.PERIODICIDADE - 1]) || 0;
+    const periodicidade = periodicidadeFonteV15_(valorTexto(l[COL.FUNCAO - 1]));
     const dataPenultimoAso = formatarDataISO(l[COL.DATA_PENULTIMO_ASO - 1]);
     const dataUltimoAso = formatarDataISO(l[COL.DATA_ULTIMO_ASO - 1]);
     const proximoVencimento = formatarDataISO(l[COL.PROXIMO_VENCIMENTO - 1]);
