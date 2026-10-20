@@ -161,7 +161,7 @@ function sincronizarBaseV15_(invalidarCache, forcarAtualizacao) {
       ["VERSAO_BASE", "15.0", "Estrutura materializada da base do Painel de ASOs", "Apps Script"],
       ["ULTIMA_SINCRONIZACAO", agora, "Última sincronização completa da base", "Apps Script"],
       ["ULTIMA_SINCRONIZACAO_ISO", agoraISO, "Controle técnico de atualização", "Apps Script"],
-      ["FONTE_DERIVADA", "GERENCIADO_POR_SCRIPT", "Somente A, P:R e T:U são materializados; B:O e S preservados", "Apps Script"],
+      ["FONTE_DERIVADA", "GERENCIADO_POR_SCRIPT", "A, J:R e T:U derivados por script; B:I e S preservados", "Apps Script"],
       ["AGENDA", "ESPELHO_POR_SCRIPT", "Sem IMPORTRANGE; origem AGENDA da planilha médica", "Apps Script"],
       ["GESTORES", "ESPELHO_POR_SCRIPT", "Sincronizado da planilha médica", "Apps Script"],
       ["ESCALA_MEDICA", "ESPELHO_POR_SCRIPT", "Sem IMPORTRANGE; sincronizada da planilha de escala", "Apps Script"],
@@ -366,15 +366,13 @@ function montarColaboradoresFonteV15_(dadosFonte, enviadosPorMatricula, eventos)
     const tipoExame = valorTexto(linha[7]);
 
     const mat = reduzirMatriculaV15_(matriculaCompleta);
-    const periodicidade = Number(linha[8]) || 0;
-    const dataBase = formatarDataISO(linha[9]);
-    const proximoVencimento = formatarDataISO(linha[10]);
-    const dataConvocar = formatarDataISO(linha[11]);
-    const dataLimite = formatarDataISO(linha[12]);
-    const diasRaw = linha[13];
-    const diasParaVencer = diasRaw === "" || diasRaw == null
-      ? calcularDiferencaDias(proximoVencimento, hojeISO)
-      : Number(diasRaw);
+    const periodicidade = periodicidadeFonteV15_(funcao);
+    // Datas derivadas exclusivamente da função e do último ASO, nunca de valores residuais J:O.
+    const dataBase = dataUltimoAso;
+    const proximoVencimento = adicionarMeses(dataBase, periodicidade);
+    const dataConvocar = calcularDataConvocarV15_(proximoVencimento, periodicidade);
+    const dataLimite = calcularDataLimiteV15_(proximoVencimento, periodicidade);
+    const diasParaVencer = calcularDiferencaDias(proximoVencimento, hojeISO);
 
     lista.push({
       linha: idx + 2,
@@ -488,19 +486,30 @@ function gravarFontePainelV15_(ss, lista) {
   if (total < 1) return;
   const mats = Array.from({length: total}, () => [""]);
   const agenda = Array.from({length: total}, () => ["", "", ""]);
+  const ciclo = Array.from({length: total}, () => ["", "", "", "", "", ""]);
   const periodo = Array.from({length: total}, () => ["", ""]);
   (lista || []).forEach(c => {
     const idx = c.linha - 2;
     if (idx < 0 || idx >= total) throw new Error("Linha inválida da FONTEpainel.");
     mats[idx] = [numeroOuTextoV15_(c.mat)];
+    ciclo[idx] = [
+      Number(c.periodicidade) || "",
+      dateOuVazioV15_(c.dataBase),
+      dateOuVazioV15_(c.proximoVencimento),
+      dateOuVazioV15_(c.dataConvocar),
+      dateOuVazioV15_(c.dataLimite),
+      c.diasParaVencer === "" ? "" : Number(c.diasParaVencer)
+    ];
     agenda[idx] = [dateOuVazioV15_(c.dataAgendada), c.informacoesAgenda || "", c.statusGeral || ""];
     periodo[idx] = [
       c.dataConvocar ? Number(c.dataConvocar.substring(5, 7)) : "",
       c.dataUltimoAso ? Number(c.dataUltimoAso.substring(0, 4)) : ""
     ];
   });
-  // Nunca apagar/regravar o cadastro B:O ou o histórico S.
+  // Cadastro B:I e histórico S preservados. J:O são derivados do último ASO e da função.
   aba.getRange(2, 1, total, 1).setValues(mats);
+  aba.getRange(2, 10, total, 6).setValues(ciclo);
+  aba.getRange(2, 11, total, 4).setNumberFormat("dd/MM/yyyy");
   aba.getRange(2, 16, total, 3).setValues(agenda);
   aba.getRange(2, 20, total, 2).setValues(periodo);
   aba.getRange(2, 16, total, 1).setNumberFormat("dd/MM/yyyy");
