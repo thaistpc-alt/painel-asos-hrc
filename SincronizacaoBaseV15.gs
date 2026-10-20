@@ -426,8 +426,11 @@ function reduzirMatriculaV15_(matriculaCompleta) {
 
 function periodicidadeFonteV15_(funcao) {
   const f = normalizarTexto(funcao);
-  // Mantém exatamente a regra histórica da FONTEpainel.
-  return f.includes("TECNICO EM RADIOLOGIA") ? 6 : 12;
+  // Regra do painel: técnicos(as) em Radiologia = 6 meses; demais funções = 12 meses.
+  // Aceita grafias do cadastro como TECNICO EM RADIOLOGIA, TECNICO(A) EM RADIOLOGIA.
+  const tecnico = /\bTECNIC(?:O|A)(?:\(A\))?\b/.test(f) || f.includes("TECNICO(A)");
+  const radiologia = f.includes("RADIOLOGIA") || f.includes("RAIOS X");
+  return tecnico && radiologia ? 6 : 12;
 }
 
 function calcularDataConvocarV15_(vencimento, periodicidade) {
