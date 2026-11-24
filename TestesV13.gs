@@ -140,6 +140,95 @@ function executarRegressaoRegrasConvocacaoV14() {
     periodico.dataAsoRealizadoAgenda
   );
 
+
+  const casoDemissional = {
+    mat: "TESTE_DEMISSIONAL",
+    matriculaCompleta: "2009998",
+    nome: "TESTE DEMISSIONAL",
+    situacao: "Ativo",
+    situacaoNorm: "ATIVO",
+    tipoExame: "DEMISSIONAL",
+    dataUltimoAso: "2026-08-15",
+    dataAgendada: "",
+    dataConvocar: "",
+    dataConvocarBR: "",
+    dataAgendadaBR: ""
+  };
+  const eventosDemissional = new Map();
+  eventosDemissional.set("TESTE_DEMISSIONAL", [
+    {
+      mat: "TESTE_DEMISSIONAL", data: "2026-08-01", dataBR: "01/08/2026",
+      tipo: "PERIÓDICO", tipoNorm: "PERIODICO", status: "Não compareceu ASO",
+      ehAsoRealizado: false, ehNaoCompareceu: true, ehReagendou: false, ehCancelado: false
+    },
+    {
+      mat: "TESTE_DEMISSIONAL", data: "2026-08-15", dataBR: "15/08/2026",
+      tipo: "DEMISSIONAL", tipoNorm: "DEMISSIONAL", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    }
+  ]);
+  const pendenciasDemissional = gerarPendencias([casoDemissional], eventosDemissional);
+  testar(
+    "ASO demissional dentro de 90 dias não resolve falta periódica",
+    pendenciasDemissional.operacionais.length === 1,
+    pendenciasDemissional.operacionais.length
+  );
+
+  const casoCancelado = {
+    mat: "TESTE_CANCELADO",
+    matriculaCompleta: "2009997",
+    nome: "TESTE CANCELADO",
+    situacao: "Ativo",
+    situacaoNorm: "ATIVO",
+    tipoExame: "",
+    dataUltimoAso: "",
+    dataAgendada: "",
+    dataConvocar: "",
+    dataConvocarBR: "",
+    dataAgendadaBR: ""
+  };
+  const eventosCancelados = new Map();
+  eventosCancelados.set("TESTE_CANCELADO", [
+    {
+      mat: "TESTE_CANCELADO", data: "2026-01-10", dataBR: "10/01/2026",
+      tipo: "PERIÓDICO", tipoNorm: "PERIODICO", status: "Cancelado",
+      ehAsoRealizado: false, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: true
+    },
+    {
+      mat: "TESTE_CANCELADO", data: "2026-11-20", dataBR: "20/11/2026",
+      tipo: "RETORNO AO TRABALHO", tipoNorm: "RETORNO AO TRABALHO", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    }
+  ]);
+  const pendenciasCancelado = gerarPendencias([casoCancelado], eventosCancelados);
+  testar(
+    "Cancelamento é baixado quando há retorno realizado no mesmo ano",
+    pendenciasCancelado.operacionais.length === 0 && pendenciasCancelado.resolvidos.length === 1,
+    { operacionais: pendenciasCancelado.operacionais.length, resolvidos: pendenciasCancelado.resolvidos.length }
+  );
+
+  const colaboradorVencendoComHistorico = {
+    mat: "TESTE_HISTORICO",
+    situacao: "Ativo",
+    situacaoNorm: "ATIVO",
+    diasParaVencer: 10,
+    temAsoRealizadoAgenda: true,
+    dataAsoRealizadoAgenda: "2025-11-24",
+    dataUltimoAso: "2025-11-24",
+    dataConvocar: "2026-09-24",
+    proximoVencimento: "2026-11-24"
+  };
+  prepararFlagsPortal([colaboradorVencendoComHistorico]);
+  testar(
+    "ASO histórico antigo não retira vencimento atual da prioridade",
+    colaboradorVencendoComHistorico.asoRealizadoValido === false &&
+      colaboradorVencendoComHistorico.asoRealizadoAgendaAtual === false,
+    {
+      valido: colaboradorVencendoComHistorico.asoRealizadoValido,
+      atual: colaboradorVencendoComHistorico.asoRealizadoAgendaAtual
+    }
+  );
+
   const falhas = resultados.filter(r => !r.ok);
   const resumo = {
     sucesso: falhas.length === 0,
