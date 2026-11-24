@@ -1197,6 +1197,7 @@
     let dadosPortal = null;
     let periodoCarregadoPortal = "";
     let selecaoConvocacoes = new Set();
+    let selecaoReconvocacoes = new Set();
     let loteEmProcessamento = false;
     let paginaGeral = 1;
     let tamanhoPaginaGeral = 100;
@@ -1835,12 +1836,17 @@
 
     function montarSecaoPendencia(titulo, lista, tipo) {
       const total = lista ? lista.length : 0;
+      const eReconvocacao = tipo === "reconvocar";
+      const barraSelecao = eReconvocacao
+        ? '<div class="acoes-reconvocacao"><span id="resumoSelecaoReconvocacao">0 selecionadas</span><button type="button" class="azul" id="enviarReconvocacoesSelecionadas" onclick="enviarReconvocacoesSelecionadas()" disabled>Enviar selecionadas</button></div>'
+        : "";
       let html = `
         <div class="secao">
           <h3>
             <span>${escaparHtml(titulo)}</span>
             <span class="contador-secao">${total}</span>
           </h3>
+          ${barraSelecao}
       `;
 
       if (!lista || lista.length === 0) {
@@ -1850,9 +1856,10 @@
 
       html += `
         <div class="tabela-container">
-          <table>
+          <table class="${eReconvocacao ? "tabela-reconvocacao" : ""}">
             <thead>
               <tr>
+                ${eReconvocacao ? '<th class="check-coluna"><input type="checkbox" class="check-todas-reconvocacoes" title="Selecionar pendências visíveis" onchange="alternarTodasReconvocacoes(this)"></th>' : ""}
                 <th>Matrícula</th>
                 <th>Nome</th>
                 <th>Função</th>
@@ -1872,6 +1879,11 @@
 
       lista.forEach(item => {
         const podeBaixar = tipo === "reconvocar" || tipo === "agendado";
+        const matriculaReconvocacao = String(item.mat || "");
+        const dataAnteriorReconvocacao = item.dataUltimaPendenciaBR || item.dataAgendadaBR || "";
+        const caixaReconvocacao = eReconvocacao
+          ? '<td class="check-coluna"><input type="checkbox" class="check-reconvocacao" data-mat="' + escaparAtributo(matriculaReconvocacao) + '" data-data-anterior="' + escaparAtributo(dataAnteriorReconvocacao) + '" ' + (selecaoReconvocacoes.has(matriculaReconvocacao) ? "checked" : "") + ' onchange="atualizarSelecaoReconvocacao(this)"></td>'
+          : "";
         const novaData = item.novaDataAgendadaBR || item.dataAgendadaBR || "";
         const totalEnviadas = Number(item.totalConvocacoesEnviadas) || 0;
         const acao = podeBaixar
@@ -1883,6 +1895,7 @@
 
         html += `
           <tr>
+            ${caixaReconvocacao}
             <td>${escaparHtml(item.mat)}</td>
             <td>${escaparHtml(item.nome)}</td>
             <td>${escaparHtml(item.funcao)}</td>
@@ -2528,6 +2541,113 @@
         .split(/[;,]/)
         .map(email => email.trim())
         .filter(Boolean);
+    }
+
+    function alternarTodasReconvocacoes(caixa) {
+      const linhas = Array.from(document.querySelectorAll("#tabelaFaltosos .check-reconvocacao"));
+      selecaoReconvocacoes.clear();
+      linhas.forEach((linha, indice) => {
+        const marcada = caixa.checked && indice < 30;
+        linha.checked = marcada;
+        if (marcada) selecaoReconvocacoes.add(String(linha.dataset.mat || ""));
+      });
+      if (caixa.checked && linhas.length > 30) mostrarErro("O envio em lote aceita até 30 pessoas por e-mail. Foram selecionadas as primeiras 30.");
+      atualizarInterfaceSelecaoReconvocacoes();
+    }
+
+    function atualizarSelecaoReconvocacao(caixa) {
+      const matricula = String(caixa.dataset.mat || "");
+      if (caixa.checked && selecaoReconvocacoes.size >= 30 && !selecaoReconvocacoes.has(matricula)) {
+        caixa.checked = false;
+        mostrarErro("O envio em lote aceita até 30 pessoas por e-mail.");
+        return;
+      }
+      if (caixa.checked) selecaoReconvocacoes.add(matricula);
+      else selecaoReconvocacoes.delete(matricula);
+      atualizarInterfaceSelecaoReconvocacoes();
+    }
+
+    function atualizarInterfaceSelecaoReconvocacoes() {
+      const visiveis = Array.from(document.querySelectorAll("#tabelaFaltosos .check-reconvocacao"));
+      const selecionadas = visiveis.filter(c => selecaoReconvocacoes.has(String(c.dataset.mat || "")));
+      const resumo = document.getElementById("resumoSelecaoReconvocacao");
+      const botao = document.getElementById("enviarReconvocacoesSelecionadas");
+      const todas = document.querySelector("#tabelaFaltosos .check-todas-reconvocacoes");
+      if (resumo) resumo.textContent = selecionadas.length + " selecionada(s)";
+      if (botao) botao.disabled = selecionadas.length === 0 || loteEmProcessamento;
+      if (todas) {
+        todas.checked = visiveis.length > 0 && selecionadas.length === visiveis.length;
+        todas.indeterminate = selecionadas.length > 0 && selecionadas.length < visiveis.length;
+      }
+    }
+
+    function enviarReconvocacoesSelecionadas() {
+      if (loteEmProcessamento) return;
+      const selecionadas = Array.from(document.querySelectorAll("#tabelaFaltosos .check-reconvocacao:checked"))
+        .map(c => ({
+          mat: String(c.dataset.mat || "").trim(),
+          dataAnteriorBR: String(c.dataset.dataAnterior || "").trim()
+        }))
+        .filter(c => c.mat);
+      if (!selecionadas.length) {
+        mostrarErro("Selecione pelo menos uma pessoa na seção Necessita reconvocação.");
+        return;
+      }
+
+      const emails = String(document.getElementById("emailGestorPendencia")?.value || "")
+        .split(/[;,]/).map(e => e.trim()).filter(Boolean);
+      if (!emails.length) {
+        mostrarErro("Informe o e-mail do gestor das pessoas selecionadas.");
+        return;
+      }
+      const invalidos = emails.filter(e => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+      if (invalidos.length) {
+        mostrarErro("E-mail(s) inválido(s): " + invalidos.join(", "));
+        return;
+      }
+      const destinatarios = emails.join("; ");
+      if (!confirm("Enviar " + selecionadas.length + " reconvocação(ões) para " + destinatarios + "? Confirme que todas pertencem ao(s) mesmo(s) gestor(es).")) return;
+
+      const dataInicio = document.getElementById("dataInicio")?.value || "";
+      const dataFim = document.getElementById("dataFim")?.value || "";
+      if (!dataInicio || !dataFim) {
+        mostrarErro("Informe o período antes de enviar as reconvocações.");
+        return;
+      }
+      const dataAnteriorPorMatricula = {};
+      selecionadas.forEach(item => { dataAnteriorPorMatricula[item.mat] = item.dataAnteriorBR; });
+
+      limparMensagens();
+      loteEmProcessamento = true;
+      atualizarInterfaceSelecaoReconvocacoes();
+      mostrarLoading(true);
+      google.script.run
+        .withSuccessHandler(function(resultados) {
+          loteEmProcessamento = false;
+          mostrarLoading(false);
+          const lista = resultados || [];
+          const enviadas = lista.filter(r => r && r.sucesso).length;
+          const falhas = lista.filter(r => r && !r.sucesso).length;
+          selecaoReconvocacoes.clear();
+          carregarDados(true);
+          mostrarOk(enviadas
+            ? enviadas + " reconvocação(ões) enviada(s) ao gestor" + (falhas ? "; " + falhas + " registro(s) não enviado(s)." : ".")
+            : "Nenhuma reconvocação foi enviada.");
+          atualizarInterfaceSelecaoReconvocacoes();
+        })
+        .withFailureHandler(function(erro) {
+          loteEmProcessamento = false;
+          mostrarLoading(false);
+          atualizarInterfaceSelecaoReconvocacoes();
+          mostrarErro(erro.message || erro);
+        })
+        .enviarConvocacoesSelecionadasGestor(
+          selecionadas.map(item => item.mat),
+          destinatarios,
+          dataInicio,
+          dataFim,
+          { reconvocacao: true, dataAnteriorPorMatricula: dataAnteriorPorMatricula }
+        );
     }
 
     function enviarPendenciaGestor(mat, dataAnteriorBR) {
