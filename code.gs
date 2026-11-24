@@ -828,6 +828,28 @@ function doGet() {
 #tabelaConvocar th:nth-child(13),#tabelaConvocar td:nth-child(13){width:3%!important}
 #tabelaConvocar th:nth-child(14),#tabelaConvocar td:nth-child(14){width:4%!important}
 #tabelaConvocar th:nth-child(15),#tabelaConvocar td:nth-child(15){width:7%!important}
+
+#tabelaFaltosos .tabela-reconvocacao{width:100%!important;min-width:0!important;table-layout:fixed!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(1),#tabelaFaltosos .tabela-reconvocacao td:nth-child(1){width:3%!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(2),#tabelaFaltosos .tabela-reconvocacao td:nth-child(2){width:7%!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(3),#tabelaFaltosos .tabela-reconvocacao td:nth-child(3){width:13%!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(4),#tabelaFaltosos .tabela-reconvocacao td:nth-child(4){width:10%!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(5),#tabelaFaltosos .tabela-reconvocacao td:nth-child(5){width:10%!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(6),#tabelaFaltosos .tabela-reconvocacao td:nth-child(6){width:7%!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(7),#tabelaFaltosos .tabela-reconvocacao td:nth-child(7){width:8%!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(8),#tabelaFaltosos .tabela-reconvocacao td:nth-child(8){width:9%!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(9),#tabelaFaltosos .tabela-reconvocacao td:nth-child(9){width:8%!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(10),#tabelaFaltosos .tabela-reconvocacao td:nth-child(10){width:5%!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(11),#tabelaFaltosos .tabela-reconvocacao td:nth-child(11){width:5%!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(12),#tabelaFaltosos .tabela-reconvocacao td:nth-child(12){width:8%!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(13),#tabelaFaltosos .tabela-reconvocacao td:nth-child(13){width:7%!important}
+#tabelaFaltosos .tabela-reconvocacao .check-coluna input{width:14px!important;min-width:14px!important;height:14px!important;margin:0!important}
+#tabelaFaltosos .tabela-reconvocacao .acoes-pendencia{display:flex!important;flex-direction:column!important;gap:3px!important}
+#tabelaFaltosos .tabela-reconvocacao .acoes-pendencia button{width:100%!important;min-width:0!important;padding:3px 2px!important;font-size:8px!important}
+#tabelaFaltosos .acoes-reconvocacao{display:flex!important;align-items:center!important;gap:10px!important;margin:8px 0!important;font-size:10px!important;color:#475569}
+#tabelaFaltosos .acoes-reconvocacao button{height:30px!important;padding:0 10px!important;font-size:9px!important}
+#tabelaFaltosos .acoes-reconvocacao button:disabled{opacity:.5!important;cursor:not-allowed!important;transform:none!important}
+
 @media(max-width:1150px){
  .painel-topbar-periodo>div:not(.painel-periodo-atalhos),.painel-topbar-periodo input{width:82px!important;min-width:0!important;flex-basis:82px!important}
  #toolbarModulo .filtro-situacao-check{width:105px!important;min-width:105px!important;flex-basis:105px!important}
