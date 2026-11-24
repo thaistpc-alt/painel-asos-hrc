@@ -782,27 +782,28 @@ function doGet() {
 /* Filtros em uma linha e navegação sem contorno externo */
 .painel-sidebar,.painel-sidebar .abas{border:0!important;outline:0!important;box-shadow:none!important;border-radius:0!important}
 .painel-sidebar .abas:focus,.painel-sidebar .abas:focus-within{outline:0!important;box-shadow:none!important}
-.filtros{overflow-x:hidden!important;flex-wrap:nowrap!important;gap:4px!important;padding:7px 8px!important}
-.painel-topbar-periodo{display:flex!important;align-items:end!important;gap:4px!important;flex:0 0 auto!important;margin:0!important}
+.filtros{overflow-x:hidden!important;flex-wrap:nowrap!important;gap:7px!important;padding:7px 9px!important}
+.painel-topbar-periodo{display:flex!important;align-items:end!important;gap:6px!important;flex:0 0 auto!important;flex-wrap:nowrap!important;margin:0!important}
 .painel-topbar-periodo>div{width:92px!important;min-width:0!important;flex:0 0 92px!important}
 .painel-topbar-periodo label{font-size:8px!important}
 .painel-topbar-periodo input{width:92px!important;min-width:0!important;height:32px!important;padding:4px 5px!important;font-size:9px!important}
-.painel-topbar-periodo>button{height:32px!important;padding:0 5px!important;font-size:8px!important}
-.painel-periodo-atalhos{gap:4px!important}
-.painel-periodo-atalhos button{height:32px!important;padding:0 5px!important;font-size:8px!important}
-#toolbarModulo{flex:1 1 auto!important;min-width:0!important;overflow:visible!important}
-#toolbarModulo .linha-filtros{width:100%!important;min-width:0!important;flex-wrap:nowrap!important;gap:4px!important}
+.painel-topbar-periodo>button{height:32px!important;min-width:42px!important;padding:0 6px!important;font-size:8px!important;white-space:nowrap!important;flex:0 0 auto!important}
+.painel-periodo-atalhos{display:flex!important;align-items:center!important;gap:5px!important;flex:0 0 auto!important;flex-wrap:nowrap!important;width:auto!important}
+.painel-periodo-atalhos button{height:32px!important;padding:0 6px!important;font-size:8px!important;white-space:nowrap!important;flex:0 0 auto!important}
+#toolbarModulo{flex:1 1 0%!important;min-width:0!important;overflow:visible!important}
+#toolbarModulo .linha-filtros{width:100%!important;min-width:0!important;flex-wrap:nowrap!important;gap:7px!important}
 #toolbarModulo .linha-filtros>div{min-width:0!important}
-#toolbarModulo .filtro-situacao-check{width:120px!important;min-width:120px!important;flex:0 0 120px!important}
+#toolbarModulo .linha-filtros>.filtro-situacao-check,#toolbarModulo .linha-filtros>.filtro-grupo-convocacao-v15,#toolbarModulo .linha-filtros>.campo-pesquisa,#toolbarModulo .linha-filtros>.acoes-lote{flex-shrink:0!important}
+#toolbarModulo .filtro-situacao-check{width:118px!important;min-width:118px!important;flex:0 0 118px!important}
 #toolbarModulo .filtro-situacao-check-botao{height:32px!important;padding:0 21px 0 7px!important;font-size:9px!important}
-#toolbarModulo .filtro-grupo-convocacao-v15{width:112px!important;min-width:112px!important;flex:0 0 112px!important}
-#toolbarModulo .linha-filtros select{width:112px!important;min-width:0!important;height:32px!important;padding:4px 5px!important;font-size:9px!important}
+#toolbarModulo .filtro-grupo-convocacao-v15{width:108px!important;min-width:108px!important;flex:0 0 108px!important}
+#toolbarModulo .linha-filtros select{width:108px!important;min-width:0!important;height:32px!important;padding:4px 5px!important;font-size:9px!important}
 #toolbarModulo .linha-filtros .campo-pesquisa{width:132px!important;min-width:0!important;flex:0 1 132px!important}
 #toolbarModulo .linha-filtros .campo-pesquisa input{width:100%!important;min-width:0!important;height:32px!important;font-size:9px!important;padding:4px 6px!important}
-#toolbarModulo .linha-filtros .email-gestor{width:145px!important;min-width:0!important;flex:0 1 145px!important}
+#toolbarModulo .linha-filtros .email-gestor{width:138px!important;min-width:0!important;flex:0 1 138px!important}
 #toolbarModulo .linha-filtros .email-gestor input{width:100%!important;min-width:0!important;height:32px!important;font-size:8.5px!important;padding:4px 5px!important}
-#toolbarModulo .acoes-lote{gap:4px!important;flex-wrap:nowrap!important}
-#toolbarModulo .acoes-lote button{height:32px!important;padding:0 5px!important;font-size:8px!important;white-space:nowrap!important}
+#toolbarModulo .acoes-lote{gap:5px!important;flex-wrap:nowrap!important;min-width:0!important;flex:1 1 auto!important}
+#toolbarModulo .acoes-lote button{height:32px!important;padding:0 5px!important;font-size:8px!important;white-space:nowrap!important;flex:0 0 auto!important}
 #toolbarModulo .linha-filtros label{font-size:8px!important;margin-bottom:2px!important}
 /* Convocar: largura responsiva para não criar barra horizontal */
 #tabelaConvocar .tabela-container{overflow-x:hidden!important;overflow-y:auto!important}
