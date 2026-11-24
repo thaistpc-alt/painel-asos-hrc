@@ -822,8 +822,9 @@ function doGet() {
 #tabelaConvocar th:nth-child(8),#tabelaConvocar td:nth-child(8){width:6.5%!important}
 #tabelaConvocar th:nth-child(9),#tabelaConvocar td:nth-child(9){width:6.5%!important}
 #tabelaConvocar th:nth-child(10),#tabelaConvocar td:nth-child(10){width:7%!important}
-#tabelaConvocar th:nth-child(11),#tabelaConvocar td:nth-child(11){width:13%!important}
-#tabelaConvocar th:nth-child(12),#tabelaConvocar td:nth-child(12){width:6%!important}
+#tabelaConvocar th:nth-child(11),#tabelaConvocar td:nth-child(11){width:9%!important}
+#tabelaConvocar td.info-agenda{white-space:normal!important;overflow-wrap:anywhere!important;line-height:1.24!important}
+#tabelaConvocar th:nth-child(12),#tabelaConvocar td:nth-child(12){width:10%!important}
 #tabelaConvocar th:nth-child(13),#tabelaConvocar td:nth-child(13){width:3%!important}
 #tabelaConvocar th:nth-child(14),#tabelaConvocar td:nth-child(14){width:4%!important}
 #tabelaConvocar th:nth-child(15),#tabelaConvocar td:nth-child(15){width:7%!important}
