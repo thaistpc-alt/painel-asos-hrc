@@ -776,7 +776,67 @@ function doGet() {
 })();
 </script>`;
 
-  const complementos = patch + "\n" + visual + "\n" + ajustesFinais;
+
+  const ajustesLayout = `
+<style>
+/* Filtros em uma linha e navegação sem contorno externo */
+.painel-sidebar,.painel-sidebar .abas{border:0!important;outline:0!important;box-shadow:none!important;border-radius:0!important}
+.painel-sidebar .abas:focus,.painel-sidebar .abas:focus-within{outline:0!important;box-shadow:none!important}
+.filtros{overflow-x:hidden!important;flex-wrap:nowrap!important;gap:4px!important;padding:7px 8px!important}
+.painel-topbar-periodo{display:flex!important;align-items:end!important;gap:4px!important;flex:0 0 auto!important;margin:0!important}
+.painel-topbar-periodo>div{width:92px!important;min-width:0!important;flex:0 0 92px!important}
+.painel-topbar-periodo label{font-size:8px!important}
+.painel-topbar-periodo input{width:92px!important;min-width:0!important;height:32px!important;padding:4px 5px!important;font-size:9px!important}
+.painel-topbar-periodo>button{height:32px!important;padding:0 5px!important;font-size:8px!important}
+.painel-periodo-atalhos{gap:4px!important}
+.painel-periodo-atalhos button{height:32px!important;padding:0 5px!important;font-size:8px!important}
+#toolbarModulo{flex:1 1 auto!important;min-width:0!important;overflow:visible!important}
+#toolbarModulo .linha-filtros{width:100%!important;min-width:0!important;flex-wrap:nowrap!important;gap:4px!important}
+#toolbarModulo .linha-filtros>div{min-width:0!important}
+#toolbarModulo .filtro-situacao-check{width:120px!important;min-width:120px!important;flex:0 0 120px!important}
+#toolbarModulo .filtro-situacao-check-botao{height:32px!important;padding:0 21px 0 7px!important;font-size:9px!important}
+#toolbarModulo .filtro-grupo-convocacao-v15{width:112px!important;min-width:112px!important;flex:0 0 112px!important}
+#toolbarModulo .linha-filtros select{width:112px!important;min-width:0!important;height:32px!important;padding:4px 5px!important;font-size:9px!important}
+#toolbarModulo .linha-filtros .campo-pesquisa{width:132px!important;min-width:0!important;flex:0 1 132px!important}
+#toolbarModulo .linha-filtros .campo-pesquisa input{width:100%!important;min-width:0!important;height:32px!important;font-size:9px!important;padding:4px 6px!important}
+#toolbarModulo .linha-filtros .email-gestor{width:145px!important;min-width:0!important;flex:0 1 145px!important}
+#toolbarModulo .linha-filtros .email-gestor input{width:100%!important;min-width:0!important;height:32px!important;font-size:8.5px!important;padding:4px 5px!important}
+#toolbarModulo .acoes-lote{gap:4px!important;flex-wrap:nowrap!important}
+#toolbarModulo .acoes-lote button{height:32px!important;padding:0 5px!important;font-size:8px!important;white-space:nowrap!important}
+#toolbarModulo .linha-filtros label{font-size:8px!important;margin-bottom:2px!important}
+/* Convocar: largura responsiva para não criar barra horizontal */
+#tabelaConvocar .tabela-container{overflow-x:hidden!important;overflow-y:auto!important}
+#tabelaConvocar table{width:100%!important;min-width:0!important;table-layout:fixed!important}
+#tabelaConvocar th,#tabelaConvocar td{overflow-wrap:anywhere!important;word-break:normal!important}
+#tabelaConvocar th:nth-child(1),#tabelaConvocar td:nth-child(1){width:2%!important}
+#tabelaConvocar th:nth-child(2),#tabelaConvocar td:nth-child(2){width:4%!important}
+#tabelaConvocar th:nth-child(3),#tabelaConvocar td:nth-child(3){width:12%!important}
+#tabelaConvocar th:nth-child(4),#tabelaConvocar td:nth-child(4){width:9%!important}
+#tabelaConvocar th:nth-child(5),#tabelaConvocar td:nth-child(5){width:9%!important}
+#tabelaConvocar th:nth-child(6),#tabelaConvocar td:nth-child(6){width:5%!important}
+#tabelaConvocar th:nth-child(7),#tabelaConvocar td:nth-child(7){width:7%!important}
+#tabelaConvocar th:nth-child(8),#tabelaConvocar td:nth-child(8){width:6%!important}
+#tabelaConvocar th:nth-child(9),#tabelaConvocar td:nth-child(9){width:6%!important}
+#tabelaConvocar th:nth-child(10),#tabelaConvocar td:nth-child(10){width:7%!important}
+#tabelaConvocar th:nth-child(11),#tabelaConvocar td:nth-child(11){width:13%!important}
+#tabelaConvocar th:nth-child(12),#tabelaConvocar td:nth-child(12){width:6%!important}
+#tabelaConvocar th:nth-child(13),#tabelaConvocar td:nth-child(13){width:3%!important}
+#tabelaConvocar th:nth-child(14),#tabelaConvocar td:nth-child(14){width:4%!important}
+#tabelaConvocar th:nth-child(15),#tabelaConvocar td:nth-child(15){width:7%!important}
+@media(max-width:1150px){
+ .painel-topbar-periodo>div,.painel-topbar-periodo input{width:82px!important;min-width:0!important;flex-basis:82px!important}
+ #toolbarModulo .filtro-situacao-check{width:105px!important;min-width:105px!important;flex-basis:105px!important}
+ #toolbarModulo .filtro-grupo-convocacao-v15{width:98px!important;min-width:98px!important;flex-basis:98px!important}
+ #toolbarModulo .linha-filtros .campo-pesquisa{width:110px!important;flex-basis:110px!important}
+ #toolbarModulo .linha-filtros .email-gestor{width:125px!important;flex-basis:125px!important}
+}
+@media(max-width:900px){
+ .filtros{overflow-x:auto!important}
+ #toolbarModulo{flex:0 0 auto!important}
+ #toolbarModulo .linha-filtros{width:max-content!important}
+}
+</style>`;
+  const complementos = patch + "\\n" + visual + "\\n" + ajustesFinais + "\\n" + ajustesLayout;
   const htmlFinal = htmlBase.includes("</body>")
     ? htmlBase.replace("</body>", complementos + "\n</body>")
     : htmlBase + complementos;
