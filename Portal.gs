@@ -294,8 +294,9 @@ function obterDadosPortal(dataInicio, dataFim, forcarAtualizacao) {
 function prepararFlagsPortal(lista) {
   (lista || []).forEach(c => {
     c.ativoAtual = ehAtivo(c);
-    c.asoRealizadoAgendaAtual = !!c.temAsoRealizadoAgenda;
     c.asoRealizadoValido = temAsoRealizadoValido(c);
+    // Apenas realização válida no ciclo atual exclui prioridade ou atraso.
+    c.asoRealizadoAgendaAtual = c.asoRealizadoValido;
     c.vencidoAtual = ehVencido(c);
     c.atrasadoAtivo = c.ativoAtual && c.vencidoAtual;
   });
