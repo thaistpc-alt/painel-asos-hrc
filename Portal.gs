@@ -672,18 +672,27 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
     const ehAsoQueResolvePendencia = e => {
       if (!e || !e.ehAsoRealizado) return false;
       const tipo = normalizarTexto(e.tipoNorm || e.tipo || "");
-      return tipo.includes("PERIODIC") || tipo.includes("PERIODICO") ||
+      return tipo.includes("ASO") || tipo.includes("PERIODIC") || tipo.includes("PERIODICO") ||
         tipo.includes("RETORNO") || tipo.includes("ADMISSIONAL") ||
         (tipo.includes("MUDANCA") && tipo.includes("RISCO"));
     };
 
-    const dentroDaJanelaPendencia = data => {
+    const diferencaAsoPendencia = data => {
       const diferenca = calcularDiferencaDias(data, ultimaPendencia.data);
-      return diferenca !== null && Math.abs(Number(diferenca)) <= 90;
+      return diferenca === null ? null : Number(diferenca);
+    };
+    const dentroDaJanelaPendencia = data => {
+      const diferenca = diferencaAsoPendencia(data);
+      return diferenca !== null && Math.abs(diferenca) <= 90;
+    };
+    const resolvePorAsoAntesDoCancelamento = e => {
+      if (!ultimaPendencia.ehCancelado) return dentroDaJanelaPendencia(e.data);
+      const diferenca = diferencaAsoPendencia(e.data);
+      return diferenca !== null && diferenca <= 0;
     };
     const realizadosDaJanela = eventos
       .filter(ehAsoQueResolvePendencia)
-      .filter(e => dentroDaJanelaPendencia(e.data));
+      .filter(resolvePorAsoAntesDoCancelamento);
 
     // A base de ASOs pode estar atualizada mesmo que o evento ainda não
     // esteja no espelho da agenda. Não transformar uma pendência histórica
