@@ -701,7 +701,11 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
     const baseQualificada = tipoBase.includes("PERIODIC") || tipoBase.includes("PERIODICO") ||
       tipoBase.includes("RETORNO") || tipoBase.includes("ADMISSIONAL") ||
       (tipoBase.includes("MUDANCA") && tipoBase.includes("RISCO"));
-    if (colaborador.dataUltimoAso && baseQualificada && dentroDaJanelaPendencia(colaborador.dataUltimoAso)) {
+    const diferencaUltimoAso = diferencaAsoPendencia(colaborador.dataUltimoAso);
+    const ultimoAsoResolvePendencia = ultimaPendencia.ehCancelado
+      ? diferencaUltimoAso !== null && diferencaUltimoAso <= 0
+      : dentroDaJanelaPendencia(colaborador.dataUltimoAso);
+    if (colaborador.dataUltimoAso && baseQualificada && ultimoAsoResolvePendencia) {
       const registrado = realizadosDaJanela.some(e => e.data === colaborador.dataUltimoAso);
       if (!registrado) realizadosDaJanela.push({
         mat: mat,
