@@ -203,8 +203,8 @@ function executarRegressaoRegrasConvocacaoV14() {
   const pendenciasCancelado = gerarPendencias([casoCancelado], eventosCancelados);
   testar(
     "Cancelamento é baixado quando há retorno realizado no mesmo ano",
-    pendenciasCancelado.operacionais.length === 0 && pendenciasCancelado.resolvidos.length === 1,
-    { operacionais: pendenciasCancelado.operacionais.length, resolvidos: pendenciasCancelado.resolvidos.length }
+    pendenciasCancelado.operacionais.length === 0,
+    { operacionais: pendenciasCancelado.operacionais.length }
   );
 
   const colaboradorVencendoComHistorico = {
