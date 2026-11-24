@@ -862,6 +862,29 @@ function doGet() {
  #toolbarModulo{flex:0 0 auto!important}
  #toolbarModulo .linha-filtros{width:max-content!important}
 }
+
+/* Aba Convocar: neutraliza larguras mínimas antigas que comprimiam as colunas. */
+#tabelaConvocar .tabela-container{width:100%!important;overflow-x:hidden!important;overflow-y:auto!important}
+#tabelaConvocar table{width:100%!important;min-width:0!important;table-layout:fixed!important}
+#tabelaConvocar th,#tabelaConvocar td{min-width:0!important;max-width:none!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}
+#tabelaConvocar th.ordenavel{white-space:normal!important;line-height:1.2!important}
+#tabelaConvocar th.ordenavel::after{display:inline-block!important;white-space:nowrap!important;vertical-align:baseline!important;margin-left:2px!important}
+#tabelaConvocar th:nth-child(1),#tabelaConvocar td:nth-child(1){width:2%!important}
+#tabelaConvocar th:nth-child(2),#tabelaConvocar td:nth-child(2){width:4%!important}
+#tabelaConvocar th:nth-child(3),#tabelaConvocar td:nth-child(3){width:11%!important}
+#tabelaConvocar th:nth-child(4),#tabelaConvocar td:nth-child(4){width:8%!important}
+#tabelaConvocar th:nth-child(5),#tabelaConvocar td:nth-child(5){width:8%!important}
+#tabelaConvocar th:nth-child(6),#tabelaConvocar td:nth-child(6){width:5%!important}
+#tabelaConvocar th:nth-child(7),#tabelaConvocar td:nth-child(7){width:6%!important}
+#tabelaConvocar th:nth-child(8),#tabelaConvocar td:nth-child(8){width:6%!important}
+#tabelaConvocar th:nth-child(9),#tabelaConvocar td:nth-child(9){width:6%!important}
+#tabelaConvocar th:nth-child(10),#tabelaConvocar td:nth-child(10){width:6%!important}
+#tabelaConvocar th:nth-child(11),#tabelaConvocar td:nth-child(11){width:13.5%!important}
+#tabelaConvocar td.info-agenda{width:13.5%!important;min-width:0!important;max-width:none!important;white-space:normal!important;overflow-wrap:anywhere!important;line-height:1.25!important}
+#tabelaConvocar th:nth-child(12),#tabelaConvocar td:nth-child(12){width:11.5%!important}
+#tabelaConvocar th:nth-child(13),#tabelaConvocar td:nth-child(13){width:3%!important}
+#tabelaConvocar th:nth-child(14),#tabelaConvocar td:nth-child(14){width:4%!important}
+#tabelaConvocar th:nth-child(15),#tabelaConvocar td:nth-child(15){width:6%!important}
 </style>`;
   const complementos = patch + "\n" + visual + "\n" + ajustesFinais + "\n" + ajustesLayout;
   const htmlFinal = htmlBase.includes("</body>")
