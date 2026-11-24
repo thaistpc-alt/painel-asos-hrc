@@ -760,7 +760,9 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
         dataResolucao: realizado.data || "",
         dataResolucaoBR: realizado.dataBR || formatarDataBR(realizado.data),
         diasAteResolucao: calcularDiferencaDias(realizado.data, ultimaPendencia.data),
-        acaoPendencia: "Resolvido por ASO realizado posteriormente"
+        acaoPendencia: ultimaPendencia.ehCancelado
+          ? "Cancelamento baixado: ASO qualificável realizado no mesmo ano"
+          : "Resolvido por ASO realizado posteriormente"
       }));
       return;
     }
