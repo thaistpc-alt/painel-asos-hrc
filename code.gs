@@ -784,7 +784,8 @@ function doGet() {
 .painel-sidebar .abas:focus,.painel-sidebar .abas:focus-within{outline:0!important;box-shadow:none!important}
 .filtros{overflow-x:hidden!important;flex-wrap:nowrap!important;gap:7px!important;padding:7px 9px!important}
 .painel-topbar-periodo{display:flex!important;align-items:end!important;gap:6px!important;flex:0 0 auto!important;flex-wrap:nowrap!important;margin:0!important}
-.painel-topbar-periodo>div{width:92px!important;min-width:0!important;flex:0 0 92px!important}
+.painel-topbar-periodo>div:not(.painel-periodo-atalhos){width:92px!important;min-width:0!important;flex:0 0 92px!important}
+.painel-topbar-periodo>.painel-periodo-atalhos{width:auto!important;min-width:max-content!important;flex:0 0 auto!important}
 .painel-topbar-periodo label{font-size:8px!important}
 .painel-topbar-periodo input{width:92px!important;min-width:0!important;height:32px!important;padding:4px 5px!important;font-size:9px!important}
 .painel-topbar-periodo>button{height:32px!important;min-width:42px!important;padding:0 6px!important;font-size:8px!important;white-space:nowrap!important;flex:0 0 auto!important}
@@ -798,9 +799,9 @@ function doGet() {
 #toolbarModulo .filtro-situacao-check-botao{height:32px!important;padding:0 21px 0 7px!important;font-size:9px!important}
 #toolbarModulo .filtro-grupo-convocacao-v15{width:108px!important;min-width:108px!important;flex:0 0 108px!important}
 #toolbarModulo .linha-filtros select{width:108px!important;min-width:0!important;height:32px!important;padding:4px 5px!important;font-size:9px!important}
-#toolbarModulo .linha-filtros .campo-pesquisa{width:132px!important;min-width:0!important;flex:0 1 132px!important}
+#toolbarModulo .linha-filtros .campo-pesquisa{width:165px!important;min-width:0!important;flex:0 0 165px!important}
 #toolbarModulo .linha-filtros .campo-pesquisa input{width:100%!important;min-width:0!important;height:32px!important;font-size:9px!important;padding:4px 6px!important}
-#toolbarModulo .linha-filtros .email-gestor{width:138px!important;min-width:0!important;flex:0 1 138px!important}
+#toolbarModulo .linha-filtros .email-gestor{width:165px!important;min-width:0!important;flex:0 0 165px!important}
 #toolbarModulo .linha-filtros .email-gestor input{width:100%!important;min-width:0!important;height:32px!important;font-size:8.5px!important;padding:4px 5px!important}
 #toolbarModulo .acoes-lote{gap:5px!important;flex-wrap:nowrap!important;min-width:0!important;flex:1 1 auto!important}
 #toolbarModulo .acoes-lote button{height:32px!important;padding:0 5px!important;font-size:8px!important;white-space:nowrap!important;flex:0 0 auto!important}
@@ -809,15 +810,17 @@ function doGet() {
 #tabelaConvocar .tabela-container{overflow-x:hidden!important;overflow-y:auto!important}
 #tabelaConvocar table{width:100%!important;min-width:0!important;table-layout:fixed!important}
 #tabelaConvocar th,#tabelaConvocar td{overflow-wrap:anywhere!important;word-break:normal!important}
+#tabelaConvocar th.ordenavel{font-size:8.2px!important;white-space:normal!important;overflow-wrap:normal!important;word-break:keep-all!important}
+#tabelaConvocar th.ordenavel::after{content:"↕"!important;display:inline-block!important;white-space:nowrap!important;margin-left:2px!important;font-size:8px!important;vertical-align:baseline!important}
 #tabelaConvocar th:nth-child(1),#tabelaConvocar td:nth-child(1){width:2%!important}
 #tabelaConvocar th:nth-child(2),#tabelaConvocar td:nth-child(2){width:4%!important}
-#tabelaConvocar th:nth-child(3),#tabelaConvocar td:nth-child(3){width:12%!important}
-#tabelaConvocar th:nth-child(4),#tabelaConvocar td:nth-child(4){width:9%!important}
+#tabelaConvocar th:nth-child(3),#tabelaConvocar td:nth-child(3){width:11.5%!important}
+#tabelaConvocar th:nth-child(4),#tabelaConvocar td:nth-child(4){width:8.5%!important}
 #tabelaConvocar th:nth-child(5),#tabelaConvocar td:nth-child(5){width:9%!important}
 #tabelaConvocar th:nth-child(6),#tabelaConvocar td:nth-child(6){width:5%!important}
 #tabelaConvocar th:nth-child(7),#tabelaConvocar td:nth-child(7){width:7%!important}
-#tabelaConvocar th:nth-child(8),#tabelaConvocar td:nth-child(8){width:6%!important}
-#tabelaConvocar th:nth-child(9),#tabelaConvocar td:nth-child(9){width:6%!important}
+#tabelaConvocar th:nth-child(8),#tabelaConvocar td:nth-child(8){width:6.5%!important}
+#tabelaConvocar th:nth-child(9),#tabelaConvocar td:nth-child(9){width:6.5%!important}
 #tabelaConvocar th:nth-child(10),#tabelaConvocar td:nth-child(10){width:7%!important}
 #tabelaConvocar th:nth-child(11),#tabelaConvocar td:nth-child(11){width:13%!important}
 #tabelaConvocar th:nth-child(12),#tabelaConvocar td:nth-child(12){width:6%!important}
@@ -825,7 +828,7 @@ function doGet() {
 #tabelaConvocar th:nth-child(14),#tabelaConvocar td:nth-child(14){width:4%!important}
 #tabelaConvocar th:nth-child(15),#tabelaConvocar td:nth-child(15){width:7%!important}
 @media(max-width:1150px){
- .painel-topbar-periodo>div,.painel-topbar-periodo input{width:82px!important;min-width:0!important;flex-basis:82px!important}
+ .painel-topbar-periodo>div:not(.painel-periodo-atalhos),.painel-topbar-periodo input{width:82px!important;min-width:0!important;flex-basis:82px!important}
  #toolbarModulo .filtro-situacao-check{width:105px!important;min-width:105px!important;flex-basis:105px!important}
  #toolbarModulo .filtro-grupo-convocacao-v15{width:98px!important;min-width:98px!important;flex-basis:98px!important}
  #toolbarModulo .linha-filtros .campo-pesquisa{width:110px!important;flex-basis:110px!important}
