@@ -10,11 +10,11 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
 </style>
 <script>
 (function(){
-  const ICONES={abaDashboard:'▦',abaColaboradores:'⌕',abaFaltosos:'↻',abaPrioridade:'!',abaConvocar:'✉',abaComplementares:'⌁',abaVencidos:'⚠',abaIndicadores:'▥'};
-  const NOMES={abaDashboard:'Visão geral',abaColaboradores:'Colaboradores',abaFaltosos:'Pendências',abaPrioridade:'A vencer',abaConvocar:'Agenda e convocação',abaComplementares:'Exames complementares',abaVencidos:'Atrasados',abaIndicadores:'Indicadores'};
+  const ICONES={abaColaboradores:'⌕',abaFaltosos:'↻',abaPrioridade:'!',abaConvocar:'✉',abaComplementares:'⌁',abaVencidos:'⚠',abaIndicadores:'▥'};
+  const NOMES={abaColaboradores:'Colaboradores',abaFaltosos:'Pendências',abaPrioridade:'A vencer',abaConvocar:'Agenda e convocação',abaComplementares:'Exames complementares',abaVencidos:'Atrasados',abaIndicadores:'Indicadores'};
   const MODULOS={convocar:'CONVOCAR',faltosos:'PENDENCIAS',prioridade:'PRIORIDADE',vencidos:'VENCIDOS',complementares:'COMPLEMENTARES',colaboradores:'COLABORADORES',indicadores:'INDICADORES'};
   const carregados=new Set(),origens=new Map();
-  let filtroAtivo=null,abaAtual='dashboard',requisicao=0,timerGrafico=null,graficoCarregado=false;
+  let filtroAtivo=null,abaAtual='indicadores',requisicao=0,timerGrafico=null,graficoCarregado=false;
   const periodo=()=>({inicio:document.getElementById('dataInicio').value,fim:document.getElementById('dataFim').value});
   const chaveModulo=id=>{const p=periodo();return p.inicio+'|'+p.fim+'|'+id};
   function debounce(fn,ms){let t;return function(){clearTimeout(t);const a=arguments,c=this;t=setTimeout(()=>fn.apply(c,a),ms)}}
@@ -45,16 +45,45 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
   }
 
   function prepararGraficoDashboard(){
-    const d=document.getElementById('dashboard');if(!d||document.getElementById('dashboardGrafico'))return;
-    const consulta=document.createElement('section');consulta.className='consulta-assistida';consulta.innerHTML='<h3>Consulta assistida de ASO</h3><p>Pesquise por nome, matrícula, função ou setor. A resposta mostra a evidência registrada na base e na agenda.</p><div class="consulta-linha"><input id="consultaAsoTermo" type="search" placeholder="Ex.: matrícula ou nome"><button id="consultaAsoBotao" type="button">Consultar</button></div><div id="consultaAsoResultado" aria-live="polite"></div>';
-    const indicadores=d.querySelector('.cards');
-    if(indicadores)d.insertBefore(consulta,indicadores);else d.insertBefore(consulta,d.firstChild);
-    const bloco=document.createElement('div');bloco.id='dashboardGrafico';bloco.className='dashboard-grafico';bloco.innerHTML='<h3>Desempenho mensal da meta</h3><div id="dashboardGraficoConteudo" class="grafico-vazio">Carregando gráfico...</div>';d.appendChild(bloco);
+    const dashboard=document.getElementById('dashboard');
+    const indicadores=document.getElementById('indicadores');
+    const colaboradores=document.getElementById('colaboradores');
+    if(!dashboard||!indicadores||!colaboradores)return;
+
+    let grafico=document.getElementById('dashboardGrafico');
+    if(!grafico){
+      grafico=document.createElement('div');
+      grafico.id='dashboardGrafico';
+      grafico.className='dashboard-grafico';
+      grafico.innerHTML='<h3>Desempenho mensal da meta</h3><div id="dashboardGraficoConteudo" class="grafico-vazio">Carregando gráfico...</div>';
+      dashboard.appendChild(grafico);
+    }
+
+    const cartoes=dashboard.querySelector('.cards');
+    const referencia=indicadores.querySelector('.painel-indicador-topo');
+    if(cartoes&&cartoes.parentElement!==indicadores)indicadores.insertBefore(cartoes,referencia||indicadores.querySelector('h2')?.nextSibling||null);
+    if(grafico.parentElement!==indicadores)indicadores.insertBefore(grafico,referencia||indicadores.querySelector('h2')?.nextSibling||null);
+
+    let consulta=document.getElementById('consultaAssistidaAso');
+    if(!consulta){
+      consulta=document.createElement('section');
+      consulta.id='consultaAssistidaAso';
+      consulta.className='consulta-assistida';
+      consulta.innerHTML='<h3>Consulta assistida de ASO</h3><p>Pesquise por nome, matrícula, função ou setor. A resposta mostra a evidência registrada na base e na agenda.</p><div class="consulta-linha"><input id="consultaAsoTermo" type="search" placeholder="Ex.: matrícula ou nome"><button id="consultaAsoBotao" type="button">Consultar</button></div><div id="consultaAsoResultado" aria-live="polite"></div>';
+    }
+    const filtroColaboradores=colaboradores.querySelector('.linha-filtros');
+    colaboradores.insertBefore(consulta,filtroColaboradores||colaboradores.querySelector('#tabelaColaboradores')||null);
+
+    dashboard.style.display='none';
+    indicadores.style.display='block';
+    document.getElementById('abaDashboard')?.remove();
+    document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));
+    document.getElementById('abaIndicadores')?.classList.add('ativa');
+
     const input=consulta.querySelector('#consultaAsoTermo'),botao=consulta.querySelector('#consultaAsoBotao');
     const buscar=()=>{const termo=input.value.trim(),saida=consulta.querySelector('#consultaAsoResultado');if(termo.length<2){saida.textContent='Digite pelo menos 2 caracteres.';return}botao.disabled=true;saida.textContent='Consultando registros…';google.script.run.withSuccessHandler(r=>{botao.disabled=false;renderConsultaAssistida(saida,r)}).withFailureHandler(e=>{botao.disabled=false;saida.textContent=e.message||'Falha ao consultar os registros.'}).consultarDiagnosticoASO(termo)};
     botao.onclick=buscar;input.addEventListener('keydown',e=>{if(e.key==='Enter')buscar()});
   }
-
   function escaparConsulta(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
   function renderConsultaAssistida(el,r){if(!r||!r.resultados||!r.resultados.length){el.textContent=(r&&r.mensagem)||'Nenhum registro encontrado.';return}el.innerHTML=r.resultados.map(x=>'<article class="consulta-aso-item"><strong>'+escaparConsulta(x.nome)+' · '+escaparConsulta(x.matricula)+'</strong><p>'+escaparConsulta(x.explicacao)+'</p><small>Fontepainel linha '+escaparConsulta(x.linhaFonte||'—')+' · último ASO '+escaparConsulta(x.ultimoAso||'sem data')+' ('+escaparConsulta(x.tipoUltimoAso)+') · vencimento '+escaparConsulta(x.vencimento||'sem data')+' · convocação '+escaparConsulta(x.convocacao||'sem data')+(x.pendencia?' · AGENDA linha '+escaparConsulta(x.pendencia.linhaAgenda||'—')+' em '+escaparConsulta(x.pendencia.data||'sem data'):'')+'</small>'+(x.eventosAgenda&&x.eventosAgenda.length?'<details><summary>Ver registros recentes da agenda</summary><ul>'+x.eventosAgenda.map(e=>'<li>'+escaparConsulta(e.dataBR)+' · '+escaparConsulta(e.tipo)+' · '+escaparConsulta(e.status)+' · linha '+escaparConsulta(e.linhaAgenda||'—')+'</li>').join('')+'</ul></details>':'')+'</article>').join('')}
 
@@ -74,13 +103,13 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
   function agendarGrafico(){
     if(graficoCarregado)return;
     if(timerGrafico)clearTimeout(timerGrafico);
-    timerGrafico=setTimeout(()=>{timerGrafico=null;if(abaAtual==='dashboard')carregarGrafico()},700);
+    timerGrafico=setTimeout(()=>{timerGrafico=null;if(abaAtual==='indicadores')carregarGrafico()},700);
   }
 
   function montarShell(){
     if(document.querySelector('.painel-sidebar'))return;
     const abas=document.querySelector('.abas');if(!abas)return;
-    [['Operação',['abaDashboard','abaConvocar','abaFaltosos','abaPrioridade','abaVencidos']],['Consulta e gestão',['abaColaboradores','abaComplementares','abaIndicadores']]].forEach(g=>{const titulo=document.createElement('div');titulo.className='menu-grupo';titulo.textContent=g[0];abas.appendChild(titulo);g[1].forEach(id=>{const el=document.getElementById(id);if(el)abas.appendChild(el)})});
+    [['Operação',['abaConvocar','abaFaltosos','abaPrioridade','abaVencidos']],['Consulta e gestão',['abaColaboradores','abaComplementares','abaIndicadores']]].forEach(g=>{const titulo=document.createElement('div');titulo.className='menu-grupo';titulo.textContent=g[0];abas.appendChild(titulo);g[1].forEach(id=>{const el=document.getElementById(id);if(el)abas.appendChild(el)})});
     const sidebar=document.createElement('aside');sidebar.className='painel-sidebar';sidebar.innerHTML='<div class="painel-brand"><div class="painel-logo">S</div><div><strong>SESMT HRC</strong><span>Painel de ASOs</span></div></div>';sidebar.appendChild(abas);
     const rodape=document.createElement('div');rodape.className='painel-rodape';rodape.innerHTML='<button type="button"><span class="menu-icone">↤</span><span class="toggle-texto">Recolher menu</span></button>';sidebar.appendChild(rodape);document.body.appendChild(sidebar);
     const top=document.createElement('header');top.className='painel-topbar';top.innerHTML='<div><h1>PAINEL DE ASOS SESMT HRC</h1><p>Gestão de exames ocupacionais e convocações</p></div><div class="painel-topbar-status"><span id="painelSync" class="painel-sync">Base: aguardando leitura</span><button class="painel-atualizar" type="button">Atualizar dados</button></div>';document.body.appendChild(top);
@@ -122,7 +151,7 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
   function carregarResumo(forcar){
     const p=periodo();if(!p.inicio||!p.fim){mostrarErro('Informe a data inicial e a data final.');return}
     const token=++requisicao;mostrarLoading(true);limparMensagens();if(forcar){carregados.clear();dadosPortal=null;graficoCarregado=false;definirAtualizandoBase(true);if(timerGrafico){clearTimeout(timerGrafico);timerGrafico=null}}
-    google.script.run.withSuccessHandler(r=>{if(token!==requisicao)return;dadosPortal={dashboard:r.dashboard,meta:r.meta||{}};periodoCarregadoPortal=p.inicio+'|'+p.fim;atualizarDashboard(r.dashboard);atualizarNomesAbas(r.dashboard);aplicarRotulosMenu();atualizarStatusBase(r.meta||{});ativarCardsDashboard();mostrarLoading(false);definirAtualizandoBase(false);if(forcar)mostrarOk('Base sincronizada e painel atualizado.');if(abaAtual==='dashboard')agendarGrafico();else carregarModulo(abaAtual,forcar)}).withFailureHandler(e=>{mostrarLoading(false);definirAtualizandoBase(false);mostrarErro(e.message||e)}).obterResumoPortalV13Leve(p.inicio,p.fim,!!forcar);
+    google.script.run.withSuccessHandler(r=>{if(token!==requisicao)return;dadosPortal={dashboard:r.dashboard,meta:r.meta||{}};periodoCarregadoPortal=p.inicio+'|'+p.fim;atualizarDashboard(r.dashboard);atualizarNomesAbas(r.dashboard);aplicarRotulosMenu();atualizarStatusBase(r.meta||{});ativarCardsDashboard();mostrarLoading(false);definirAtualizandoBase(false);if(forcar)mostrarOk('Base sincronizada e painel atualizado.');if(abaAtual==='indicadores')agendarGrafico();if(abaAtual!=='dashboard')carregarModulo(abaAtual,forcar)}).withFailureHandler(e=>{mostrarLoading(false);definirAtualizandoBase(false);mostrarErro(e.message||e)}).obterResumoPortalV13Leve(p.inicio,p.fim,!!forcar);
   }
 
   function carregarModulo(id,forcar){
@@ -145,7 +174,7 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
   window.carregarDados=forcar=>carregarResumo(!!forcar);
   window.atualizarDadosForcado=()=>carregarResumo(true);
   window.renderizarAbaAtiva=function(){if(abaAtual!=='dashboard')carregarModulo(abaAtual,false)};
-  window.abrirAba=function(id,botao){document.querySelectorAll('.conteudo').forEach(d=>d.style.display='none');const alvo=document.getElementById(id);if(alvo)alvo.style.display='block';document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));if(botao)botao.classList.add('ativa');abaAtual=id;moverFiltro(id);if(id==='dashboard')agendarGrafico();else carregarModulo(id,false)};
-  window.onload=function(){montarShell();const hoje=new Date(),ini=new Date(hoje.getFullYear(),hoje.getMonth(),1),fim=new Date(hoje.getFullYear(),hoje.getMonth()+1,0);document.getElementById('dataInicio').value=formatarDataInput(ini);document.getElementById('dataFim').value=formatarDataInput(fim);document.getElementById('dataInicio').removeAttribute('onchange');document.getElementById('dataFim').removeAttribute('onchange');moverFiltro('dashboard');carregarResumo(false)};
+  window.abrirAba=function(id,botao){document.querySelectorAll('.conteudo').forEach(d=>d.style.display='none');const alvo=document.getElementById(id);if(alvo)alvo.style.display='block';document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));if(botao)botao.classList.add('ativa');abaAtual=id;moverFiltro(id);if(id==='indicadores')agendarGrafico();if(id!=='dashboard')carregarModulo(id,false)};
+  window.onload=function(){montarShell();const hoje=new Date(),ini=new Date(hoje.getFullYear(),hoje.getMonth(),1),fim=new Date(hoje.getFullYear(),hoje.getMonth()+1,0);document.getElementById('dataInicio').value=formatarDataInput(ini);document.getElementById('dataFim').value=formatarDataInput(fim);document.getElementById('dataInicio').removeAttribute('onchange');document.getElementById('dataFim').removeAttribute('onchange');moverFiltro('indicadores');carregarResumo(false)};
 })();
 </script>
