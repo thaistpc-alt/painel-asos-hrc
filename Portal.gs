@@ -684,7 +684,7 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
     const ehAsoQueResolvePendencia = e => {
       if (!e || !e.ehAsoRealizado) return false;
       const tipo = normalizarTexto(e.tipoNorm || e.tipo || "");
-      return tipo.includes("ASO") || tipo.includes("PERIODIC") || tipo.includes("PERIODICO") ||
+      return tipo.includes("PERIODIC") || tipo.includes("PERIODICO") ||
         tipo.includes("RETORNO") || tipo.includes("ADMISSIONAL") ||
         (tipo.includes("MUDANCA") && tipo.includes("RISCO"));
     };
