@@ -563,12 +563,23 @@ function enviarConvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInici
 
   if (anexos.length > 0) {
     const assunto = montarAssuntoEmailGestor(dataInicio, dataFim);
+    const mapaDatasAnteriores = opcoes.dataAnteriorPorMatricula || {};
     const contexto = opcoes.reconvocacao
       ? {
           reconvocacao: true,
           dataAnteriorBR: opcoes.dataAnteriorBR || "",
           novaDataBR: obterNovaDataConvocacaoBR(enviados),
-          colaborador: enviados.length === 1 ? (enviados[0].colaborador || enviados[0].nome || "") : ""
+          colaborador: enviados.length === 1 ? (enviados[0].colaborador || enviados[0].nome || "") : "",
+          itensReconvocacao: opcoes.dataAnteriorPorMatricula
+            ? enviados.map(item => {
+                const matricula = String(item.matricula || "").trim();
+                return {
+                  matricula: matricula,
+                  dataAnteriorBR: String(mapaDatasAnteriores[matricula] || ""),
+                  novaDataBR: item.dataAgendadaBR || item.dataConvocarBR || item.dataLimiteBR || ""
+                };
+              })
+            : []
         }
       : {};
     const corpo = montarCorpoEmailGestor(enviados, dataInicio, dataFim, contexto);
@@ -677,25 +688,47 @@ function montarCorpoEmailGestor(convocacoes, dataInicio, dataFim, contexto) {
     dataFim ? formatarDataBR(dataFim) : ""
   ].filter(Boolean).join(" a ");
 
-  const linhasHtml = (convocacoes || []).map(c =>
-    "<li>" + escaparHtmlEmail(c.colaborador || c.nome || "") +
-    " - Matrícula " + escaparHtmlEmail(c.matricula || "") + "</li>"
-  ).join("");
+  const reconvocacoes = Array.isArray(contexto.itensReconvocacao) ? contexto.itensReconvocacao : [];
+  const reconvocacoesPorMatricula = new Map(
+    reconvocacoes.map(item => [String(item.matricula || "").trim(), item])
+  );
 
-  const linhasTexto = (convocacoes || []).map(c =>
-    "- " + (c.colaborador || c.nome || "") + " - Matrícula " + (c.matricula || "")
-  ).join("\n");
+  const linhasHtml = (convocacoes || []).map(c => {
+    const matricula = String(c.matricula || "").trim();
+    const reconvocacao = reconvocacoesPorMatricula.get(matricula);
+    const detalhe = reconvocacao
+      ? (reconvocacao.dataAnteriorBR ? " — ausência em " + escaparHtmlEmail(reconvocacao.dataAnteriorBR) : "") +
+        (reconvocacao.novaDataBR ? "; nova data " + escaparHtmlEmail(reconvocacao.novaDataBR) : "")
+      : "";
+    return "<li>" + escaparHtmlEmail(c.colaborador || c.nome || "") +
+      " - Matrícula " + escaparHtmlEmail(matricula) + detalhe + "</li>";
+  }).join("");
+
+  const linhasTexto = (convocacoes || []).map(c => {
+    const matricula = String(c.matricula || "").trim();
+    const reconvocacao = reconvocacoesPorMatricula.get(matricula);
+    const detalhe = reconvocacao
+      ? (reconvocacao.dataAnteriorBR ? " — ausência em " + reconvocacao.dataAnteriorBR : "") +
+        (reconvocacao.novaDataBR ? "; nova data " + reconvocacao.novaDataBR : "")
+      : "";
+    return "- " + (c.colaborador || c.nome || "") +
+      " - Matrícula " + matricula + detalhe;
+  }).join("\n");
 
   const avisoReconvocacaoHtml = contexto.reconvocacao
-    ? "<p>Informamos que " + (contexto.colaborador ? "<strong>" + escaparHtmlEmail(contexto.colaborador) + "</strong> " : "o colaborador ") +
-      "faltou à data anterior" + (contexto.dataAnteriorBR ? " (" + escaparHtmlEmail(contexto.dataAnteriorBR) + ")" : "") +
-      ". Segue nova convocação" + (contexto.novaDataBR ? " com a nova data " + escaparHtmlEmail(contexto.novaDataBR) : "") + ".</p>"
+    ? reconvocacoes.length
+      ? "<p>Segue(m) nova(s) convocação(ões) para os casos de ausência. A data anterior e a nova data de cada pessoa estão indicadas na lista abaixo.</p>"
+      : "<p>Informamos que " + (contexto.colaborador ? "<strong>" + escaparHtmlEmail(contexto.colaborador) + "</strong> " : "o colaborador ") +
+        "faltou à data anterior" + (contexto.dataAnteriorBR ? " (" + escaparHtmlEmail(contexto.dataAnteriorBR) + ")" : "") +
+        ". Segue nova convocação" + (contexto.novaDataBR ? " com a nova data " + escaparHtmlEmail(contexto.novaDataBR) : "") + ".</p>"
     : "";
 
   const avisoReconvocacaoTexto = contexto.reconvocacao
-    ? "Informamos que " + (contexto.colaborador || "o colaborador") +
-      " faltou à data anterior" + (contexto.dataAnteriorBR ? " (" + contexto.dataAnteriorBR + ")" : "") +
-      ". Segue nova convocação" + (contexto.novaDataBR ? " com a nova data " + contexto.novaDataBR : "") + ".\n\n"
+    ? reconvocacoes.length
+      ? "Seguem novas convocações para os casos de ausência. A data anterior e a nova data de cada pessoa estão indicadas na lista abaixo.\n\n"
+      : "Informamos que " + (contexto.colaborador || "o colaborador") +
+        " faltou à data anterior" + (contexto.dataAnteriorBR ? " (" + contexto.dataAnteriorBR + ")" : "") +
+        ". Segue nova convocação" + (contexto.novaDataBR ? " com a nova data " + contexto.novaDataBR : "") + ".\n\n"
     : "";
 
   const html =
@@ -718,7 +751,6 @@ function montarCorpoEmailGestor(convocacoes, dataInicio, dataFim, contexto) {
 
   return { html: html, texto: texto };
 }
-
 function escaparHtmlEmail(valor) {
   return String(valor ?? "")
     .replace(/&/g, "&amp;")
