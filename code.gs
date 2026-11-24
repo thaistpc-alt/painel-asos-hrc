@@ -836,7 +836,7 @@ function doGet() {
  #toolbarModulo .linha-filtros{width:max-content!important}
 }
 </style>`;
-  const complementos = patch + "\\n" + visual + "\\n" + ajustesFinais + "\\n" + ajustesLayout;
+  const complementos = patch + "\n" + visual + "\n" + ajustesFinais + "\n" + ajustesLayout;
   const htmlFinal = htmlBase.includes("</body>")
     ? htmlBase.replace("</body>", complementos + "\n</body>")
     : htmlBase + complementos;
