@@ -185,12 +185,32 @@
 
     table {
       width: 100%;
-      min-width: 920px;
+      min-width: 0;
       table-layout: fixed;
       border-collapse: collapse;
-      font-size: 10.2px;
+      font-size: 9.4px;
       background: white;
     }
+
+    #tabelaConvocar .tabela-container { overflow-x: hidden; }
+    #tabelaConvocar table { min-width: 0; width: 100%; }
+    #tabelaConvocar th, #tabelaConvocar td {
+      padding: 4px 3px; font-size: 9px; line-height: 1.16; overflow-wrap: anywhere;
+    }
+    #tabelaConvocar th:nth-child(1), #tabelaConvocar td:nth-child(1) { width: 26px; }
+    #tabelaConvocar th:nth-child(2), #tabelaConvocar td:nth-child(2) { width: 50px; }
+    #tabelaConvocar th:nth-child(3), #tabelaConvocar td:nth-child(3) { width: 125px; }
+    #tabelaConvocar th:nth-child(4), #tabelaConvocar td:nth-child(4) { width: 105px; }
+    #tabelaConvocar th:nth-child(5), #tabelaConvocar td:nth-child(5) { width: 90px; }
+    #tabelaConvocar th:nth-child(6), #tabelaConvocar td:nth-child(6) { width: 62px; }
+    #tabelaConvocar th:nth-child(7), #tabelaConvocar td:nth-child(7) { width: 82px; }
+    #tabelaConvocar th:nth-child(8), #tabelaConvocar td:nth-child(8),
+    #tabelaConvocar th:nth-child(9), #tabelaConvocar td:nth-child(9),
+    #tabelaConvocar th:nth-child(10), #tabelaConvocar td:nth-child(10) { width: 76px; }
+    #tabelaConvocar th:nth-child(12), #tabelaConvocar td:nth-child(12) { width: 70px; }
+    #tabelaConvocar th:nth-child(13), #tabelaConvocar td:nth-child(13) { width: 42px; }
+    #tabelaConvocar th:nth-child(14), #tabelaConvocar td:nth-child(14),
+    #tabelaConvocar th:nth-child(15), #tabelaConvocar td:nth-child(15) { width: 44px; }
 
     th, td {
       border-bottom: 1px solid #e5e7eb;
