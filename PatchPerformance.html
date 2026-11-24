@@ -46,8 +46,10 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
 
   function prepararGraficoDashboard(){
     const d=document.getElementById('dashboard');if(!d||document.getElementById('dashboardGrafico'))return;
+    const consulta=document.createElement('section');consulta.className='consulta-assistida';consulta.innerHTML='<h3>Consulta assistida de ASO</h3><p>Pesquise por nome, matrícula, função ou setor. A resposta mostra a evidência registrada na base e na agenda.</p><div class="consulta-linha"><input id="consultaAsoTermo" type="search" placeholder="Ex.: matrícula ou nome"><button id="consultaAsoBotao" type="button">Consultar</button></div><div id="consultaAsoResultado" aria-live="polite"></div>';
+    const indicadores=d.querySelector('.cards');
+    if(indicadores)d.insertBefore(consulta,indicadores);else d.insertBefore(consulta,d.firstChild);
     const bloco=document.createElement('div');bloco.id='dashboardGrafico';bloco.className='dashboard-grafico';bloco.innerHTML='<h3>Desempenho mensal da meta</h3><div id="dashboardGraficoConteudo" class="grafico-vazio">Carregando gráfico...</div>';d.appendChild(bloco);
-    const consulta=document.createElement('section');consulta.className='consulta-assistida';consulta.innerHTML='<h3>Consulta assistida de ASO</h3><p>Pesquise por nome, matrícula, função ou setor. A resposta mostra a evidência registrada na base e na agenda.</p><div class="consulta-linha"><input id="consultaAsoTermo" type="search" placeholder="Ex.: matrícula ou nome"><button id="consultaAsoBotao" type="button">Consultar</button></div><div id="consultaAsoResultado" aria-live="polite"></div>';d.appendChild(consulta);
     const input=consulta.querySelector('#consultaAsoTermo'),botao=consulta.querySelector('#consultaAsoBotao');
     const buscar=()=>{const termo=input.value.trim(),saida=consulta.querySelector('#consultaAsoResultado');if(termo.length<2){saida.textContent='Digite pelo menos 2 caracteres.';return}botao.disabled=true;saida.textContent='Consultando registros…';google.script.run.withSuccessHandler(r=>{botao.disabled=false;renderConsultaAssistida(saida,r)}).withFailureHandler(e=>{botao.disabled=false;saida.textContent=e.message||'Falha ao consultar os registros.'}).consultarDiagnosticoASO(termo)};
     botao.onclick=buscar;input.addEventListener('keydown',e=>{if(e.key==='Enter')buscar()});
