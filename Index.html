@@ -1538,6 +1538,8 @@
           if (th.dataset.ordenacaoAtiva === "1") return;
 
           th.dataset.ordenacaoAtiva = "1";
+          if (th.classList.contains("check-coluna") || !th.textContent.trim()) return;
+
           th.classList.add("ordenavel");
           th.title = "Clique para ordenar";
 
