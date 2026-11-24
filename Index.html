@@ -1092,7 +1092,7 @@
   <div class="conteudo" id="faltosos" style="display:none;">
     <h2>Pendências</h2>
     <div class="rodape-info">Esta aba é operacional e mostra apenas as pendências que ainda exigem ação do SESMT. Quem já realizou o ASO posteriormente deixa de aparecer nesta aba.</div>
-    <div class="rodape-info">Para reconvocar, informe o e-mail do gestor e use <strong>Enviar</strong> na coluna Ação da seção “Necessita reconvocação”. O botão <strong>PDF</strong> gera a nova convocação para baixar.</div>
+    <div class="rodape-info">Na seção “Necessita reconvocação”, selecione uma ou mais pessoas do mesmo gestor e clique em <strong>Enviar selecionadas</strong>. Informe o e-mail do gestor no campo acima. Você também pode enviar individualmente pela coluna Ação; <strong>PDF</strong> gera a convocação para baixar.</div>
 
 
     <div class="linha-filtros">
@@ -1832,6 +1832,7 @@
         ${montarSecaoPendencia("Agendados/Reagendados", agendados, "agendado")}
       `;
       ativarOrdenacaoTabelas("tabelaFaltosos");
+      atualizarInterfaceSelecaoReconvocacoes();
     }
 
     function montarSecaoPendencia(titulo, lista, tipo) {
@@ -2656,7 +2657,8 @@
         return;
       }
 
-      const emails = obterEmailsGestor();
+      const emails = String(document.getElementById("emailGestorPendencia")?.value || "")
+        .split(/[;,]/).map(email => email.trim()).filter(Boolean);
       if (emails.length === 0) {
         mostrarErro("Informe o e-mail do gestor antes de enviar a pendência.");
         return;
