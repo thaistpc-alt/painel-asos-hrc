@@ -668,7 +668,18 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
 
     const ultimaPendencia = eventosPendencia[eventosPendencia.length - 1];
 
-    // A resolução depende do tipo e da janela absoluta de 90 dias da ocorrência.
+    // Cancelamentos costumam ocorrer porque o ASO já foi feito. Nesses casos,
+    // qualquer periódico, retorno ao trabalho ou mudança de risco realizado no
+    // mesmo ano civil encerra a pendência, mesmo que esteja fora da janela de 90 dias.
+    const tipoQualificaCancelamento = tipo => {
+      const tipoNorm = normalizarTexto(tipo || "");
+      return tipoNorm.includes("PERIODIC") || tipoNorm.includes("PERIODICO") ||
+        tipoNorm.includes("RETORNO") ||
+        (tipoNorm.includes("MUDANCA") && tipoNorm.includes("RISCO"));
+    };
+    const mesmoAnoCivil = (dataA, dataB) =>
+      !!dataA && !!dataB && String(dataA).slice(0, 4) === String(dataB).slice(0, 4);
+
     const ehAsoQueResolvePendencia = e => {
       if (!e || !e.ehAsoRealizado) return false;
       const tipo = normalizarTexto(e.tipoNorm || e.tipo || "");
@@ -685,25 +696,23 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
       const diferenca = diferencaAsoPendencia(data);
       return diferenca !== null && Math.abs(diferenca) <= 90;
     };
-    const resolvePorAsoAntesDoCancelamento = e => {
-      if (!ultimaPendencia.ehCancelado) return dentroDaJanelaPendencia(e.data);
-      const diferenca = diferencaAsoPendencia(e.data);
-      return diferenca !== null && diferenca <= 0;
-    };
+    const resolvePorAso = e => ultimaPendencia.ehCancelado
+      ? tipoQualificaCancelamento(e.tipoNorm || e.tipo) && mesmoAnoCivil(e.data, ultimaPendencia.data)
+      : dentroDaJanelaPendencia(e.data);
     const realizadosDaJanela = eventos
       .filter(ehAsoQueResolvePendencia)
-      .filter(resolvePorAsoAntesDoCancelamento);
+      .filter(resolvePorAso);
 
-    // A base de ASOs pode estar atualizada mesmo que o evento ainda não
-    // esteja no espelho da agenda. Não transformar uma pendência histórica
-    // em reconvocação quando o ASO mais recente já é posterior a ela.
+    // A FONTEpainel também pode registrar o último ASO antes do espelho da AGENDA.
     const tipoBase = normalizarTexto(colaborador.tipoExame || "");
-    const baseQualificada = tipoBase.includes("PERIODIC") || tipoBase.includes("PERIODICO") ||
-      tipoBase.includes("RETORNO") || tipoBase.includes("ADMISSIONAL") ||
-      (tipoBase.includes("MUDANCA") && tipoBase.includes("RISCO"));
+    const baseQualificada = ultimaPendencia.ehCancelado
+      ? tipoQualificaCancelamento(tipoBase)
+      : tipoBase.includes("PERIODIC") || tipoBase.includes("PERIODICO") ||
+        tipoBase.includes("RETORNO") || tipoBase.includes("ADMISSIONAL") ||
+        (tipoBase.includes("MUDANCA") && tipoBase.includes("RISCO"));
     const diferencaUltimoAso = diferencaAsoPendencia(colaborador.dataUltimoAso);
     const ultimoAsoResolvePendencia = ultimaPendencia.ehCancelado
-      ? diferencaUltimoAso !== null && diferencaUltimoAso <= 0
+      ? mesmoAnoCivil(colaborador.dataUltimoAso, ultimaPendencia.data)
       : dentroDaJanelaPendencia(colaborador.dataUltimoAso);
     if (colaborador.dataUltimoAso && baseQualificada && ultimoAsoResolvePendencia) {
       const registrado = realizadosDaJanela.some(e => e.data === colaborador.dataUltimoAso);
