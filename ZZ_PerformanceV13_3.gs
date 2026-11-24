@@ -4,7 +4,7 @@
    Os módulos continuam armazenados por período.
 ========================================================= */
 
-const PERF133_PREFIXO = "ASOS_V15_0_";
+const PERF133_PREFIXO = "ASOS_V15_1_";
 const PERF133_PARTE_PROPRIEDADE = 8000;
 const PERF133_MAX_PARTES = 55;
 const PERF133_TTL_MS = 30 * 60 * 1000;

@@ -97,10 +97,19 @@ function executarRegressaoRegrasConvocacaoV14() {
 
   const setembro = gerarListaConvocar([colaborador], "2026-09-01", "2026-09-30");
   testar(
-    "Colaborador em férias permanece elegível no mês original",
-    setembro.length === 1 && setembro[0].grupoConvocacao === "Convocação do período",
+    "Filtro de período segue mês do agendamento, não da convocação",
+    setembro.length === 0,
     setembro.length ? setembro[0].grupoConvocacao : "não listado"
   );
+
+  testar("Regra anual convoca dez meses após o último ASO",
+    calcularDataConvocarV15_("2025-03-15", "2026-03-15", 12) === "2026-01-15");
+  testar("Vencimento em janeiro não convoca no ano anterior",
+    calcularDataConvocarV15_("2025-01-18", "2026-01-18", 12) === "2026-01-01");
+  testar("Vencimento em fevereiro não convoca no ano anterior",
+    calcularDataConvocarV15_("2025-02-18", "2026-02-18", 12) === "2026-02-01");
+  testar("Técnico em radiologia convoca quinze dias antes",
+    calcularDataConvocarV15_("2026-01-01", "2026-07-01", 6) === "2026-06-16");
 
   testar(
     "PDF não é bloqueado quando convocação nasce em setembro e agenda é outubro",

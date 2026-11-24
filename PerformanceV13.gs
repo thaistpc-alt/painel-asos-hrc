@@ -7,7 +7,7 @@
    - entrega cada módulo sob demanda.
 ========================================================= */
 
-const PERF13_PREFIXO = "ASOS_V15_0_";
+const PERF13_PREFIXO = "ASOS_V15_1_";
 const PERF13_TTL = 1800;
 const PERF13_PARTE = 80000;
 const PERF13_MAX_PARTES = 50;
@@ -34,6 +34,7 @@ function obterModuloPortalV13(modulo, dataInicio, dataFim, forcarAtualizacao) {
     const cacheado = obterCacheV13_(chave);
     if (cacheado) {
       cacheado.__cacheV13 = "cache";
+      aplicarHistoricoEnviosPendencias(cacheado);
       return cacheado;
     }
   }
@@ -66,6 +67,7 @@ function obterModuloPortalV13(modulo, dataInicio, dataFim, forcarAtualizacao) {
     }
     case "PRIORIDADE": {
       const itens = lista
+        .filter(c => !c.matriculaDuplicada)
         .filter(c => Number(c.diasParaVencer) >= 0 && Number(c.diasParaVencer) <= 30)
         .filter(c => !c.asoRealizadoAgendaAtual && !c.asoRealizadoValido)
         .sort((a, b) => Number(a.diasParaVencer) - Number(b.diasParaVencer));
@@ -77,6 +79,7 @@ function obterModuloPortalV13(modulo, dataInicio, dataFim, forcarAtualizacao) {
     }
     case "VENCIDOS": {
       const itens = lista
+        .filter(c => !c.matriculaDuplicada)
         .filter(ehVencido)
         .filter(c => !c.asoRealizadoAgendaAtual && !c.asoRealizadoValido)
         .sort((a, b) => Number(a.diasParaVencer) - Number(b.diasParaVencer));
@@ -109,6 +112,7 @@ function obterModuloPortalV13(modulo, dataInicio, dataFim, forcarAtualizacao) {
       throw new Error("Módulo inválido: " + modulo);
   }
 
+  aplicarHistoricoEnviosPendencias(resultado);
   resultado.__contextoV13 = contexto.origemCache || "nova";
   salvarCacheV13_(chave, resultado);
   return resultado;
@@ -194,7 +198,7 @@ function montarEventosAgendaPorMatriculaV13_() {
   const idxData = cfg.colData - primeiraColuna;
   const idxTipo = cfg.colTipoExame >= 0 ? cfg.colTipoExame - primeiraColuna : -1;
 
-  valores.forEach(linha => {
+  valores.forEach((linha, idxLinha) => {
     const mat = String(linha[idxMat] || "").trim();
     if (!mat) return;
 
@@ -221,6 +225,7 @@ function montarEventosAgendaPorMatriculaV13_() {
       statusNorm: statusNorm,
       tipo: tipo,
       tipoNorm: tipoNorm,
+      linhaAgenda: cfg.linhaDados + 2 + idxLinha,
       ehAsoRealizado: ehAsoRealizado,
       ehNaoCompareceu: ehNaoCompareceu,
       ehReagendou: ehReagendou,
@@ -230,7 +235,7 @@ function montarEventosAgendaPorMatriculaV13_() {
     obterChavesMatricula(mat, "").forEach(chave => {
       if (!mapaEventos.has(chave)) mapaEventos.set(chave, []);
       mapaEventos.get(chave).push(evento);
-      if (tipoNorm.includes("PERIODIC") && (ehNaoCompareceu || ehReagendou)) {
+      if ((tipoNorm.includes("PERIODIC") || tipoNorm.includes("PERIODICO")) && (ehNaoCompareceu || ehReagendou || ehCancelado)) {
         mapaOcorrencias.set(chave, (Number(mapaOcorrencias.get(chave)) || 0) + 1);
       }
     });

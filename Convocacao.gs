@@ -279,7 +279,8 @@ function situacaoPermiteBaixarConvocacao(c) {
 }
 
 function motivoNaoBaixarConvocacao(c, dataInicio, dataFim) {
-  if (!c || !c.dataAgendada) {
+  const reconvocacao = arguments.length > 3 && arguments[3] === true;
+  if (!c || (!c.dataAgendada && !reconvocacao)) {
     return "Sem data agendada";
   }
 
@@ -292,6 +293,8 @@ function motivoNaoBaixarConvocacao(c, dataInicio, dataFim) {
   if (c.asoRealizadoValido) {
     return "ASO periódico já realizado";
   }
+
+  if (c.matriculaDuplicada) return "Matrícula duplicada; cadastro precisa ser revisado";
 
   return "";
 }
@@ -511,7 +514,7 @@ function enviarConvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInici
         return;
       }
 
-      const motivo = motivoNaoBaixarConvocacao(colaborador, dataInicio, dataFim);
+      const motivo = motivoNaoBaixarConvocacao(colaborador, dataInicio, dataFim, !!opcoes.reconvocacao);
 
       if (motivo) {
         resultados.push({

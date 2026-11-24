@@ -81,7 +81,7 @@ function enviarConvocacoesSelecionadasGestorComCopia(matriculas, emailsGestor, d
       return;
     }
 
-    const motivo = motivoNaoBaixarConvocacao(colaborador, dataInicio, dataFim);
+    const motivo = motivoNaoBaixarConvocacao(colaborador, dataInicio, dataFim, !!opcoes.reconvocacao);
     if (motivo) {
       resultados.push({
         sucesso: false,

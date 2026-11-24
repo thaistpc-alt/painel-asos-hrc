@@ -1100,6 +1100,12 @@
       return `${ano}-${mes}-${dia}`;
     }
 
+    function formatarDataEnvioPortal(valor) {
+      const s=String(valor||"").trim();
+      const m=s.match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}:\d{2})(?::\d{2})?)?$/);
+      return m ? `${m[3]}/${m[2]}/${m[1]}${m[4]?' '+m[4]:''}` : s;
+    }
+
     function mostrarLoading(exibir) {
       document.getElementById("loading").style.display = exibir ? "inline" : "none";
     }
@@ -1514,10 +1520,11 @@
               <th>Setor</th>
               <th>Situação</th>
               <th>Origem</th>
-              <th>Data convocar</th>
-              <th>Data limite</th>
+              <th>Convocação</th>
+              <th>Vencimento</th>
               <th>Data agendada</th>
               <th>Informações da agenda</th>
+              <th>Último e-mail</th>
               <th>Dias</th>
               
               <th>PDF</th>
@@ -1553,9 +1560,10 @@
             <td>${escaparHtml(item.situacao)}</td>
             <td><span class="badge-origem-convocacao">${escaparHtml(item.grupoConvocacao || "")}</span></td>
             <td>${escaparHtml(item.dataConvocarBR)}</td>
-            <td>${escaparHtml(item.dataLimiteBR)}</td>
+            <td>${escaparHtml(item.proximoVencimentoBR)}</td>
             <td>${dataAgendadaPortal}</td>
             <td class="info-agenda" title="${escaparAtributo(item.informacoesAgenda || item.statusAgenda || "")}">${escaparHtml(item.informacoesAgenda || item.statusAgenda || "")}</td>
+            <td>${escaparHtml(formatarDataEnvioPortal(item.ultimoEnvioConvocacao))}</td>
             <td>${escaparHtml(item.diasParaVencer)}</td>
             
             <td>
@@ -1723,6 +1731,7 @@
                 <th>Nova data</th>
                 <th>Ocorr.</th>
                 <th>Enviadas</th>
+                <th>Último e-mail</th>
                 <th>Ação</th>
               </tr>
             </thead>
@@ -1752,6 +1761,7 @@
             <td>${escaparHtml(novaData)}</td>
             <td>${escaparHtml(item.qtdOcorrencias ?? item.ocorrencias ?? 0)}</td>
             <td title="${escaparAtributo(item.ultimoEnvioConvocacao || "")}">${escaparHtml(totalEnviadas)}</td>
+            <td>${escaparHtml(formatarDataEnvioPortal(item.ultimoEnvioConvocacao))}</td>
             <td>${acao}</td>
           </tr>
         `;

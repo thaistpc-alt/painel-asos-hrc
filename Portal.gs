@@ -36,13 +36,12 @@ function lerFontePainel() {
     const periodicidade = periodicidadeFonteV15_(valorTexto(l[COL.FUNCAO - 1]));
     const dataPenultimoAso = formatarDataISO(l[COL.DATA_PENULTIMO_ASO - 1]);
     const dataUltimoAso = formatarDataISO(l[COL.DATA_ULTIMO_ASO - 1]);
-    const proximoVencimento = formatarDataISO(l[COL.PROXIMO_VENCIMENTO - 1]);
+    const proximoVencimento = adicionarMeses(dataUltimoAso, periodicidade);
+    const dataConvocar = calcularDataConvocarV15_(dataUltimoAso, proximoVencimento, periodicidade);
+    const dataLimite = calcularDataLimiteV15_(dataUltimoAso, proximoVencimento, periodicidade);
     const dataPrevistaIndicador = adicionarMeses(dataPenultimoAso, periodicidade);
 
-    const diasRaw = l[COL.DIAS_PARA_VENCER - 1];
-    const diasParaVencer = diasRaw === "" || diasRaw === null
-      ? calcularDiferencaDias(proximoVencimento, hojeISO)
-      : Number(diasRaw) || 0;
+    const diasParaVencer = calcularDiferencaDias(proximoVencimento, hojeISO);
 
     const situacao = valorTexto(l[COL.SITUACAO - 1]);
 
@@ -75,11 +74,11 @@ function lerFontePainel() {
       proximoVencimento: proximoVencimento,
       proximoVencimentoBR: formatarDataBR(proximoVencimento),
 
-      dataConvocar: formatarDataISO(l[COL.DATA_CONVOCAR - 1]),
-      dataConvocarBR: formatarDataBR(l[COL.DATA_CONVOCAR - 1]),
+      dataConvocar: dataConvocar,
+      dataConvocarBR: formatarDataBR(dataConvocar),
 
-      dataLimite: formatarDataISO(l[COL.DATA_LIMITE - 1]),
-      dataLimiteBR: formatarDataBR(l[COL.DATA_LIMITE - 1]),
+      dataLimite: dataLimite,
+      dataLimiteBR: formatarDataBR(dataLimite),
 
       diasParaVencer: diasParaVencer,
       prioridade: definirPrioridade(diasParaVencer),
@@ -99,7 +98,21 @@ function lerFontePainel() {
     });
   }
 
+  marcarMatriculasAmbiguasPortal_(saida);
   return saida;
+}
+
+function marcarMatriculasAmbiguasPortal_(lista) {
+  const contagem = new Map();
+  (lista || []).forEach(c => {
+    Array.from(new Set([c.matriculaCompleta, c.mat].map(x => String(x || "").trim()).filter(Boolean)))
+      .forEach(k => contagem.set(k, (contagem.get(k) || 0) + 1));
+  });
+  (lista || []).forEach(c => {
+    const chaves = [c.matriculaCompleta, c.mat].map(x => String(x || "").trim()).filter(Boolean);
+    c.matriculaDuplicada = chaves.some(k => contagem.get(k) > 1);
+    c.alertaCadastro = c.matriculaDuplicada ? "Matrícula duplicada na FONTEpainel; revisar situação antes de convocar." : "";
+  });
 }
 
 /* =========================================================
@@ -109,12 +122,10 @@ function lerFontePainel() {
 function definirPrioridade(dias) {
   const n = Number(dias);
 
-  if (isNaN(n)) return "Normal";
-  if (n < 0) return "Vencido";
-  if (n <= 7) return "Alta";
-  if (n <= 15) return "Média";
-  if (n <= 30) return "Baixa";
-  return "Normal";
+  if (dias === "" || dias === null || dias === undefined || isNaN(n)) return "Sem data";
+  if (n < 0) return "Atrasado";
+  if (n <= 30) return "Prioridade";
+  return "No prazo";
 }
 
 function ehAtivo(c) {
@@ -139,8 +150,7 @@ function ehNaoCompareceuOuReagendou(c) {
 }
 
 function ehVencido(c) {
-  const status = normalizarTexto(c && c.statusGeralNorm || "");
-  return status.includes("VENCIDO") || Number(c && c.diasParaVencer) < 0;
+  return Number(c && c.diasParaVencer) < 0;
 }
 
 function ehAtrasadoAtivo(c) {
@@ -294,7 +304,7 @@ function prepararFlagsPortal(lista) {
 
 function ehEventoPeriodicoAgenda(evento) {
   const tipo = normalizarTexto(evento && (evento.tipoNorm || evento.tipo) || "");
-  return tipo.includes("PERIODIC");
+  return tipo.includes("PERIODIC") || tipo.includes("PERIODICO");
 }
 
 function aplicarHistoricoEnviosPendencias(dadosPortal) {
@@ -334,6 +344,45 @@ function aplicarHistoricoEnviosPendencias(dadosPortal) {
   });
 
   return dadosPortal;
+}
+
+/** Consulta assistida baseada somente em registros do painel e da agenda. */
+function consultarDiagnosticoASO(termo) {
+  const consulta = normalizarTexto(String(termo || "").trim());
+  if (consulta.length < 2) return { consulta: String(termo || ""), resultados: [], mensagem: "Digite pelo menos 2 caracteres." };
+  const lista = lerFontePainel();
+  const eventos = montarEventosAgendaPorMatricula();
+  aplicarOcorrenciasAgenda(lista, eventos);
+  aplicarAsoRealizadoAgenda(lista, eventos);
+  prepararFlagsPortal(lista);
+  const pendencias = gerarPendencias(lista, eventos).operacionais;
+  const encontrados = lista.filter(c =>
+    normalizarTexto([c.nome, c.mat, c.matriculaCompleta, c.funcao, c.setor].join(" ")).includes(consulta)
+  ).slice(0, 20);
+  const resultados = encontrados.map(c => {
+    const p = pendencias.find(x => String(x.mat) === String(c.mat));
+    const ev = obterEventosPorColaborador(eventos, c).map(e => ({
+      data: e.data || "", dataBR: e.dataBR || formatarDataBR(e.data), tipo: e.tipo || "",
+      status: e.status || "", realizado: !!e.ehAsoRealizado, linhaAgenda: e.linhaAgenda || ""
+    }));
+    const base = c.tipoExame || "sem tipo informado na base";
+    const explicacao = c.matriculaDuplicada
+      ? "Cadastro ambíguo: há matrícula duplicada na FONTEpainel. O registro está impedido de entrar em ações até revisão da fonte."
+      : p
+        ? "Pendente porque a AGENDA contém ocorrência periódica com status " + (p.statusPendencia || p.statusAgenda || "Não compareceu/Reagendou/Cancelado") + " em " + (p.dataUltimaPendenciaBR || "data não informada") + ", sem ASO qualificável dentro da janela de 90 dias antes ou depois."
+        : c.asoRealizadoValido
+          ? "A base/agenda indica ASO periódico realizado em " + (c.dataUltimoAsoBR || c.dataAsoRealizadoAgendaBR || "data não informada") + "; o próximo vencimento é recalculado pela periodicidade da função."
+          : "Não há pendência operacional aberta registrada. A data de vencimento é calculada pela data do último ASO mais " + c.periodicidade + " meses.";
+    return {
+      matricula: c.mat, nome: c.nome, funcao: c.funcao, situacao: c.situacao,
+      linhaFonte: c.linha, matriculaDuplicada: !!c.matriculaDuplicada,
+      ultimoAso: c.dataUltimoAso || "", tipoUltimoAso: base, periodicidade: c.periodicidade,
+      vencimento: c.proximoVencimento || "", convocacao: c.dataConvocar || "",
+      pendencia: p ? { data: p.dataUltimaPendencia || "", status: p.statusPendencia || p.statusAgenda || "", linhaAgenda: p.linhaAgenda || "" } : null,
+      eventosAgenda: ev.slice(-12), explicacao: explicacao
+    };
+  });
+  return { consulta: String(termo || ""), resultados: resultados, mensagem: resultados.length ? "" : "Nenhum colaborador encontrado na FONTEpainel." };
 }
 
 /**
@@ -420,7 +469,7 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
       const tipo = normalizarTexto(e.tipoNorm || e.tipo || "");
       if (tipo.includes("DEMISSIONAL")) ultimosPorTipo.DEMISSIONAL = e;
       else if (tipo.includes("RETORNO")) ultimosPorTipo.RETORNO = e;
-      else if (tipo.includes("PERIODIC")) ultimosPorTipo.PERIODICO = e;
+      else if (tipo.includes("PERIODIC") || tipo.includes("PERIODICO")) ultimosPorTipo.PERIODICO = e;
     });
 
     const informacoes = [];
@@ -590,6 +639,7 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
   const processadas = new Set();
 
   (lista || []).forEach(colaborador => {
+    if (colaborador.matriculaDuplicada) return;
     const mat = String(colaborador.mat || "").trim();
     if (!mat || processadas.has(mat)) return;
     processadas.add(mat);
@@ -618,27 +668,33 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
 
     const ultimaPendencia = eventosPendencia[eventosPendencia.length - 1];
 
-    // Um ASO posterior de retorno ou de mudança de riscos também encerra
-    // a pendência operacional. Consultas e demissionais não encerram.
+    // A resolução depende do tipo e da janela absoluta de 90 dias da ocorrência.
     const ehAsoQueResolvePendencia = e => {
       if (!e || !e.ehAsoRealizado) return false;
       const tipo = normalizarTexto(e.tipoNorm || e.tipo || "");
-      return tipo.includes("PERIODIC") ||
-        tipo.includes("RETORNO") ||
-        tipo.includes("MUDANCA") ||
-        tipo.includes("ADMISSIONAL");
+      return tipo.includes("PERIODIC") || tipo.includes("PERIODICO") ||
+        tipo.includes("RETORNO") || tipo.includes("ADMISSIONAL") ||
+        (tipo.includes("MUDANCA") && tipo.includes("RISCO"));
     };
 
-    const realizadosPosteriores = eventos
+    const dentroDaJanelaPendencia = data => {
+      const diferenca = calcularDiferencaDias(data, ultimaPendencia.data);
+      return diferenca !== null && Math.abs(Number(diferenca)) <= 90;
+    };
+    const realizadosDaJanela = eventos
       .filter(ehAsoQueResolvePendencia)
-      .filter(e => dataMaiorQue(e.data, ultimaPendencia.data));
+      .filter(e => dentroDaJanelaPendencia(e.data));
 
     // A base de ASOs pode estar atualizada mesmo que o evento ainda não
     // esteja no espelho da agenda. Não transformar uma pendência histórica
     // em reconvocação quando o ASO mais recente já é posterior a ela.
-    if (colaborador.dataUltimoAso && !normalizarTexto(colaborador.tipoExame).includes("DEMISSIONAL") && dataMaiorQue(colaborador.dataUltimoAso, ultimaPendencia.data)) {
-      const registrado = realizadosPosteriores.some(e => e.data === colaborador.dataUltimoAso);
-      if (!registrado) realizadosPosteriores.push({
+    const tipoBase = normalizarTexto(colaborador.tipoExame || "");
+    const baseQualificada = tipoBase.includes("PERIODIC") || tipoBase.includes("PERIODICO") ||
+      tipoBase.includes("RETORNO") || tipoBase.includes("ADMISSIONAL") ||
+      (tipoBase.includes("MUDANCA") && tipoBase.includes("RISCO"));
+    if (colaborador.dataUltimoAso && baseQualificada && dentroDaJanelaPendencia(colaborador.dataUltimoAso)) {
+      const registrado = realizadosDaJanela.some(e => e.data === colaborador.dataUltimoAso);
+      if (!registrado) realizadosDaJanela.push({
         mat: mat,
         data: colaborador.dataUltimoAso,
         dataBR: formatarDataBR(colaborador.dataUltimoAso),
@@ -648,30 +704,18 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
       });
     }
 
-    // ASO válido já realizado: o agendamento periódico cancelado depois
-    // não reabre o ciclo quando ainda não chegou a data de convocação.
-    // Dentro da janela de convocação, pendências novas continuam visíveis.
-    const cicloRegularForaDaConvocacao =
-      !!colaborador.dataUltimoAso &&
-      !!colaborador.dataConvocar &&
-      !!colaborador.proximoVencimento &&
-      colaborador.proximoVencimento > obterHojeISO() &&
-      ultimaPendencia.data < colaborador.dataConvocar &&
-      colaborador.dataUltimoAso <= ultimaPendencia.data;
-    if (cicloRegularForaDaConvocacao) return;
-
     /* Fallback baseado no periódico validado pela própria rotina da AGENDA. */
     if (
       colaborador.temAsoRealizadoAgenda &&
       colaborador.dataAsoRealizadoAgenda &&
-      dataMaiorQue(colaborador.dataAsoRealizadoAgenda, ultimaPendencia.data)
+      dentroDaJanelaPendencia(colaborador.dataAsoRealizadoAgenda)
     ) {
-      const jaExiste = realizadosPosteriores.some(e =>
+      const jaExiste = realizadosDaJanela.some(e =>
         String(e.data || "") === String(colaborador.dataAsoRealizadoAgenda || "")
       );
 
       if (!jaExiste) {
-        realizadosPosteriores.push({
+        realizadosDaJanela.push({
           mat: mat,
           data: colaborador.dataAsoRealizadoAgenda,
           dataBR: colaborador.dataAsoRealizadoAgendaBR || formatarDataBR(colaborador.dataAsoRealizadoAgenda),
@@ -686,8 +730,8 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
 
     const itemBase = montarItemPendencia(colaborador, ultimaPendencia, eventosPendencia.length);
 
-    if (realizadosPosteriores.length > 0) {
-      const realizado = realizadosPosteriores[realizadosPosteriores.length - 1];
+    if (realizadosDaJanela.length > 0) {
+      const realizado = realizadosDaJanela.sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")))[0];
 
       resolvidos.push(Object.assign({}, itemBase, {
         grupoPendencia: "Resolvido",
@@ -772,6 +816,7 @@ function montarItemPendencia(colaborador, evento, qtdOcorrencias) {
     dataUltimaPendencia: evento.data || "",
     dataUltimaPendenciaBR: evento.dataBR || formatarDataBR(evento.data),
     statusPendencia: evento.status || colaborador.statusAgenda || "",
+    linhaAgenda: evento.linhaAgenda || "",
     tipoRegistroFaltoso: tipo,
     qtdOcorrencias: qtdOcorrencias || 1,
     ocorrencias: colaborador.qtdOcorrencias || colaborador.ocorrencias || (qtdOcorrencias || 1),
@@ -851,6 +896,7 @@ function montarEventosAgendaPorMatricula() {
   statusNorm: statusNorm,
   tipo: tipo,
   tipoNorm: tipoNorm,
+  linhaAgenda: i + 1,
   ehAsoRealizado: ehAsoRealizado,
   ehNaoCompareceu: ehNaoCompareceu,
   ehReagendou: ehReagendou,
@@ -864,7 +910,7 @@ function montarEventosAgendaPorMatricula() {
       mapaEventos.get(chave).push(evento);
     });
 
-    if (tipoNorm.includes("PERIODIC") && (ehNaoCompareceu || ehReagendou)) {
+    if ((tipoNorm.includes("PERIODIC") || tipoNorm.includes("PERIODICO")) && (ehNaoCompareceu || ehReagendou || ehCancelado)) {
       chaves.forEach(chave => {
         mapaOcorrencias.set(chave, (Number(mapaOcorrencias.get(chave)) || 0) + 1);
       });
@@ -949,7 +995,7 @@ function obterResumoSincronizacaoAgenda() {
 
 function gerarListaConvocar(lista, dataInicio, dataFim) {
   return (lista || [])
-    .filter(c => situacaoPermiteBaixarConvocacao(c))
+    .filter(c => !c.matriculaDuplicada && situacaoPermiteBaixarConvocacao(c))
     .map(c => {
       let grupo = "";
       let dataReferencia = "";
@@ -957,16 +1003,6 @@ function gerarListaConvocar(lista, dataInicio, dataFim) {
       if (noPeriodo(c.dataAgendada, dataInicio, dataFim)) {
         grupo = "Agendado no período";
         dataReferencia = c.dataAgendada;
-      } else if (noPeriodo(c.dataConvocar, dataInicio, dataFim)) {
-        grupo = "Convocação do período";
-        dataReferencia = c.dataConvocar;
-      } else if (
-        c.dataConvocar &&
-        c.dataConvocar < dataInicio &&
-        (!c.dataAgendada || c.dataAgendada < dataInicio)
-      ) {
-        grupo = "Pendência anterior";
-        dataReferencia = c.dataConvocar;
       }
 
       if (!grupo) return null;
