@@ -2536,9 +2536,9 @@
     }
 
     function obterEmailsGestor() {
+      // O campo Convocar é independente do campo usado na aba Pendências.
       const emailConvocar = String(document.getElementById("emailGestorConvocacao")?.value || "");
-      const emailPendencia = String(document.getElementById("emailGestorPendencia")?.value || "");
-      return (emailConvocar + ";" + emailPendencia)
+      return emailConvocar
         .split(/[;,]/)
         .map(email => email.trim())
         .filter(Boolean);
