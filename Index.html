@@ -1189,9 +1189,8 @@
         </div>
         
         
-        <button class="azul" onclick="gerarSelecionadosEmLote()">Gerar selecionados</button>
-        <button class="azul" onclick="enviarSelecionadosGestor()">Enviar gestor</button>
-        <button class="botao-alerta" onclick="gerarTodosVisiveisEmLote()">Gerar lote</button>
+        <button class="azul" onclick="enviarSelecionadosGestor()">Enviar convocação</button>
+        <button class="azul" onclick="gerarSelecionadosEmLote()">Gerar PDF selecionados</button>
       </div>
     </div>
 
@@ -2618,11 +2617,11 @@
       // Mantém a seleção persistida mesmo quando a tabela é filtrada/renderizada novamente.
       const selecionadosVisiveis = obterMatriculasSelecionadasVisiveis().length;
       const textoSelecionados = selecionadosVisiveis > 0
-        ? `Gerar selecionados (${selecionadosVisiveis})`
-        : "Gerar selecionados";
+        ? `Gerar PDF selecionados (${selecionadosVisiveis})`
+        : "Gerar PDF selecionados";
       const textoEmail = selecionadosVisiveis > 0
-        ? `Enviar gestor (${selecionadosVisiveis})`
-        : "Enviar gestor";
+        ? `Enviar convocação (${selecionadosVisiveis})`
+        : "Enviar convocação";
 
       const botao = document.querySelector("button[onclick='gerarSelecionadosEmLote()']");
       if (botao) botao.innerText = textoSelecionados;

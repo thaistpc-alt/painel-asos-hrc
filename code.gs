@@ -310,23 +310,38 @@ function doGet() {
   function montarFiltroGrupoConvocacaoV15() {
     const referencia = document.getElementById('filtroSituacaoConvocar');
     const linha = referencia && referencia.closest('.linha-filtros');
-    if (!linha || document.getElementById('filtroGrupoConvocacaoV15')) return;
+    if (!linha) return;
 
-    const bloco = document.createElement('div');
-    bloco.className = 'filtro-grupo-convocacao-v15';
-    bloco.innerHTML =
-      '<label>Origem da convocação</label>' +
-      '<select id="filtroGrupoConvocacaoV15">' +
-        '<option value="">Todas</option>' +
-        '<option value="Agendado no período">Agendados no período</option>' +
-        '<option value="Convocação do período">Convocações do período</option>' +
-        '<option value="Pendência anterior">Pendências anteriores</option>' +
-      '</select>';
+    let select = document.getElementById('filtroGrupoConvocacaoV15');
+    if (!select) {
+      const bloco = document.createElement('div');
+      bloco.className = 'filtro-grupo-convocacao-v15';
+      const label = document.createElement('label');
+      label.textContent = 'Origem da convocação';
+      select = document.createElement('select');
+      select.id = 'filtroGrupoConvocacaoV15';
+      bloco.append(label, select);
+      const alvo = linha.querySelector('.email-gestor') || linha.querySelector('.acoes-lote');
+      linha.insertBefore(bloco, alvo || null);
+      select.addEventListener('change', filtrarConvocarEstavel);
+    }
 
-    const pesquisa = document.getElementById('pesquisaConvocar');
-    const alvo = pesquisa && pesquisa.closest('div');
-    linha.insertBefore(bloco, alvo || null);
-    bloco.querySelector('select').addEventListener('change', filtrarConvocarEstavel);
+    const selecionada = select.value;
+    const origens = [...new Set(listaConvocar()
+      .map(item => String(item.grupoConvocacao || '').trim())
+      .filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    select.replaceChildren();
+    const todas = document.createElement('option');
+    todas.value = '';
+    todas.textContent = 'Todas';
+    select.appendChild(todas);
+    origens.forEach(origem => {
+      const opcao = document.createElement('option');
+      opcao.value = origem;
+      opcao.textContent = origem;
+      select.appendChild(opcao);
+    });
+    select.value = origens.includes(selecionada) ? selecionada : '';
   }
 
   function montarFiltroConvocar() {
@@ -643,22 +658,24 @@ body{overflow-x:hidden!important}
 .painel-sidebar .abas:focus,.painel-sidebar .abas:focus-within{outline:0!important;box-shadow:none!important}
 .painel-topbar{display:grid!important;grid-template-columns:minmax(250px,1fr) auto!important;gap:20px!important;align-items:center!important}
 .painel-topbar-status{display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important}
-.painel-topbar-status .painel-busca-global{display:block!important;flex:0 1 245px!important;width:245px!important;min-width:200px!important;margin:0!important}
+.painel-topbar-status .painel-busca-global{display:block!important;flex:1 1 280px!important;width:280px!important;max-width:360px!important;min-width:220px!important;margin:0!important}
 .painel-topbar-status .painel-busca-global label{display:block!important;font-size:11px!important;line-height:1.2!important;margin:0 0 4px!important}
 .painel-topbar-status .painel-busca-global input{width:100%!important;min-width:0!important;height:40px!important;font-size:13px!important;padding:8px 10px!important}
-.painel-topbar-status .painel-sync{font-size:10px!important;white-space:nowrap!important}
+.painel-topbar-status .painel-sync{font-size:11px!important;line-height:1.25!important;white-space:normal!important;max-width:230px!important}
+.painel-topbar-status #loading{font-size:11px!important;white-space:nowrap!important}
 .painel-atualizar{height:40px!important;white-space:nowrap!important}
 
 .filtros{position:sticky!important;top:94px!important;z-index:50!important;display:grid!important;
- grid-template-columns:minmax(112px,1.05fr) minmax(72px,.65fr) minmax(84px,.75fr) minmax(62px,.55fr)
- minmax(108px,1fr) minmax(112px,1fr) minmax(145px,1.3fr) minmax(112px,1fr) minmax(128px,1.1fr)!important;
- align-items:end!important;gap:8px!important;width:auto!important;min-width:0!important;margin:16px 20px 0!important;
+ grid-template-columns:minmax(100px,1.05fr) minmax(70px,.78fr) minmax(80px,.9fr) minmax(64px,.7fr)
+ minmax(98px,1.1fr) minmax(112px,1.25fr) minmax(150px,1.65fr) minmax(120px,1.25fr) minmax(138px,1.5fr)!important;
+ align-items:end!important;gap:6px!important;width:auto!important;min-width:0!important;margin:16px 20px 0!important;
  padding:12px!important;overflow:visible!important;background:#fff!important;border:1px solid var(--borda)!important;border-radius:12px!important}
 .filtros>.painel-topbar-periodo,.painel-topbar-periodo{display:contents!important}
+.painel-periodo-atalhos{display:contents!important}
 .painel-topbar-periodo .filtro-data-wrap{display:block!important;position:relative!important;width:100%!important;min-width:0!important;flex:none!important;margin:0!important}
 .painel-topbar-periodo .filtro-data-wrap>label,#toolbarModulo .linha-filtros label{display:block!important;white-space:normal!important;overflow-wrap:anywhere!important;font-size:11px!important;line-height:1.2!important;margin:0 0 5px!important}
 .painel-topbar-periodo .filtro-data-trigger{width:100%!important;min-width:0!important;height:44px!important;min-height:44px!important;padding:8px 9px!important;font-size:12px!important;line-height:1.2!important;white-space:normal!important}
-.painel-topbar-periodo>button,.filtros button.periodo-barra-btn{width:100%!important;min-width:0!important;max-width:none!important;min-height:44px!important;height:44px!important;padding:5px 7px!important;font-size:11.5px!important;line-height:1.15!important;white-space:normal!important;overflow-wrap:anywhere!important}
+.painel-periodo-atalhos>button{width:100%!important;min-width:0!important;max-width:none!important;min-height:44px!important;height:44px!important;padding:5px 6px!important;font-size:11.5px!important;line-height:1.15!important;white-space:normal!important;overflow-wrap:anywhere!important}
 #toolbarModulo,#toolbarModulo .linha-filtros,#toolbarModulo .acoes-lote{display:contents!important}
 #toolbarModulo .linha-filtros>div{width:100%!important;min-width:0!important;max-width:none!important;flex:none!important;margin:0!important}
 #toolbarModulo .linha-filtros>div:has(#filtroSituacaoConvocar){display:none!important}
@@ -667,29 +684,30 @@ body{overflow-x:hidden!important}
 #toolbarModulo .filtro-grupo-convocacao-v15{width:100%!important;min-width:0!important;max-width:none!important;flex:none!important}
 #toolbarModulo .linha-filtros select,#toolbarModulo .situacao-multipla-botao,#toolbarModulo .filtro-situacao-check-botao,
 #toolbarModulo .linha-filtros input{width:100%!important;min-width:0!important;height:44px!important;padding:8px 9px!important;font-size:12px!important;line-height:1.2!important}
-#toolbarModulo .acoes-lote button{width:100%!important;min-width:0!important;max-width:none!important;min-height:44px!important;height:44px!important;padding:5px 7px!important;font-size:11.5px!important;line-height:1.15!important;white-space:normal!important;overflow-wrap:anywhere!important}
+#toolbarModulo .acoes-lote button{width:100%!important;min-width:0!important;max-width:none!important;min-height:44px!important;height:44px!important;padding:5px 6px!important;font-size:11.5px!important;line-height:1.15!important;white-space:normal!important;overflow-wrap:anywhere!important}
 #toolbarModulo .email-gestor{width:100%!important;min-width:0!important;max-width:none!important}
 #toolbarModulo .email-gestor input{width:100%!important}
-.filtros>#loading{grid-column:1/-1!important}
+#toolbarModulo .situacao-multipla:not(.situacao-complementares){display:none!important}
 .filtros>.azul,.filtros>.cinza{display:none!important}
 #popoverPeriodo{z-index:30000!important}
 #popoverPeriodo .periodo-campos{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 #popoverPeriodo input{width:100%!important;min-width:0!important}
 
 /* Cabeçalhos preservam os controles de ordenação e mantêm a legenda legível. */
-.conteudo .tabela-container{width:100%!important;max-width:100%!important;overflow-x:hidden!important;overflow-y:auto!important}
+.conteudo .tabela-container{width:100%!important;max-width:100%!important;max-height:none!important;overflow-x:hidden!important;overflow-y:visible!important}
 .conteudo table{width:100%!important;min-width:0!important;table-layout:fixed!important}
 .conteudo th,.conteudo td{min-width:0!important;max-width:none!important;overflow-wrap:anywhere!important;word-break:normal!important}
 .conteudo th.ordenavel{position:relative!important;padding-right:13px!important;white-space:normal!important;line-height:1.2!important;vertical-align:middle!important}
 .conteudo th.ordenavel::after{position:absolute!important;right:3px!important;top:50%!important;transform:translateY(-50%)!important;display:inline-block!important;white-space:nowrap!important;margin:0!important;font-size:9px!important}
-#tabelaConvocar .tabela-container{overflow-x:hidden!important;overflow-y:auto!important}
+#tabelaConvocar .tabela-container{max-height:none!important;overflow-x:hidden!important;overflow-y:visible!important}
 #tabelaConvocar table{width:100%!important;min-width:0!important;table-layout:fixed!important}
-#tabelaConvocar th,#tabelaConvocar td{padding:6px 5px!important;font-size:10px!important;line-height:1.22!important}
-#tabelaConvocar th{font-size:9px!important}
+#tabelaConvocar th,#tabelaConvocar td{padding:7px 5px!important;font-size:10.5px!important;line-height:1.28!important}
+#tabelaConvocar th{font-size:9.5px!important}
+#tabelaConvocar td:nth-child(3){font-size:12px!important;font-weight:600!important;line-height:1.25!important}
 #tabelaConvocar td.info-agenda{white-space:normal!important;overflow-wrap:anywhere!important;line-height:1.24!important}
 #tabelaConvocar th:nth-child(1),#tabelaConvocar td:nth-child(1){width:2%!important}
 #tabelaConvocar th:nth-child(2),#tabelaConvocar td:nth-child(2){width:4%!important}
-#tabelaConvocar th:nth-child(3),#tabelaConvocar td:nth-child(3){width:12%!important}
+#tabelaConvocar th:nth-child(3),#tabelaConvocar td:nth-child(3){width:16%!important}
 #tabelaConvocar th:nth-child(4),#tabelaConvocar td:nth-child(4){width:9%!important}
 #tabelaConvocar th:nth-child(5),#tabelaConvocar td:nth-child(5){width:10%!important}
 #tabelaConvocar th:nth-child(6),#tabelaConvocar td:nth-child(6){width:6%!important}
@@ -697,8 +715,8 @@ body{overflow-x:hidden!important}
 #tabelaConvocar th:nth-child(8),#tabelaConvocar td:nth-child(8){width:6%!important}
 #tabelaConvocar th:nth-child(9),#tabelaConvocar td:nth-child(9){width:6%!important}
 #tabelaConvocar th:nth-child(10),#tabelaConvocar td:nth-child(10){width:7%!important}
-#tabelaConvocar th:nth-child(11),#tabelaConvocar td:nth-child(11){width:10%!important}
-#tabelaConvocar th:nth-child(12),#tabelaConvocar td:nth-child(12){width:10%!important}
+#tabelaConvocar th:nth-child(11),#tabelaConvocar td:nth-child(11){width:8%!important}
+#tabelaConvocar th:nth-child(12),#tabelaConvocar td:nth-child(12){width:8%!important}
 #tabelaConvocar th:nth-child(13),#tabelaConvocar td:nth-child(13){width:3%!important;text-align:center!important}
 #tabelaConvocar th:nth-child(14),#tabelaConvocar td:nth-child(14){width:3%!important;text-align:center!important}
 #tabelaConvocar th:nth-child(15),#tabelaConvocar td:nth-child(15){width:5%!important;text-align:center!important}
@@ -720,13 +738,20 @@ body{overflow-x:hidden!important}
 @media(max-width:1280px){
  .filtros{grid-template-columns:repeat(5,minmax(0,1fr))!important}
  .painel-topbar{grid-template-columns:minmax(220px,1fr) auto!important}
- .painel-topbar-status .painel-busca-global{width:210px!important;min-width:170px!important}
+ .painel-topbar-status{flex-wrap:wrap!important}
+ .painel-topbar-status .painel-busca-global{width:240px!important;min-width:190px!important}
 }
 @media(max-width:900px){
  .painel-topbar{position:relative!important;left:auto!important;right:auto!important;height:auto!important;grid-template-columns:1fr!important}
  .painel-topbar-status{flex-wrap:wrap!important}
  .filtros{position:relative!important;top:auto!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;margin:12px!important}
  .conteudo{margin:12px!important}
+}
+@media(max-width:600px){
+ .painel-topbar-status{align-items:stretch!important}
+ .painel-topbar-status .painel-busca-global{flex:1 1 100%!important;width:100%!important;max-width:none!important}
+ .painel-topbar-status .painel-sync{max-width:none!important}
+ .filtros{grid-template-columns:1fr!important}
 }
 </style>`;
 

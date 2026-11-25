@@ -38,14 +38,12 @@
     // Retira o popover da barra para que nenhum contêiner o recorte ou comprima.
     if(popover.parentElement!==document.body)document.body.appendChild(popover);
 
-    let atalhos=popover.querySelector('.periodo-atalhos');
+    let atalhos=periodo.querySelector('.painel-periodo-atalhos');
     if(!atalhos){
       atalhos=document.createElement('div');
-      atalhos.className='periodo-atalhos';
-      const acoes=popover.querySelector('.periodo-acoes');
-      popover.insertBefore(atalhos,acoes||null);
+      atalhos.className='painel-periodo-atalhos';
 
-      [['Mês atual',0],['Próximo mês',1]].forEach(cfg=>{
+      [['Mês atual',0],['Mês seguinte',1]].forEach(cfg=>{
         const b=document.createElement('button');
         b.type='button';
         b.className='periodo-atalho';
@@ -54,6 +52,7 @@
           const h=new Date(),base=new Date(h.getFullYear(),h.getMonth()+cfg[1],1);
           inicio.value=formatarDataInput(new Date(base.getFullYear(),base.getMonth(),1));
           fim.value=formatarDataInput(new Date(base.getFullYear(),base.getMonth()+1,0));
+          atualizarTextoPeriodo();
           aplicarPeriodoSelecionado();
         };
         atalhos.appendChild(b);
@@ -62,22 +61,47 @@
       const limpar=document.createElement('button');
       limpar.type='button';
       limpar.className='painel-limpar-periodo';
-      limpar.textContent='Limpar filtros';
+      limpar.textContent='Limpar';
       limpar.onclick=function(){
         const h=new Date();
         inicio.value=formatarDataInput(new Date(h.getFullYear(),h.getMonth(),1));
         fim.value=formatarDataInput(new Date(h.getFullYear(),h.getMonth()+1,0));
+        if(typeof limparFiltrosLocais==='function')limparFiltrosLocais();
         resetarSituacoes();
         resetarSituacoesComplementares();
         document.querySelectorAll('.linha-filtros input[type="text"],.linha-filtros input[type="email"]').forEach(el=>el.value='');
         document.querySelectorAll('.linha-filtros select').forEach(el=>el.value='');
+        const busca=document.getElementById('pesquisaConvocar');
+        const origem=document.getElementById('filtroGrupoConvocacaoV15');
+        const gestor=document.getElementById('emailGestorConvocacao');
+        if(busca)busca.value='';
+        if(origem)origem.value='';
+        if(gestor)gestor.value='';
+        atualizarTextoPeriodo();
         aplicarPeriodoSelecionado();
       };
       atalhos.appendChild(limpar);
+      periodo.appendChild(atalhos);
     }
 
     const area=filtros.querySelector('#toolbarModulo');
     filtros.insertBefore(periodo,area||filtros.firstChild);
+  }
+
+  function moverPesquisaParaCabecalho(){
+    const status=document.querySelector('.painel-topbar-status');
+    const busca=document.getElementById('pesquisaConvocar');
+    const carregando=document.getElementById('loading');
+    const atualizar=status&&status.querySelector('.painel-atualizar');
+    if(!status)return;
+    if(busca){
+      const caixa=busca.closest('.campo-pesquisa');
+      if(caixa&&caixa.parentElement!==status){
+        caixa.classList.add('painel-busca-global');
+        status.insertBefore(caixa,status.querySelector('.painel-sync')||atualizar||null);
+      }
+    }
+    if(carregando&&carregando.parentElement!==status)status.insertBefore(carregando,atualizar||null);
   }
 
   function situacoesDisponiveis(){const lista=dadosPortal&&dadosPortal.convocar&&dadosPortal.convocar.todos||[];return[...new Set(lista.map(i=>i.situacao).filter(Boolean))].sort((a,b)=>a.localeCompare(b));}
@@ -107,7 +131,7 @@
 
   function ajustarIndicadores(){const grafico=document.getElementById('graficoMetaMensal');if(grafico){const titulo=grafico.previousElementSibling;if(titulo&&norm(titulo.textContent)==='DESEMPENHO MENSAL DA META')titulo.remove();grafico.remove()}document.querySelectorAll('#analiseIndicadorMensal .analise-bloco h3 span:first-child').forEach(s=>{if(norm(s.textContent).includes('ASOS ATRASADOS REALIZADOS NO MES DA ANALISE'))s.textContent='Atrasados no vencimento — relação nominal'});quebrarCabecalhos()}
   const renderIndicadoresOriginal=window.renderizarIndicadores;window.renderizarIndicadores=function(ind){if(typeof renderIndicadoresOriginal==='function')renderIndicadoresOriginal(ind);ajustarIndicadores()};
-  function iniciar(){moverPeriodo();removerLimparAntigo();montarFiltroSituacao();quebrarCabecalhos();ajustarIndicadores()}
+  function iniciar(){moverPeriodo();moverPesquisaParaCabecalho();removerLimparAntigo();montarFiltroSituacao();quebrarCabecalhos();ajustarIndicadores()}
   document.addEventListener('DOMContentLoaded',()=>{setTimeout(iniciar,0);setTimeout(iniciar,300)});
 })();
 </script>
