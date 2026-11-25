@@ -1011,6 +1011,9 @@ function enviarReconvocacaoPendenciaGestor(mat, emailsGestor, dataInicio, dataFi
 
 function enviarReconvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInicio, dataFim, dataAnteriorPorMatricula) {
   const selecionadas = Array.from(new Set((matriculas || []).map(m => String(m || "").trim()).filter(Boolean)));
+  if (selecionadas.length > LIMITE_ANEXOS_EMAIL_GESTOR) {
+    throw new Error("Selecione no máximo " + LIMITE_ANEXOS_EMAIL_GESTOR + " pessoas por reconvocação em lote.");
+  }
   const resultados = [];
   const anteriores = dataAnteriorPorMatricula || {};
   selecionadas.forEach(mat => {
