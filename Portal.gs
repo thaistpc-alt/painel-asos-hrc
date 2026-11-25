@@ -379,9 +379,11 @@ function consultarDiagnosticoASO(termo) {
       ? "Cadastro ambíguo: há matrícula duplicada na FONTEpainel. O registro está impedido de entrar em ações até revisão da fonte."
       : p
         ? "Pendente porque a AGENDA contém ocorrência periódica com status " + (p.statusPendencia || p.statusAgenda || "Não compareceu/Reagendou/Cancelado") + " em " + (p.dataUltimaPendenciaBR || "data não informada") + ", sem ASO qualificável no ano vigente; Técnico em Radiologia precisa completar dois no ano."
-        : c.asoRealizadoValido
-          ? "A base/agenda indica ASO periódico realizado em " + (c.dataUltimoAsoBR || c.dataAsoRealizadoAgendaBR || "data não informada") + "; o próximo vencimento é recalculado pela periodicidade da função."
-          : "Não há pendência operacional aberta registrada. A data de vencimento é calculada pela data do último ASO mais " + c.periodicidade + " meses.";
+        : c.asoDemissionalRealizado
+          ? "Há ASO demissional realizado registrado; conforme a regra vigente, nenhuma pendência permanece."
+          : c.asoRealizadoValido
+            ? "A regra anual está satisfeita por: " + ((c.asosQualificaveisNoAno || []).map(e => (e.tipo || "ASO") + " em " + (e.dataBR || formatarDataBR(e.data))).join("; ") || "ASO qualificável no ano vigente") + ". Próximo vencimento calculado pela periodicidade da função."
+            : "Não há pendência operacional aberta registrada. A data de vencimento é calculada pela data do último ASO mais " + c.periodicidade + " meses.";
     return {
       matricula: c.mat, nome: c.nome, funcao: c.funcao, situacao: c.situacao,
       linhaFonte: c.linha, matriculaDuplicada: !!c.matriculaDuplicada,
@@ -463,11 +465,30 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
       String(e.data || "").slice(0, 4) === anoVigente &&
       ehTipoAsoQualificaPendencia_(e.tipoNorm || e.tipo)
     );
-    const datasRealizadasNoAno = new Set(realizadosNoAno.map(e => String(e.data || "") + "|" + normalizarTexto(e.tipoNorm || e.tipo || "")));
     const fonteTemAsoNoAno = String(c.dataUltimoAso || "").slice(0, 4) === anoVigente &&
       ehTipoAsoQualificaPendencia_(c.tipoExame || "") &&
       !realizadosNoAno.some(e => String(e.data || "") === String(c.dataUltimoAso || ""));
-    c.asosRealizadosNoAnoVigente = datasRealizadasNoAno.size + (fonteTemAsoNoAno ? 1 : 0);
+    const qualificaveisNoAno = realizadosNoAno.map(e => ({
+      data: e.data || "",
+      dataBR: e.dataBR || formatarDataBR(e.data),
+      tipo: e.tipo || e.tipoNorm || "",
+      origem: "AGENDA"
+    }));
+    if (fonteTemAsoNoAno) {
+      qualificaveisNoAno.push({
+        data: c.dataUltimoAso || "",
+        dataBR: formatarDataBR(c.dataUltimoAso),
+        tipo: c.tipoExame || "",
+        origem: "FONTEpainel"
+      });
+    }
+    const qualificaveisUnicos = new Map();
+    qualificaveisNoAno.forEach(e => {
+      const chave = String(e.data || "") + "|" + normalizarTexto(e.tipo || "");
+      if (!qualificaveisUnicos.has(chave)) qualificaveisUnicos.set(chave, e);
+    });
+    c.asosQualificaveisNoAno = Array.from(qualificaveisUnicos.values());
+    c.asosRealizadosNoAnoVigente = c.asosQualificaveisNoAno.length;
     c.asoDemissionalRealizado = realizadosTodos.some(e =>
       normalizarTexto(e.tipoNorm || e.tipo || "").includes("DEMISSIONAL")
     ) || (
@@ -485,19 +506,35 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
       }));
 
     const ultimosPorTipo = {
+      ADMISSIONAL: null,
       DEMISSIONAL: null,
       RETORNO: null,
-      PERIODICO: null
+      PERIODICO: null,
+      MUDANCA_RISCO: null
     };
 
     realizadosTodos.forEach(e => {
       const tipo = normalizarTexto(e.tipoNorm || e.tipo || "");
-      if (tipo.includes("DEMISSIONAL")) ultimosPorTipo.DEMISSIONAL = e;
+      if (tipo.includes("ADMISSIONAL")) ultimosPorTipo.ADMISSIONAL = e;
+      else if (tipo.includes("DEMISSIONAL")) ultimosPorTipo.DEMISSIONAL = e;
       else if (tipo.includes("RETORNO")) ultimosPorTipo.RETORNO = e;
       else if (tipo.includes("PERIODIC") || tipo.includes("PERIODICO")) ultimosPorTipo.PERIODICO = e;
+      else if (tipo.includes("MUDANCA") && tipo.includes("RISCO")) ultimosPorTipo.MUDANCA_RISCO = e;
     });
 
     const informacoes = [];
+    if (ultimosPorTipo.ADMISSIONAL) {
+      informacoes.push(
+        "ASO admissional realizado em " +
+        (ultimosPorTipo.ADMISSIONAL.dataBR || formatarDataBR(ultimosPorTipo.ADMISSIONAL.data))
+      );
+    }
+    if (ultimosPorTipo.MUDANCA_RISCO) {
+      informacoes.push(
+        "ASO de mudança de risco realizado em " +
+        (ultimosPorTipo.MUDANCA_RISCO.dataBR || formatarDataBR(ultimosPorTipo.MUDANCA_RISCO.data))
+      );
+    }
     if (ultimosPorTipo.DEMISSIONAL) {
       informacoes.push(
         "ASO demissional realizado em " +
@@ -569,7 +606,8 @@ function calcularStatusGeralPortalV14_7_(c, hojeISO) {
   }
 
   if (vencimento && vencimento < hojeISO) return "VENCIDO";
-  if (c && c.dataLimite && c.dataLimite <= hojeISO) return "PRIORIDADE";
+  const diasParaVencimento = calcularDiferencaDias(vencimento, hojeISO);
+  if (diasParaVencimento !== null && diasParaVencimento >= 0 && diasParaVencimento <= 30) return "PRIORIDADE";
   if (c && c.dataConvocar && c.dataConvocar <= hojeISO) return "CONVOCAR";
   return "EM DIA";
 }
