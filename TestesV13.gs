@@ -229,11 +229,6 @@ function executarRegressaoRegrasConvocacaoV14() {
       tipoNorm: "PERIODICO", status: "ASO Realizado",
       ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
     },
-    {
-      mat: "TESTE_RADIOLOGIA_ANUAL", data: "2026-11-01", tipo: "PERIÓDICO",
-      tipoNorm: "PERIODICO", status: "ASO Realizado",
-      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
-    }
   ]);
   testar(
     "Técnico em Radiologia sem dois ASOs no ano ainda pode ter pendência",
