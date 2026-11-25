@@ -932,12 +932,12 @@ function validarCasosCriticosV15() {
     obterChavesMatricula(i.mat, i.matriculaCompleta).includes("3738")
   );
   testar(
-    "3738 - demissional não encerra ciclo e periódico cancelado exige nova ação",
+    "3738 - ASO demissional realizado encerra a pendência de periódico cancelado",
     !!c3738 &&
       c3738.temAsoRealizadoAgenda === false &&
       c3738.dataAgendada === "" &&
       normalizarTexto(c3738.statusAgenda).includes("CANCELAD") &&
-      pend3738 === true &&
+      pend3738 === false &&
       (c3738.asosRealizadosNaoPeriodicos || []).some(e => normalizarTexto(e.tipo).includes("DEMISSIONAL")),
     c3738 ? {
       dataAgendada: c3738.dataAgendada,
