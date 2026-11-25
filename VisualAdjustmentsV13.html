@@ -779,13 +779,13 @@
     if(!trigger)return;
     const atalhos=document.getElementById('popoverPeriodo')?.querySelector('.periodo-atalhos');
     if(atalhos)atalhos.remove();
-    [periodo,...filtros.querySelectorAll('.painel-topbar-periodo')].slice(1).forEach(el=>el.remove());
+    filtros.querySelectorAll('.painel-topbar-periodo').forEach((el,i)=>{if(i>0)el.remove()});
     const botoes=[
       botaoPeriodo('botaoMesAtualBarra','Mês atual',()=>datasMes(0)),
       botaoPeriodo('botaoMesSeguinteBarra','Mês seguinte',()=>datasMes(1)),
       botaoPeriodo('botaoLimparBarra','Limpar',limparBarra)
     ];
-    botoes.forEach(b=>{if(b.parentElement!==filtros)filtros.appendChild(b)});
+    botoes.forEach(b=>{if(b.parentElement!==periodo)periodo.appendChild(b)});
     const busca=document.querySelector('#toolbarModulo .campo-pesquisa,#convocar .linha-filtros .campo-pesquisa');
     const topo=document.querySelector('.painel-topbar-acoes')||document.querySelector('.painel-topbar');
     if(busca&&topo&&!busca.classList.contains('painel-busca-global')){
