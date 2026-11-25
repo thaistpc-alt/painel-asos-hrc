@@ -1829,7 +1829,7 @@
               <th>Vencimento</th>
               <th>Data agendada</th>
               <th>Informações da agenda</th>
-              <th>Último e-mail</th>
+              <th title="Data e hora da última convocação enviada ao gestor">Último e-mail enviado</th>
               <th>Dias</th>
               
               <th>PDF</th>
@@ -2763,7 +2763,7 @@
         }))
         .filter(c => c.mat);
       if (!selecionadas.length) {
-        mostrarErro("Selecione pelo menos uma pessoa na seção Necessita reconvocação.");
+        mostrarErro("Selecione pessoas na seção Agendados/Reagendados, que já tenham nova data agendada.");
         return;
       }
 
