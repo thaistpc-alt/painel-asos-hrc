@@ -534,3 +534,152 @@
   window.addEventListener('scroll',posicionarPopoverPeriodo,true);
 })();
 </script>
+
+
+<style>
+/* Correção estrutural da barra superior: os filtros operacionais passam a
+   ocupar a mesma grade do período, sem ficar presos dentro da aba Agenda. */
+.filtros{
+  display:grid!important;
+  grid-template-columns:170px 110px 120px minmax(140px,1fr) 160px 96px 90px 78px!important;
+  align-items:end!important;
+  gap:8px!important;
+  width:100%!important;
+  min-height:0!important;
+  padding:12px 14px!important;
+  overflow:visible!important;
+}
+.painel-topbar-periodo{
+  display:block!important;
+  grid-column:auto!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+}
+.painel-topbar-periodo .filtro-data-wrap{
+  display:block!important;
+  position:relative!important;
+  width:100%!important;
+  min-width:0!important;
+  flex:none!important;
+}
+.painel-topbar-periodo .filtro-data-wrap>label,
+#toolbarModulo .linha-filtros label{
+  display:block!important;
+  margin:0 0 5px!important;
+  color:#334155!important;
+  font-size:11px!important;
+  line-height:1.2!important;
+}
+.painel-topbar-periodo .filtro-data-trigger{
+  display:flex!important;
+  justify-content:space-between!important;
+  align-items:center!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:46px!important;
+  padding:8px 10px!important;
+  font-size:12px!important;
+  line-height:1.25!important;
+  white-space:normal!important;
+}
+#toolbarModulo,
+#toolbarModulo .linha-filtros,
+#toolbarModulo .acoes-lote{
+  display:contents!important;
+}
+#toolbarModulo .linha-filtros>div:has(> #filtroSituacaoConvocar){
+  display:none!important;
+}
+#toolbarModulo .filtro-situacao-check,
+#toolbarModulo .filtro-grupo-convocacao-v15,
+#toolbarModulo .linha-filtros .campo-pesquisa,
+#toolbarModulo .linha-filtros .email-gestor{
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  flex:none!important;
+  margin:0!important;
+}
+#toolbarModulo .filtro-situacao-check-botao,
+#toolbarModulo .linha-filtros select,
+#toolbarModulo .linha-filtros .campo-pesquisa input,
+#toolbarModulo .linha-filtros .email-gestor input{
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  height:46px!important;
+  min-height:46px!important;
+  margin:0!important;
+  padding:8px 9px!important;
+  font-size:12px!important;
+  line-height:1.25!important;
+}
+#toolbarModulo .linha-filtros .email-gestor input{font-size:11px!important}
+#toolbarModulo .acoes-lote button{
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  min-height:46px!important;
+  height:auto!important;
+  margin:0!important;
+  padding:7px 6px!important;
+  font-size:12px!important;
+  line-height:1.2!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+}
+#toolbarModulo .filtro-situacao-check-lista{z-index:30000!important}
+#popoverPeriodo{
+  position:fixed!important;
+  z-index:30001!important;
+}
+@media(max-width:1250px){
+  .filtros{grid-template-columns:repeat(4,minmax(0,1fr))!important;overflow:visible!important}
+  .painel-topbar-periodo{grid-column:span 2!important}
+  #toolbarModulo .linha-filtros .campo-pesquisa,
+  #toolbarModulo .linha-filtros .email-gestor{grid-column:span 2!important}
+}
+@media(max-width:700px){
+  .filtros{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;padding:12px!important}
+  .painel-topbar-periodo,
+  #toolbarModulo .linha-filtros .campo-pesquisa,
+  #toolbarModulo .linha-filtros .email-gestor{grid-column:1/-1!important}
+  #toolbarModulo .acoes-lote button{font-size:11px!important}
+}
+</style>
+<script>
+(function(){
+  'use strict';
+  function organizarFiltros(){
+    const toolbar=document.getElementById('toolbarModulo');
+    const linha=document.querySelector('#convocar .linha-filtros');
+    if(toolbar&&linha&&linha.parentElement!==toolbar)toolbar.appendChild(linha);
+    if(typeof window.atualizarTextoPeriodo==='function')window.atualizarTextoPeriodo();
+  }
+  function selecionarAgendaInicial(){
+    if(window.__painelUsuarioSelecionouAba)return;
+    const botao=document.getElementById('abaConvocar');
+    if(typeof window.abrirAba==='function'&&botao){
+      try{window.abrirAba('convocar',botao)}catch(e){}
+    }
+    document.querySelectorAll('.conteudo').forEach(el=>{
+      el.style.display=el.id==='convocar'?'block':'none';
+    });
+    document.querySelectorAll('.aba').forEach(el=>el.classList.toggle('ativa',el.id==='abaConvocar'));
+    organizarFiltros();
+  }
+  document.addEventListener('click',function(e){
+    if(e.target.closest&&e.target.closest('.aba'))window.__painelUsuarioSelecionouAba=true;
+    if(e.target.closest&&e.target.closest('#abaConvocar'))setTimeout(organizarFiltros,0);
+  },true);
+  function iniciar(){
+    organizarFiltros();
+    setTimeout(organizarFiltros,250);
+    setTimeout(selecionarAgendaInicial,500);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',iniciar,{once:true});
+  else iniciar();
+  window.addEventListener('load',function(){setTimeout(selecionarAgendaInicial,250)});
+})();
+</script>
