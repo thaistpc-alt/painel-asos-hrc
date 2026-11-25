@@ -38,12 +38,12 @@ function gerarIndicadores(lista) {
   }
 
   lista.forEach(c => {
-    if (!ehAtivoIndicadorASO(c)) return;
+    if (c.matriculaDuplicada || !ehAtivoIndicadorASO(c)) return;
     if (!ehTipoPeriodicoIndicadorASO(c)) return;
     if (!periodicidadeFonteV15_(c.funcao)) return;
 
     const eventos = obterEventosIndicadorASO(c);
-    const radiologia = ehRadiologiaIndicadorASO(c);
+    const radiologia = periodicidadeFonteV15_(c.funcao) === 6;
 
     eventos.forEach(evento => {
       const mesVencimento = evento.dataPrevista.substring(0, 7);
@@ -177,7 +177,7 @@ function ehAtivoIndicadorASO(c) {
 
 function ehRadiologiaIndicadorASO(c) {
   const funcao = normalizarTexto(c && c.funcao ? c.funcao : "");
-  return funcao.includes("RADIOLOGIA") || funcao.includes("RAIOS X");
+  return periodicidadeFonteV15_(funcao) === 6;
 }
 
 function montarItemAnaliseIndicador(c, evento, mesAnalise, mesVencimento, classificacao) {

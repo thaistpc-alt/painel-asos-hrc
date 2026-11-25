@@ -143,6 +143,7 @@ function sincronizarBaseV15_(invalidarCache, forcarAtualizacao) {
     const colaboradores = medir("Calcular FONTEpainel em memória", function() {
       return montarColaboradoresFonteV15_(dadosFonte, enviadosPorMatricula, eventos);
     });
+    marcarMatriculasAmbiguasPortal_(colaboradores);
 
     medir("Gravar FONTEpainel", function() {
       gravarFontePainelV15_(ss, colaboradores);
@@ -234,15 +235,8 @@ function lerDadosFontePainelV15_(ss) {
   if (!aba) throw new Error("Aba FONTEpainel não encontrada.");
   if (aba.getLastRow() < 2) return [];
   const dados = aba.getRange(2, 2, aba.getLastRow() - 1, 14).getValues(); // B:O
-  const matriculas = new Set();
-  dados.forEach(linha => {
-    const matricula = valorTexto(linha[0]);
-    if (!matricula) return;
-    if (matriculas.has(matricula)) {
-      throw new Error("Matrícula duplicada na FONTEpainel: " + matricula);
-    }
-    matriculas.add(matricula);
-  });
+  // Mantém todas as linhas da fonte para auditoria. A camada do painel marca
+  // matrículas ambíguas e bloqueia ações até a inconsistência cadastral ser corrigida.
   return dados;
 }
 
@@ -312,7 +306,7 @@ function montarEventosAgendaDeMatrizV15_(valores) {
     obterChavesMatricula(mat, "").forEach(chave => {
       if (!mapaEventos.has(chave)) mapaEventos.set(chave, []);
       mapaEventos.get(chave).push(evento);
-      if (tipoNorm.includes("PERIODIC") && (evento.ehNaoCompareceu || evento.ehReagendou)) {
+      if ((tipoNorm.includes("PERIODIC") || tipoNorm.includes("PERIODICO")) && (evento.ehNaoCompareceu || evento.ehReagendou || evento.ehCancelado)) {
         mapaOcorrencias.set(chave, (Number(mapaOcorrencias.get(chave)) || 0) + 1);
       }
     });
@@ -370,8 +364,8 @@ function montarColaboradoresFonteV15_(dadosFonte, enviadosPorMatricula, eventos)
     // Datas derivadas exclusivamente da função e do último ASO, nunca de valores residuais J:O.
     const dataBase = dataUltimoAso;
     const proximoVencimento = adicionarMeses(dataBase, periodicidade);
-    const dataConvocar = calcularDataConvocarV15_(proximoVencimento, periodicidade);
-    const dataLimite = calcularDataLimiteV15_(proximoVencimento, periodicidade);
+    const dataConvocar = calcularDataConvocarV15_(dataBase, proximoVencimento, periodicidade);
+    const dataLimite = calcularDataLimiteV15_(dataBase, proximoVencimento, periodicidade);
     const diasParaVencer = calcularDiferencaDias(proximoVencimento, hojeISO);
 
     lista.push({
@@ -433,35 +427,21 @@ function periodicidadeFonteV15_(funcao) {
   return tecnico && radiologia ? 6 : 12;
 }
 
-function calcularDataConvocarV15_(vencimento, periodicidade) {
+function calcularDataConvocarV15_(ultimoAso, vencimento, periodicidade) {
   if (!vencimento) return "";
   if (Number(periodicidade) === 6) return adicionarDiasV15_(vencimento, -15);
-
-  const candidata = adicionarDiasV15_(vencimento, -60);
+  const candidata = adicionarMeses(ultimoAso, 10);
   if (!candidata) return "";
-  if (candidata.substring(0, 4) < vencimento.substring(0, 4)) {
-    return vencimento.substring(0, 4) + "-01-01";
+  // Vencimentos em janeiro/fevereiro não convocam no ano anterior.
+  if (vencimento.substring(5, 7) === "01" || vencimento.substring(5, 7) === "02") {
+    return vencimento.substring(0, 7) + "-01";
   }
   return candidata;
 }
 
-function calcularDataLimiteV15_(vencimento, periodicidade) {
-  if (!vencimento) return "";
-
-  if (Number(periodicidade) === 6) {
-    return adicionarDiasV15_(vencimento, -15);
-  }
-
-  const limiteNormal = adicionarDiasV15_(vencimento, -30);
-  const dataConvocar = calcularDataConvocarV15_(vencimento, periodicidade);
-
-  // Quando a convocação anual é deslocada para 01/01 para não cair
-  // no ano anterior, a data limite também não pode permanecer antes dela.
-  if (dataConvocar && limiteNormal && limiteNormal < dataConvocar) {
-    return dataConvocar;
-  }
-
-  return limiteNormal;
+function calcularDataLimiteV15_(ultimoAso, vencimento, periodicidade) {
+  // Compatibilidade com a coluna legada: não existe uma segunda regra de prazo.
+  return calcularDataConvocarV15_(ultimoAso, vencimento, periodicidade);
 }
 
 function adicionarDiasV15_(dataISO, dias) {
@@ -555,6 +535,7 @@ function gravarBaseIndicadorV15_(ss, lista) {
 
   const linhas = [];
   (lista || []).forEach(c => {
+    if (c.matriculaDuplicada) return;
     if (!ehAtivoIndicadorASO(c) || !ehTipoPeriodicoIndicadorASO(c) || !c.periodicidade) return;
 
     obterEventosIndicadorASO(c).forEach(evento => {

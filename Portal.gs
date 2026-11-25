@@ -36,13 +36,12 @@ function lerFontePainel() {
     const periodicidade = periodicidadeFonteV15_(valorTexto(l[COL.FUNCAO - 1]));
     const dataPenultimoAso = formatarDataISO(l[COL.DATA_PENULTIMO_ASO - 1]);
     const dataUltimoAso = formatarDataISO(l[COL.DATA_ULTIMO_ASO - 1]);
-    const proximoVencimento = formatarDataISO(l[COL.PROXIMO_VENCIMENTO - 1]);
+    const proximoVencimento = adicionarMeses(dataUltimoAso, periodicidade);
+    const dataConvocar = calcularDataConvocarV15_(dataUltimoAso, proximoVencimento, periodicidade);
+    const dataLimite = calcularDataLimiteV15_(dataUltimoAso, proximoVencimento, periodicidade);
     const dataPrevistaIndicador = adicionarMeses(dataPenultimoAso, periodicidade);
 
-    const diasRaw = l[COL.DIAS_PARA_VENCER - 1];
-    const diasParaVencer = diasRaw === "" || diasRaw === null
-      ? calcularDiferencaDias(proximoVencimento, hojeISO)
-      : Number(diasRaw) || 0;
+    const diasParaVencer = calcularDiferencaDias(proximoVencimento, hojeISO);
 
     const situacao = valorTexto(l[COL.SITUACAO - 1]);
 
@@ -75,11 +74,11 @@ function lerFontePainel() {
       proximoVencimento: proximoVencimento,
       proximoVencimentoBR: formatarDataBR(proximoVencimento),
 
-      dataConvocar: formatarDataISO(l[COL.DATA_CONVOCAR - 1]),
-      dataConvocarBR: formatarDataBR(l[COL.DATA_CONVOCAR - 1]),
+      dataConvocar: dataConvocar,
+      dataConvocarBR: formatarDataBR(dataConvocar),
 
-      dataLimite: formatarDataISO(l[COL.DATA_LIMITE - 1]),
-      dataLimiteBR: formatarDataBR(l[COL.DATA_LIMITE - 1]),
+      dataLimite: dataLimite,
+      dataLimiteBR: formatarDataBR(dataLimite),
 
       diasParaVencer: diasParaVencer,
       prioridade: definirPrioridade(diasParaVencer),
@@ -99,7 +98,21 @@ function lerFontePainel() {
     });
   }
 
+  marcarMatriculasAmbiguasPortal_(saida);
   return saida;
+}
+
+function marcarMatriculasAmbiguasPortal_(lista) {
+  const contagem = new Map();
+  (lista || []).forEach(c => {
+    Array.from(new Set([c.matriculaCompleta, c.mat].map(x => String(x || "").trim()).filter(Boolean)))
+      .forEach(k => contagem.set(k, (contagem.get(k) || 0) + 1));
+  });
+  (lista || []).forEach(c => {
+    const chaves = [c.matriculaCompleta, c.mat].map(x => String(x || "").trim()).filter(Boolean);
+    c.matriculaDuplicada = chaves.some(k => contagem.get(k) > 1);
+    c.alertaCadastro = c.matriculaDuplicada ? "Matrícula duplicada na FONTEpainel; revisar situação antes de convocar." : "";
+  });
 }
 
 /* =========================================================
@@ -109,12 +122,10 @@ function lerFontePainel() {
 function definirPrioridade(dias) {
   const n = Number(dias);
 
-  if (isNaN(n)) return "Normal";
-  if (n < 0) return "Vencido";
-  if (n <= 7) return "Alta";
-  if (n <= 15) return "Média";
-  if (n <= 30) return "Baixa";
-  return "Normal";
+  if (dias === "" || dias === null || dias === undefined || isNaN(n)) return "Sem data";
+  if (n < 0) return "Atrasado";
+  if (n <= 30) return "Prioridade";
+  return "No prazo";
 }
 
 function ehAtivo(c) {
@@ -139,8 +150,7 @@ function ehNaoCompareceuOuReagendou(c) {
 }
 
 function ehVencido(c) {
-  const status = normalizarTexto(c && c.statusGeralNorm || "");
-  return status.includes("VENCIDO") || Number(c && c.diasParaVencer) < 0;
+  return Number(c && c.diasParaVencer) < 0;
 }
 
 function ehAtrasadoAtivo(c) {
@@ -181,7 +191,7 @@ function situacaoExcluidaIndicador(situacaoNorm) {
 ========================================================= */
 
 function obterDadosPortal(dataInicio, dataFim, forcarAtualizacao) {
-  const chaveCache = "DADOS_" + dataInicio + "_" + dataFim;
+  const chaveCache = "DADOS_V11_5_" + dataInicio + "_" + dataFim;
   const cacheado = forcarAtualizacao ? null : obterCachePortal(chaveCache);
 
   if (cacheado) {
@@ -284,8 +294,9 @@ function obterDadosPortal(dataInicio, dataFim, forcarAtualizacao) {
 function prepararFlagsPortal(lista) {
   (lista || []).forEach(c => {
     c.ativoAtual = ehAtivo(c);
-    c.asoRealizadoAgendaAtual = !!c.temAsoRealizadoAgenda;
     c.asoRealizadoValido = temAsoRealizadoValido(c);
+    // Apenas realização válida no ciclo atual exclui prioridade ou atraso.
+    c.asoRealizadoAgendaAtual = c.asoRealizadoValido;
     c.vencidoAtual = ehVencido(c);
     c.atrasadoAtivo = c.ativoAtual && c.vencidoAtual;
   });
@@ -294,7 +305,7 @@ function prepararFlagsPortal(lista) {
 
 function ehEventoPeriodicoAgenda(evento) {
   const tipo = normalizarTexto(evento && (evento.tipoNorm || evento.tipo) || "");
-  return tipo.includes("PERIODIC");
+  return tipo.includes("PERIODIC") || tipo.includes("PERIODICO");
 }
 
 function aplicarHistoricoEnviosPendencias(dadosPortal) {
@@ -334,6 +345,45 @@ function aplicarHistoricoEnviosPendencias(dadosPortal) {
   });
 
   return dadosPortal;
+}
+
+/** Consulta assistida baseada somente em registros do painel e da agenda. */
+function consultarDiagnosticoASO(termo) {
+  const consulta = normalizarTexto(String(termo || "").trim());
+  if (consulta.length < 2) return { consulta: String(termo || ""), resultados: [], mensagem: "Digite pelo menos 2 caracteres." };
+  const lista = lerFontePainel();
+  const eventos = montarEventosAgendaPorMatricula();
+  aplicarOcorrenciasAgenda(lista, eventos);
+  aplicarAsoRealizadoAgenda(lista, eventos);
+  prepararFlagsPortal(lista);
+  const pendencias = gerarPendencias(lista, eventos).operacionais;
+  const encontrados = lista.filter(c =>
+    normalizarTexto([c.nome, c.mat, c.matriculaCompleta, c.funcao, c.setor].join(" ")).includes(consulta)
+  ).slice(0, 20);
+  const resultados = encontrados.map(c => {
+    const p = pendencias.find(x => String(x.mat) === String(c.mat));
+    const ev = obterEventosPorColaborador(eventos, c).map(e => ({
+      data: e.data || "", dataBR: e.dataBR || formatarDataBR(e.data), tipo: e.tipo || "",
+      status: e.status || "", realizado: !!e.ehAsoRealizado, linhaAgenda: e.linhaAgenda || ""
+    }));
+    const base = c.tipoExame || "sem tipo informado na base";
+    const explicacao = c.matriculaDuplicada
+      ? "Cadastro ambíguo: há matrícula duplicada na FONTEpainel. O registro está impedido de entrar em ações até revisão da fonte."
+      : p
+        ? "Pendente porque a AGENDA contém ocorrência periódica com status " + (p.statusPendencia || p.statusAgenda || "Não compareceu/Reagendou/Cancelado") + " em " + (p.dataUltimaPendenciaBR || "data não informada") + ", sem ASO qualificável dentro da janela de 90 dias antes ou depois."
+        : c.asoRealizadoValido
+          ? "A base/agenda indica ASO periódico realizado em " + (c.dataUltimoAsoBR || c.dataAsoRealizadoAgendaBR || "data não informada") + "; o próximo vencimento é recalculado pela periodicidade da função."
+          : "Não há pendência operacional aberta registrada. A data de vencimento é calculada pela data do último ASO mais " + c.periodicidade + " meses.";
+    return {
+      matricula: c.mat, nome: c.nome, funcao: c.funcao, situacao: c.situacao,
+      linhaFonte: c.linha, matriculaDuplicada: !!c.matriculaDuplicada,
+      ultimoAso: c.dataUltimoAso || "", tipoUltimoAso: base, periodicidade: c.periodicidade,
+      vencimento: c.proximoVencimento || "", convocacao: c.dataConvocar || "",
+      pendencia: p ? { data: p.dataUltimaPendencia || "", status: p.statusPendencia || p.statusAgenda || "", linhaAgenda: p.linhaAgenda || "" } : null,
+      eventosAgenda: ev.slice(-12), explicacao: explicacao
+    };
+  });
+  return { consulta: String(termo || ""), resultados: resultados, mensagem: resultados.length ? "" : "Nenhum colaborador encontrado na FONTEpainel." };
 }
 
 /**
@@ -400,6 +450,21 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
 
     const realizadosTodos = eventosComData.filter(e => e.ehAsoRealizado);
     const realizadosPeriodicos = realizadosTodos.filter(ehEventoPeriodicoAgenda);
+    const anoVigente = String(hojeISO || obterHojeISO()).slice(0, 4);
+    const realizadosNoAno = realizadosTodos.filter(e =>
+      String(e.data || "").slice(0, 4) === anoVigente &&
+      !normalizarTexto(e.tipoNorm || e.tipo || "").includes("DEMISSIONAL")
+    );
+    const datasRealizadasNoAno = new Set(realizadosNoAno.map(e => String(e.data || "") + "|" + normalizarTexto(e.tipoNorm || e.tipo || "")));
+    const fonteTemAsoNoAno = String(c.dataUltimoAso || "").slice(0, 4) === anoVigente &&
+      !realizadosNoAno.some(e => String(e.data || "") === String(c.dataUltimoAso || ""));
+    c.asosRealizadosNoAnoVigente = datasRealizadasNoAno.size + (fonteTemAsoNoAno ? 1 : 0);
+    c.asoDemissionalRealizado = realizadosTodos.some(e =>
+      normalizarTexto(e.tipoNorm || e.tipo || "").includes("DEMISSIONAL")
+    ) || (
+      normalizarTexto(c.tipoExame || "").includes("DEMISSIONAL") &&
+      !!c.dataUltimoAso
+    );
 
     c.asosRealizadosNaoPeriodicos = realizadosTodos
       .filter(e => !ehEventoPeriodicoAgenda(e))
@@ -420,7 +485,7 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
       const tipo = normalizarTexto(e.tipoNorm || e.tipo || "");
       if (tipo.includes("DEMISSIONAL")) ultimosPorTipo.DEMISSIONAL = e;
       else if (tipo.includes("RETORNO")) ultimosPorTipo.RETORNO = e;
-      else if (tipo.includes("PERIODIC")) ultimosPorTipo.PERIODICO = e;
+      else if (tipo.includes("PERIODIC") || tipo.includes("PERIODICO")) ultimosPorTipo.PERIODICO = e;
     });
 
     const informacoes = [];
@@ -503,25 +568,25 @@ function calcularStatusGeralPortalV14_7_(c, hojeISO) {
 function temAsoRealizadoValido(c) {
   if (!c) return false;
 
-  const dataRealizado = c.dataAsoRealizadoAgenda || "";
-  if (!dataRealizado) return false;
-
-  const dataUltimoFonte = c.dataUltimoAso || "";
-  const dataConvocar = c.dataConvocar || "";
-  const proximoVencimento = c.proximoVencimento || "";
-
-  if (dataUltimoFonte && dataMaiorQue(dataRealizado, dataUltimoFonte)) return true;
-
-  if (dataConvocar && (dataRealizado >= dataConvocar)) return true;
-
-  if (proximoVencimento) {
-    const diasAntesDoVencimento = calcularDiferencaDias(proximoVencimento, dataRealizado);
-    if (diasAntesDoVencimento !== null && diasAntesDoVencimento >= 0 && diasAntesDoVencimento <= 120) {
-      return true;
-    }
+  const anoVigente = String(obterHojeISO()).slice(0, 4);
+  let quantidade = Number(c.asosRealizadosNoAnoVigente) || 0;
+  const dataUltimoFonte = String(c.dataUltimoAso || "");
+  const dataRealizadoAgenda = String(c.dataAsoRealizadoAgenda || "");
+  if (dataRealizadoAgenda.slice(0, 4) === anoVigente) {
+    quantidade = Math.max(quantidade, 1);
+  }
+  if (
+    dataUltimoFonte.slice(0, 4) === anoVigente &&
+    !normalizarTexto(c.tipoExame || "").includes("DEMISSIONAL") &&
+    !String(c.dataAsoRealizadoAgenda || "").startsWith(anoVigente)
+  ) {
+    quantidade = Math.max(quantidade, 1);
   }
 
-  return false;
+  const periodicidade = Number(c.periodicidade) ||
+    periodicidadeFonteV15_(valorTexto(c.funcao || ""));
+  const limiteAnual = periodicidade === 6 ? 2 : 1;
+  return quantidade >= limiteAnual;
 }
 
 function dataMaiorQue(dataA, dataB) {
@@ -582,6 +647,37 @@ function obterEventosPorColaborador(eventosPorMatricula, colaborador) {
   return eventos;
 }
 
+function deveIgnorarPendenciaPorAsoNoAno_(colaborador, eventos) {
+  const anoVigente = String(obterHojeISO()).slice(0, 4);
+  const realizados = (eventos || []).filter(e => e && e.ehAsoRealizado && e.data);
+  const demissionalNaAgenda = realizados.some(e =>
+    normalizarTexto(e.tipoNorm || e.tipo || "").includes("DEMISSIONAL")
+  );
+  const demissionalNaFonte = normalizarTexto(colaborador && colaborador.tipoExame || "")
+    .includes("DEMISSIONAL") && !!(colaborador && colaborador.dataUltimoAso);
+  if (demissionalNaAgenda || demissionalNaFonte) return true;
+
+  const chaves = new Set();
+  realizados
+    .filter(e =>
+      String(e.data || "").slice(0, 4) === anoVigente &&
+      !normalizarTexto(e.tipoNorm || e.tipo || "").includes("DEMISSIONAL")
+    )
+    .forEach(e => chaves.add(String(e.data) + "|" + normalizarTexto(e.tipoNorm || e.tipo || "")));
+
+  const dataFonte = String(colaborador && colaborador.dataUltimoAso || "");
+  if (dataFonte.slice(0, 4) === anoVigente &&
+      !normalizarTexto(colaborador && colaborador.tipoExame || "").includes("DEMISSIONAL") &&
+      !realizados.some(e => String(e.data || "") === dataFonte)) {
+    chaves.add(dataFonte + "|" + normalizarTexto(colaborador.tipoExame || ""));
+  }
+
+  const periodicidade = Number(colaborador && colaborador.periodicidade) ||
+    periodicidadeFonteV15_(valorTexto(colaborador && colaborador.funcao || ""));
+  const limiteAnual = periodicidade === 6 ? 2 : 1;
+  return chaves.size >= limiteAnual;
+}
+
 function gerarPendencias(lista, eventosPorMatriculaParam) {
   const eventosPorMatricula = eventosPorMatriculaParam || montarEventosAgendaPorMatricula();
   const necessitaReconvocacao = [];
@@ -590,12 +686,14 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
   const processadas = new Set();
 
   (lista || []).forEach(colaborador => {
+    if (colaborador.matriculaDuplicada) return;
     const mat = String(colaborador.mat || "").trim();
     if (!mat || processadas.has(mat)) return;
     processadas.add(mat);
 
     // A lista já vem consolidada, sem duplicidades e em ordem cronológica.
     const eventos = obterEventosPorColaborador(eventosPorMatricula, colaborador);
+    if (deveIgnorarPendenciaPorAsoNoAno_(colaborador, eventos)) return;
     const eventosPendencia = eventos.filter(e =>
       ehEventoPeriodicoAgenda(e) &&
       (e.ehNaoCompareceu || e.ehReagendou || e.ehCancelado)
@@ -618,27 +716,55 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
 
     const ultimaPendencia = eventosPendencia[eventosPendencia.length - 1];
 
-    // Um ASO posterior de retorno ou de mudança de riscos também encerra
-    // a pendência operacional. Consultas e demissionais não encerram.
+    // Cancelamentos costumam ocorrer porque o ASO já foi feito. Nesses casos,
+    // qualquer periódico, retorno ao trabalho ou mudança de risco realizado no
+    // mesmo ano civil encerra a pendência, mesmo que esteja fora da janela de 90 dias.
+    const tipoQualificaCancelamento = tipo => {
+      const tipoNorm = normalizarTexto(tipo || "");
+      return tipoNorm.includes("PERIODIC") || tipoNorm.includes("PERIODICO") ||
+        tipoNorm.includes("RETORNO") ||
+        (tipoNorm.includes("MUDANCA") && tipoNorm.includes("RISCO"));
+    };
+    const mesmoAnoCivil = (dataA, dataB) =>
+      !!dataA && !!dataB && String(dataA).slice(0, 4) === String(dataB).slice(0, 4);
+
     const ehAsoQueResolvePendencia = e => {
       if (!e || !e.ehAsoRealizado) return false;
       const tipo = normalizarTexto(e.tipoNorm || e.tipo || "");
-      return tipo.includes("PERIODIC") ||
-        tipo.includes("RETORNO") ||
-        tipo.includes("MUDANCA") ||
-        tipo.includes("ADMISSIONAL");
+      return tipo.includes("PERIODIC") || tipo.includes("PERIODICO") ||
+        tipo.includes("RETORNO") || tipo.includes("ADMISSIONAL") ||
+        (tipo.includes("MUDANCA") && tipo.includes("RISCO"));
     };
 
-    const realizadosPosteriores = eventos
+    const diferencaAsoPendencia = data => {
+      const diferenca = calcularDiferencaDias(data, ultimaPendencia.data);
+      return diferenca === null ? null : Number(diferenca);
+    };
+    const dentroDaJanelaPendencia = data => {
+      const diferenca = diferencaAsoPendencia(data);
+      return diferenca !== null && Math.abs(diferenca) <= 90;
+    };
+    const resolvePorAso = e => ultimaPendencia.ehCancelado
+      ? tipoQualificaCancelamento(e.tipoNorm || e.tipo) && mesmoAnoCivil(e.data, ultimaPendencia.data)
+      : dentroDaJanelaPendencia(e.data);
+    const realizadosDaJanela = eventos
       .filter(ehAsoQueResolvePendencia)
-      .filter(e => dataMaiorQue(e.data, ultimaPendencia.data));
+      .filter(resolvePorAso);
 
-    // A base de ASOs pode estar atualizada mesmo que o evento ainda não
-    // esteja no espelho da agenda. Não transformar uma pendência histórica
-    // em reconvocação quando o ASO mais recente já é posterior a ela.
-    if (colaborador.dataUltimoAso && !normalizarTexto(colaborador.tipoExame).includes("DEMISSIONAL") && dataMaiorQue(colaborador.dataUltimoAso, ultimaPendencia.data)) {
-      const registrado = realizadosPosteriores.some(e => e.data === colaborador.dataUltimoAso);
-      if (!registrado) realizadosPosteriores.push({
+    // A FONTEpainel também pode registrar o último ASO antes do espelho da AGENDA.
+    const tipoBase = normalizarTexto(colaborador.tipoExame || "");
+    const baseQualificada = ultimaPendencia.ehCancelado
+      ? tipoQualificaCancelamento(tipoBase)
+      : tipoBase.includes("PERIODIC") || tipoBase.includes("PERIODICO") ||
+        tipoBase.includes("RETORNO") || tipoBase.includes("ADMISSIONAL") ||
+        (tipoBase.includes("MUDANCA") && tipoBase.includes("RISCO"));
+    const diferencaUltimoAso = diferencaAsoPendencia(colaborador.dataUltimoAso);
+    const ultimoAsoResolvePendencia = ultimaPendencia.ehCancelado
+      ? mesmoAnoCivil(colaborador.dataUltimoAso, ultimaPendencia.data)
+      : dentroDaJanelaPendencia(colaborador.dataUltimoAso);
+    if (colaborador.dataUltimoAso && baseQualificada && ultimoAsoResolvePendencia) {
+      const registrado = realizadosDaJanela.some(e => e.data === colaborador.dataUltimoAso);
+      if (!registrado) realizadosDaJanela.push({
         mat: mat,
         data: colaborador.dataUltimoAso,
         dataBR: formatarDataBR(colaborador.dataUltimoAso),
@@ -648,30 +774,18 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
       });
     }
 
-    // ASO válido já realizado: o agendamento periódico cancelado depois
-    // não reabre o ciclo quando ainda não chegou a data de convocação.
-    // Dentro da janela de convocação, pendências novas continuam visíveis.
-    const cicloRegularForaDaConvocacao =
-      !!colaborador.dataUltimoAso &&
-      !!colaborador.dataConvocar &&
-      !!colaborador.proximoVencimento &&
-      colaborador.proximoVencimento > obterHojeISO() &&
-      ultimaPendencia.data < colaborador.dataConvocar &&
-      colaborador.dataUltimoAso <= ultimaPendencia.data;
-    if (cicloRegularForaDaConvocacao) return;
-
     /* Fallback baseado no periódico validado pela própria rotina da AGENDA. */
     if (
       colaborador.temAsoRealizadoAgenda &&
       colaborador.dataAsoRealizadoAgenda &&
-      dataMaiorQue(colaborador.dataAsoRealizadoAgenda, ultimaPendencia.data)
+      dentroDaJanelaPendencia(colaborador.dataAsoRealizadoAgenda)
     ) {
-      const jaExiste = realizadosPosteriores.some(e =>
+      const jaExiste = realizadosDaJanela.some(e =>
         String(e.data || "") === String(colaborador.dataAsoRealizadoAgenda || "")
       );
 
       if (!jaExiste) {
-        realizadosPosteriores.push({
+        realizadosDaJanela.push({
           mat: mat,
           data: colaborador.dataAsoRealizadoAgenda,
           dataBR: colaborador.dataAsoRealizadoAgendaBR || formatarDataBR(colaborador.dataAsoRealizadoAgenda),
@@ -686,15 +800,17 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
 
     const itemBase = montarItemPendencia(colaborador, ultimaPendencia, eventosPendencia.length);
 
-    if (realizadosPosteriores.length > 0) {
-      const realizado = realizadosPosteriores[realizadosPosteriores.length - 1];
+    if (realizadosDaJanela.length > 0) {
+      const realizado = realizadosDaJanela.sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")))[0];
 
       resolvidos.push(Object.assign({}, itemBase, {
         grupoPendencia: "Resolvido",
         dataResolucao: realizado.data || "",
         dataResolucaoBR: realizado.dataBR || formatarDataBR(realizado.data),
         diasAteResolucao: calcularDiferencaDias(realizado.data, ultimaPendencia.data),
-        acaoPendencia: "Resolvido por ASO realizado posteriormente"
+        acaoPendencia: ultimaPendencia.ehCancelado
+          ? "Cancelamento baixado: ASO qualificável realizado no mesmo ano"
+          : "Resolvido por ASO realizado posteriormente"
       }));
       return;
     }
@@ -772,6 +888,7 @@ function montarItemPendencia(colaborador, evento, qtdOcorrencias) {
     dataUltimaPendencia: evento.data || "",
     dataUltimaPendenciaBR: evento.dataBR || formatarDataBR(evento.data),
     statusPendencia: evento.status || colaborador.statusAgenda || "",
+    linhaAgenda: evento.linhaAgenda || "",
     tipoRegistroFaltoso: tipo,
     qtdOcorrencias: qtdOcorrencias || 1,
     ocorrencias: colaborador.qtdOcorrencias || colaborador.ocorrencias || (qtdOcorrencias || 1),
@@ -851,6 +968,7 @@ function montarEventosAgendaPorMatricula() {
   statusNorm: statusNorm,
   tipo: tipo,
   tipoNorm: tipoNorm,
+  linhaAgenda: i + 1,
   ehAsoRealizado: ehAsoRealizado,
   ehNaoCompareceu: ehNaoCompareceu,
   ehReagendou: ehReagendou,
@@ -864,7 +982,7 @@ function montarEventosAgendaPorMatricula() {
       mapaEventos.get(chave).push(evento);
     });
 
-    if (tipoNorm.includes("PERIODIC") && (ehNaoCompareceu || ehReagendou)) {
+    if ((tipoNorm.includes("PERIODIC") || tipoNorm.includes("PERIODICO")) && (ehNaoCompareceu || ehReagendou || ehCancelado)) {
       chaves.forEach(chave => {
         mapaOcorrencias.set(chave, (Number(mapaOcorrencias.get(chave)) || 0) + 1);
       });
@@ -949,7 +1067,7 @@ function obterResumoSincronizacaoAgenda() {
 
 function gerarListaConvocar(lista, dataInicio, dataFim) {
   return (lista || [])
-    .filter(c => situacaoPermiteBaixarConvocacao(c))
+    .filter(c => !c.matriculaDuplicada && situacaoPermiteBaixarConvocacao(c))
     .map(c => {
       let grupo = "";
       let dataReferencia = "";
@@ -957,16 +1075,6 @@ function gerarListaConvocar(lista, dataInicio, dataFim) {
       if (noPeriodo(c.dataAgendada, dataInicio, dataFim)) {
         grupo = "Agendado no período";
         dataReferencia = c.dataAgendada;
-      } else if (noPeriodo(c.dataConvocar, dataInicio, dataFim)) {
-        grupo = "Convocação do período";
-        dataReferencia = c.dataConvocar;
-      } else if (
-        c.dataConvocar &&
-        c.dataConvocar < dataInicio &&
-        (!c.dataAgendada || c.dataAgendada < dataInicio)
-      ) {
-        grupo = "Pendência anterior";
-        dataReferencia = c.dataConvocar;
       }
 
       if (!grupo) return null;

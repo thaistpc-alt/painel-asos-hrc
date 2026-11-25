@@ -208,6 +208,9 @@ function encerrarContextoGeracaoConvocacoes(contexto) {
 
 function gerarConvocacaoPorColaborador(colaborador, dadosAgenda, opcoes) {
   opcoes = opcoes || {};
+  if (opcoes.reconvocacao && !colaborador.dataAgendada) {
+    throw new Error("A reconvocação só pode ser gerada após informar uma nova data de agendamento.");
+  }
   const contextoProprio = !opcoes.contextoGeracao;
   const contexto = opcoes.contextoGeracao || criarContextoGeracaoConvocacoes();
   const ss = contexto.ss;
@@ -225,8 +228,10 @@ function gerarConvocacaoPorColaborador(colaborador, dadosAgenda, opcoes) {
       [colaborador.setor]
     ]);
 
-    if (colaborador.dataAgendadaBR) {
-      modeloTemp.getRange("C18").setValue(colaborador.dataAgendadaBR);
+    if (colaborador.dataAgendada) {
+      modeloTemp.getRange("C18").setValue(
+        colaborador.dataAgendadaBR || formatarDataBR(colaborador.dataAgendada)
+      );
     } else {
       modeloTemp.getRange("C18").setValue(
         colaborador.dataConvocarBR ||
@@ -292,6 +297,8 @@ function motivoNaoBaixarConvocacao(c, dataInicio, dataFim) {
   if (c.asoRealizadoValido) {
     return "ASO periódico já realizado";
   }
+
+  if (c.matriculaDuplicada) return "Matrícula duplicada; cadastro precisa ser revisado";
 
   return "";
 }
@@ -531,7 +538,8 @@ function enviarConvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInici
         const pdf = gerarConvocacaoPorColaborador(colaborador, dadosAgenda, {
           turnosAgenda: turnosAgenda,
           incluirAnexo: true,
-          contextoGeracao: contextoGeracao
+          contextoGeracao: contextoGeracao,
+          reconvocacao: !!opcoes.reconvocacao
         });
 
         anexos.push(pdf.anexo);
@@ -560,16 +568,31 @@ function enviarConvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInici
 
   if (anexos.length > 0) {
     const assunto = montarAssuntoEmailGestor(dataInicio, dataFim);
+    const mapaDatasAnteriores = opcoes.dataAnteriorPorMatricula || {};
     const contexto = opcoes.reconvocacao
       ? {
           reconvocacao: true,
           dataAnteriorBR: opcoes.dataAnteriorBR || "",
           novaDataBR: obterNovaDataConvocacaoBR(enviados),
-          colaborador: enviados.length === 1 ? (enviados[0].colaborador || enviados[0].nome || "") : ""
+          colaborador: enviados.length === 1 ? (enviados[0].colaborador || enviados[0].nome || "") : "",
+          itensReconvocacao: opcoes.dataAnteriorPorMatricula
+            ? enviados.map(item => {
+                const matricula = String(item.matricula || "").trim();
+                return {
+                  matricula: matricula,
+                  dataAnteriorBR: String(mapaDatasAnteriores[matricula] || ""),
+                  novaDataBR: item.dataAgendadaBR || formatarDataBR(item.dataAgendada) || ""
+                };
+              })
+            : []
         }
       : {};
     const corpo = montarCorpoEmailGestor(enviados, dataInicio, dataFim, contexto);
     const thread = opcoes.responderThreadId ? obterThreadGmailPorId(opcoes.responderThreadId) : null;
+
+    if (opcoes.reconvocacao && !thread) {
+      throw new Error("A convocação original não foi localizada. Para manter a cadeia de e-mail, nenhum envio foi feito.");
+    }
 
     if (thread) {
       // GmailApp.sendEmail cria uma mensagem nova e não assegura a continuidade
@@ -664,7 +687,7 @@ function obterReferenciaMesConvocacoes(dataInicio, dataFim) {
 
 function obterNovaDataConvocacaoBR(convocacoes) {
   const primeira = (convocacoes || [])[0] || {};
-  return primeira.dataAgendadaBR || primeira.dataConvocarBR || primeira.dataLimiteBR || "";
+  return primeira.dataAgendadaBR || formatarDataBR(primeira.dataAgendada) || "";
 }
 
 function montarCorpoEmailGestor(convocacoes, dataInicio, dataFim, contexto) {
@@ -674,25 +697,47 @@ function montarCorpoEmailGestor(convocacoes, dataInicio, dataFim, contexto) {
     dataFim ? formatarDataBR(dataFim) : ""
   ].filter(Boolean).join(" a ");
 
-  const linhasHtml = (convocacoes || []).map(c =>
-    "<li>" + escaparHtmlEmail(c.colaborador || c.nome || "") +
-    " - Matrícula " + escaparHtmlEmail(c.matricula || "") + "</li>"
-  ).join("");
+  const reconvocacoes = Array.isArray(contexto.itensReconvocacao) ? contexto.itensReconvocacao : [];
+  const reconvocacoesPorMatricula = new Map(
+    reconvocacoes.map(item => [String(item.matricula || "").trim(), item])
+  );
 
-  const linhasTexto = (convocacoes || []).map(c =>
-    "- " + (c.colaborador || c.nome || "") + " - Matrícula " + (c.matricula || "")
-  ).join("\n");
+  const linhasHtml = (convocacoes || []).map(c => {
+    const matricula = String(c.matricula || "").trim();
+    const reconvocacao = reconvocacoesPorMatricula.get(matricula);
+    const detalhe = reconvocacao
+      ? (reconvocacao.dataAnteriorBR ? " — ausência em " + escaparHtmlEmail(reconvocacao.dataAnteriorBR) : "") +
+        (reconvocacao.novaDataBR ? "; nova data " + escaparHtmlEmail(reconvocacao.novaDataBR) : "")
+      : "";
+    return "<li>" + escaparHtmlEmail(c.colaborador || c.nome || "") +
+      " - Matrícula " + escaparHtmlEmail(matricula) + detalhe + "</li>";
+  }).join("");
+
+  const linhasTexto = (convocacoes || []).map(c => {
+    const matricula = String(c.matricula || "").trim();
+    const reconvocacao = reconvocacoesPorMatricula.get(matricula);
+    const detalhe = reconvocacao
+      ? (reconvocacao.dataAnteriorBR ? " — ausência em " + reconvocacao.dataAnteriorBR : "") +
+        (reconvocacao.novaDataBR ? "; nova data " + reconvocacao.novaDataBR : "")
+      : "";
+    return "- " + (c.colaborador || c.nome || "") +
+      " - Matrícula " + matricula + detalhe;
+  }).join("\n");
 
   const avisoReconvocacaoHtml = contexto.reconvocacao
-    ? "<p>Informamos que " + (contexto.colaborador ? "<strong>" + escaparHtmlEmail(contexto.colaborador) + "</strong> " : "o colaborador ") +
-      "faltou à data anterior" + (contexto.dataAnteriorBR ? " (" + escaparHtmlEmail(contexto.dataAnteriorBR) + ")" : "") +
-      ". Segue nova convocação" + (contexto.novaDataBR ? " com a nova data " + escaparHtmlEmail(contexto.novaDataBR) : "") + ".</p>"
+    ? reconvocacoes.length
+      ? "<p>Segue(m) nova(s) convocação(ões) para os casos de ausência. A data anterior e a nova data de cada pessoa estão indicadas na lista abaixo.</p>"
+      : "<p>Informamos que " + (contexto.colaborador ? "<strong>" + escaparHtmlEmail(contexto.colaborador) + "</strong> " : "o colaborador ") +
+        "faltou à data anterior" + (contexto.dataAnteriorBR ? " (" + escaparHtmlEmail(contexto.dataAnteriorBR) + ")" : "") +
+        ". Segue nova convocação" + (contexto.novaDataBR ? " com a nova data " + escaparHtmlEmail(contexto.novaDataBR) : "") + ".</p>"
     : "";
 
   const avisoReconvocacaoTexto = contexto.reconvocacao
-    ? "Informamos que " + (contexto.colaborador || "o colaborador") +
-      " faltou à data anterior" + (contexto.dataAnteriorBR ? " (" + contexto.dataAnteriorBR + ")" : "") +
-      ". Segue nova convocação" + (contexto.novaDataBR ? " com a nova data " + contexto.novaDataBR : "") + ".\n\n"
+    ? reconvocacoes.length
+      ? "Seguem novas convocações para os casos de ausência. A data anterior e a nova data de cada pessoa estão indicadas na lista abaixo.\n\n"
+      : "Informamos que " + (contexto.colaborador || "o colaborador") +
+        " faltou à data anterior" + (contexto.dataAnteriorBR ? " (" + contexto.dataAnteriorBR + ")" : "") +
+        ". Segue nova convocação" + (contexto.novaDataBR ? " com a nova data " + contexto.novaDataBR : "") + ".\n\n"
     : "";
 
   const html =
@@ -715,7 +760,6 @@ function montarCorpoEmailGestor(convocacoes, dataInicio, dataFim, contexto) {
 
   return { html: html, texto: texto };
 }
-
 function escaparHtmlEmail(valor) {
   return String(valor ?? "")
     .replace(/&/g, "&amp;")
@@ -952,11 +996,48 @@ function reconstruirHistoricoEnviosAgosto2026() {
 function enviarReconvocacaoPendenciaGestor(mat, emailsGestor, dataInicio, dataFim, dataAnteriorBR) {
   const historico = obterHistoricoEnvioConvocacao(mat);
   const threadAnterior = historico.threadId || localizarThreadAnteriorConvocacao(mat);
+  if (!threadAnterior) {
+    return [{
+      sucesso: false,
+      ignorado: true,
+      matricula: String(mat || ""),
+      erro: "Convocação original não localizada; nenhum e-mail foi enviado."
+    }];
+  }
   return enviarConvocacoesSelecionadasGestor([mat], emailsGestor, dataInicio, dataFim, {
     reconvocacao: true,
     dataAnteriorBR: dataAnteriorBR || "",
     responderThreadId: threadAnterior
   });
+}
+
+function enviarReconvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInicio, dataFim, dataAnteriorPorMatricula) {
+  const selecionadas = Array.from(new Set((matriculas || []).map(m => String(m || "").trim()).filter(Boolean)));
+  if (selecionadas.length > LIMITE_ANEXOS_EMAIL_GESTOR) {
+    throw new Error("Selecione no máximo " + LIMITE_ANEXOS_EMAIL_GESTOR + " pessoas por reconvocação em lote.");
+  }
+  const resultados = [];
+  const anteriores = dataAnteriorPorMatricula || {};
+  selecionadas.forEach(mat => {
+    try {
+      const resposta = enviarReconvocacaoPendenciaGestor(
+        mat,
+        emailsGestor,
+        dataInicio,
+        dataFim,
+        anteriores[mat] || ""
+      );
+      (resposta || []).forEach(item => resultados.push(item));
+    } catch (e) {
+      resultados.push({
+        sucesso: false,
+        ignorado: false,
+        matricula: mat,
+        erro: e && e.message ? e.message : String(e)
+      });
+    }
+  });
+  return resultados;
 }
 
 function localizarThreadAnteriorConvocacao(mat) {

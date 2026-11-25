@@ -192,6 +192,26 @@
       background: white;
     }
 
+    #tabelaConvocar .tabela-container { overflow-x: hidden; }
+    #tabelaConvocar table { min-width: 0; width: 100%; }
+    #tabelaConvocar th, #tabelaConvocar td {
+      padding: 4px 3px; font-size: 9px; line-height: 1.16; overflow-wrap: anywhere;
+    }
+    #tabelaConvocar th:nth-child(1), #tabelaConvocar td:nth-child(1) { width: 26px; }
+    #tabelaConvocar th:nth-child(2), #tabelaConvocar td:nth-child(2) { width: 50px; }
+    #tabelaConvocar th:nth-child(3), #tabelaConvocar td:nth-child(3) { width: 125px; }
+    #tabelaConvocar th:nth-child(4), #tabelaConvocar td:nth-child(4) { width: 105px; }
+    #tabelaConvocar th:nth-child(5), #tabelaConvocar td:nth-child(5) { width: 90px; }
+    #tabelaConvocar th:nth-child(6), #tabelaConvocar td:nth-child(6) { width: 62px; }
+    #tabelaConvocar th:nth-child(7), #tabelaConvocar td:nth-child(7) { width: 82px; }
+    #tabelaConvocar th:nth-child(8), #tabelaConvocar td:nth-child(8),
+    #tabelaConvocar th:nth-child(9), #tabelaConvocar td:nth-child(9),
+    #tabelaConvocar th:nth-child(10), #tabelaConvocar td:nth-child(10) { width: 76px; }
+    #tabelaConvocar th:nth-child(12), #tabelaConvocar td:nth-child(12) { width: 70px; }
+    #tabelaConvocar th:nth-child(13), #tabelaConvocar td:nth-child(13) { width: 42px; }
+    #tabelaConvocar th:nth-child(14), #tabelaConvocar td:nth-child(14),
+    #tabelaConvocar th:nth-child(15), #tabelaConvocar td:nth-child(15) { width: 44px; }
+
     th, td {
       border-bottom: 1px solid #e5e7eb;
       padding: 5px 4px;
@@ -834,6 +854,115 @@
     #tabelaConvocar table th:nth-child(11), #tabelaConvocar table td:nth-child(11) { width: 4%; text-align: center; }
     #tabelaConvocar table th:nth-child(12), #tabelaConvocar table td:nth-child(12) { width: 4.5%; text-align: center; }
     #tabelaConvocar table th:nth-child(13), #tabelaConvocar table td:nth-child(13) { width: 4%; text-align: center; }
+
+    /* Refinamento visual global do painel */
+    :root {
+      --azul: #1d4ed8; --verde: #047857; --vermelho: #b91c1c; --amarelo: #b45309;
+      --borda: #d9e2ef; --texto: #12233f; --cinza: #60718a; --fundo: #f3f6fb;
+    }
+    body {
+      font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+      background: radial-gradient(ellipse at top left, #e7f0ff 0, transparent 42%), #f3f6fb;
+      padding: 18px; line-height: 1.45;
+    }
+    .topo {
+      border-radius: 16px; padding: 22px 24px; margin-bottom: 16px;
+      background: linear-gradient(120deg, #102a56 0%, #174a83 58%, #0f766e 100%);
+      box-shadow: 0 12px 28px rgba(22, 55, 98, .18);
+    }
+    .topo h1 { font-size: clamp(22px, 2.2vw, 30px); letter-spacing: -.025em; }
+    .topo p { font-size: 14px; color: rgba(255,255,255,.86); }
+    .filtros, .conteudo {
+      border: 1px solid rgba(206, 218, 235, .92); border-radius: 16px; padding: 18px;
+      margin-bottom: 14px; box-shadow: 0 5px 18px rgba(20, 43, 78, .055);
+      background: rgba(255,255,255,.97);
+    }
+    .conteudo { animation: entrarPainel .22s ease-out; }
+    @keyframes entrarPainel { from { opacity: .78; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .abas {
+      gap: 8px; margin: 0 0 14px; padding: 8px; border: 1px solid #e0e8f3;
+      border-radius: 14px; background: rgba(243, 246, 251, .9); box-shadow: 0 3px 12px rgba(20,43,78,.04);
+    }
+    .aba {
+      border: 1px solid transparent; border-radius: 10px; padding: 9px 14px;
+      background: transparent; color: #455873;
+      transition: background .18s ease, color .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+    .aba:hover { background: #e7eef9; color: #173d70; transform: translateY(-1px); }
+    .aba.ativa { background: #1d4ed8; color: #fff; box-shadow: 0 5px 12px rgba(29,78,216,.22); }
+    h2 { color: #132b4c; letter-spacing: -.02em; margin-bottom: 14px; }
+    h3 { color: #173d70; border-left-width: 4px; }
+    input, select {
+      min-height: 38px; border-color: #cbd7e7; border-radius: 9px; color: #172b48;
+      transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+    input:hover, select:hover { border-color: #9db3d1; }
+    input:focus, select:focus { outline: none; border-color: #4f82e8; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+    button {
+      min-height: 36px; border-radius: 9px; box-shadow: 0 2px 5px rgba(15,23,42,.08);
+      transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+    }
+    button:hover { box-shadow: 0 5px 12px rgba(15,23,42,.13); }
+    button:focus-visible { outline: 3px solid rgba(59,130,246,.32); outline-offset: 2px; }
+    .cards { gap: 14px; }
+    .card, .indicador-card {
+      border-radius: 14px; border-color: #e0e8f2; box-shadow: 0 4px 12px rgba(20,43,78,.045);
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .card:hover, .indicador-card:hover {
+      transform: translateY(-2px); border-color: #c5d6f0; box-shadow: 0 9px 20px rgba(20,43,78,.09);
+    }
+    .card .titulo { color: #52647d; }
+    .numero { color: #087e72; letter-spacing: -.04em; }
+    .tabela-container { border-color: #dce5f0; border-radius: 13px; box-shadow: 0 2px 8px rgba(20,43,78,.035); }
+    table { font-size: 10.5px; }
+    th { background: #edf3fa; color: #334b6b; letter-spacing: .035em; padding-top: 8px; padding-bottom: 8px; }
+    th, td { border-bottom-color: #e7edf5; }
+    tbody tr:nth-child(even) td { background: #fbfcfe; }
+    tr:hover td { background: #f0f6ff; }
+    .badge, .contador-secao, .sinal-agenda-periodo { border-radius: 999px; }
+    .vazio { border-radius: 12px; padding: 18px; background: #f7f9fc; }
+    .rodape-info, .info-tabela { color: #687b95; line-height: 1.5; }
+
+    /* Convocar: as 15 colunas passam a caber na largura disponível. */
+    #tabelaConvocar .tabela-container { overflow-x: hidden; }
+    #tabelaConvocar table { width: 100%; min-width: 0; table-layout: fixed; font-size: 9px; }
+    #tabelaConvocar th, #tabelaConvocar td {
+      padding: 6px 4px; font-size: 9px; line-height: 1.22; overflow-wrap: anywhere; word-break: normal;
+    }
+    #tabelaConvocar th:nth-child(1), #tabelaConvocar td:nth-child(1) { width: 2%; }
+    #tabelaConvocar th:nth-child(2), #tabelaConvocar td:nth-child(2) { width: 4%; }
+    #tabelaConvocar th:nth-child(3), #tabelaConvocar td:nth-child(3) { width: 12%; }
+    #tabelaConvocar th:nth-child(4), #tabelaConvocar td:nth-child(4) { width: 10%; }
+    #tabelaConvocar th:nth-child(5), #tabelaConvocar td:nth-child(5) { width: 9%; }
+    #tabelaConvocar th:nth-child(6), #tabelaConvocar td:nth-child(6) { width: 5%; }
+    #tabelaConvocar th:nth-child(7), #tabelaConvocar td:nth-child(7) { width: 6%; }
+    #tabelaConvocar th:nth-child(8), #tabelaConvocar td:nth-child(8) { width: 6%; }
+    #tabelaConvocar th:nth-child(9), #tabelaConvocar td:nth-child(9) { width: 6%; }
+    #tabelaConvocar th:nth-child(10), #tabelaConvocar td:nth-child(10) { width: 7%; }
+    #tabelaConvocar th:nth-child(11), #tabelaConvocar td:nth-child(11) { width: 14%; }
+    #tabelaConvocar th:nth-child(12), #tabelaConvocar td:nth-child(12) { width: 6%; }
+    #tabelaConvocar th:nth-child(13), #tabelaConvocar td:nth-child(13) { width: 3%; }
+    #tabelaConvocar th:nth-child(14), #tabelaConvocar td:nth-child(14) { width: 4%; }
+    #tabelaConvocar th:nth-child(15), #tabelaConvocar td:nth-child(15) { width: 6%; }
+    #tabelaConvocar td:nth-child(11) { white-space: normal; overflow: visible; }
+    #tabelaConvocar td button { min-width: 26px; width: 100%; }
+
+    @media (max-width: 1100px) {
+      body { padding: 10px; } .topo { padding: 18px; } .filtros, .conteudo { padding: 13px; }
+      .abas { position: static; } #tabelaConvocar th, #tabelaConvocar td { padding: 4px 2px; font-size: 8px; }
+    }
+    @media (max-width: 720px) {
+      .topo { border-radius: 12px; } .filtros { align-items: stretch; }
+      .filtros > div, .filtros input, .filtros select { width: 100%; }
+      .linha-filtros { align-items: stretch; } .campo-pesquisa, .email-gestor { min-width: 100%; }
+      .acoes-lote { margin-left: 0; } .abas { overflow-x: auto; flex-wrap: nowrap; }
+      .aba { flex: 0 0 auto; } .cards, .indicador-resumo-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+
 </style>
 </head>
 
@@ -944,8 +1073,8 @@
           <label>E-mail do gestor</label>
           <input type="text" id="emailGestorConvocacao" placeholder="gestor@isgh.org.br; outro@isgh.org.br">
         </div>
-        <button class="botao-secundario" onclick="marcarConvocacoesVisiveis(true)">Marcar</button>
-        <button class="botao-secundario" onclick="marcarConvocacoesVisiveis(false)">Desmarcar</button>
+        
+        
         <button class="azul" onclick="gerarSelecionadosEmLote()">Gerar selecionados</button>
         <button class="azul" onclick="enviarSelecionadosGestor()">Enviar gestor</button>
         <button class="botao-alerta" onclick="gerarTodosVisiveisEmLote()">Gerar lote</button>
@@ -963,6 +1092,7 @@
   <div class="conteudo" id="faltosos" style="display:none;">
     <h2>Pendências</h2>
     <div class="rodape-info">Esta aba é operacional e mostra apenas as pendências que ainda exigem ação do SESMT. Quem já realizou o ASO posteriormente deixa de aparecer nesta aba.</div>
+    <div class="rodape-info">Na seção “Necessita reconvocação”, selecione uma ou mais pessoas do mesmo gestor e clique em <strong>Enviar selecionadas</strong>. Informe o e-mail do gestor no campo acima. Você também pode enviar individualmente pela coluna Ação; <strong>PDF</strong> gera a convocação para baixar.</div>
 
 
     <div class="linha-filtros">
@@ -1067,6 +1197,7 @@
     let dadosPortal = null;
     let periodoCarregadoPortal = "";
     let selecaoConvocacoes = new Set();
+    let selecaoReconvocacoes = new Set();
     let loteEmProcessamento = false;
     let paginaGeral = 1;
     let tamanhoPaginaGeral = 100;
@@ -1098,6 +1229,12 @@
       const mes = String(data.getMonth() + 1).padStart(2, "0");
       const dia = String(data.getDate()).padStart(2, "0");
       return `${ano}-${mes}-${dia}`;
+    }
+
+    function formatarDataEnvioPortal(valor) {
+      const s=String(valor||"").trim();
+      const m=s.match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}:\d{2})(?::\d{2})?)?$/);
+      return m ? `${m[3]}/${m[2]}/${m[1]}${m[4]?' '+m[4]:''}` : s;
     }
 
     function mostrarLoading(exibir) {
@@ -1403,6 +1540,8 @@
           if (th.dataset.ordenacaoAtiva === "1") return;
 
           th.dataset.ordenacaoAtiva = "1";
+          if (th.classList.contains("check-coluna") || !th.textContent.trim()) return;
+
           th.classList.add("ordenavel");
           th.title = "Clique para ordenar";
 
@@ -1514,10 +1653,11 @@
               <th>Setor</th>
               <th>Situação</th>
               <th>Origem</th>
-              <th>Data convocar</th>
-              <th>Data limite</th>
+              <th>Convocação</th>
+              <th>Vencimento</th>
               <th>Data agendada</th>
               <th>Informações da agenda</th>
+              <th>Último e-mail</th>
               <th>Dias</th>
               
               <th>PDF</th>
@@ -1553,9 +1693,10 @@
             <td>${escaparHtml(item.situacao)}</td>
             <td><span class="badge-origem-convocacao">${escaparHtml(item.grupoConvocacao || "")}</span></td>
             <td>${escaparHtml(item.dataConvocarBR)}</td>
-            <td>${escaparHtml(item.dataLimiteBR)}</td>
+            <td>${escaparHtml(item.proximoVencimentoBR)}</td>
             <td>${dataAgendadaPortal}</td>
             <td class="info-agenda" title="${escaparAtributo(item.informacoesAgenda || item.statusAgenda || "")}">${escaparHtml(item.informacoesAgenda || item.statusAgenda || "")}</td>
+            <td>${escaparHtml(formatarDataEnvioPortal(item.ultimoEnvioConvocacao))}</td>
             <td>${escaparHtml(item.diasParaVencer)}</td>
             
             <td>
@@ -1691,16 +1832,22 @@
         ${montarSecaoPendencia("Agendados/Reagendados", agendados, "agendado")}
       `;
       ativarOrdenacaoTabelas("tabelaFaltosos");
+      atualizarInterfaceSelecaoReconvocacoes();
     }
 
     function montarSecaoPendencia(titulo, lista, tipo) {
       const total = lista ? lista.length : 0;
+      const eReconvocacao = tipo === "agendado";
+      const barraSelecao = eReconvocacao
+        ? '<div class="acoes-reconvocacao"><span id="resumoSelecaoReconvocacao">0 selecionadas</span><button type="button" class="azul" id="enviarReconvocacoesSelecionadas" onclick="enviarReconvocacoesSelecionadas()" disabled>Enviar selecionadas</button></div>'
+        : "";
       let html = `
         <div class="secao">
           <h3>
             <span>${escaparHtml(titulo)}</span>
             <span class="contador-secao">${total}</span>
           </h3>
+          ${barraSelecao}
       `;
 
       if (!lista || lista.length === 0) {
@@ -1710,9 +1857,10 @@
 
       html += `
         <div class="tabela-container">
-          <table>
+          <table class="${eReconvocacao ? "tabela-reconvocacao" : ""}">
             <thead>
               <tr>
+                ${eReconvocacao ? '<th class="check-coluna"><input type="checkbox" class="check-todas-reconvocacoes" title="Selecionar pendências visíveis" onchange="alternarTodasReconvocacoes(this)"></th>' : ""}
                 <th>Matrícula</th>
                 <th>Nome</th>
                 <th>Função</th>
@@ -1723,6 +1871,7 @@
                 <th>Nova data</th>
                 <th>Ocorr.</th>
                 <th>Enviadas</th>
+                <th>Último e-mail</th>
                 <th>Ação</th>
               </tr>
             </thead>
@@ -1730,7 +1879,12 @@
       `;
 
       lista.forEach(item => {
-        const podeBaixar = tipo === "reconvocar" || tipo === "agendado";
+        const podeBaixar = tipo === "agendado" && !!(item.novaDataAgendada || item.dataAgendada);
+        const matriculaReconvocacao = String(item.mat || "");
+        const dataAnteriorReconvocacao = item.dataUltimaPendenciaBR || item.dataAgendadaBR || "";
+        const caixaReconvocacao = eReconvocacao
+          ? '<td class="check-coluna"><input type="checkbox" class="check-reconvocacao" data-mat="' + escaparAtributo(matriculaReconvocacao) + '" data-data-anterior="' + escaparAtributo(dataAnteriorReconvocacao) + '" ' + (selecaoReconvocacoes.has(matriculaReconvocacao) ? "checked" : "") + ' onchange="atualizarSelecaoReconvocacao(this)"></td>'
+          : "";
         const novaData = item.novaDataAgendadaBR || item.dataAgendadaBR || "";
         const totalEnviadas = Number(item.totalConvocacoesEnviadas) || 0;
         const acao = podeBaixar
@@ -1738,10 +1892,11 @@
                <button title="Baixar nova convocação" onclick="gerarIndividual('${escaparAtributo(item.mat)}')">PDF</button>
                <button title="Enviar nova convocação ao gestor" onclick="enviarPendenciaGestor('${escaparAtributo(item.mat)}', '${escaparAtributo(item.dataUltimaPendenciaBR || item.dataAgendadaBR || "")}')">Enviar</button>
              </div>`
-          : `<span class="badge">${escaparHtml(item.grupoPendencia || "")}</span>`;
+          : `<span class="badge">Aguardando novo agendamento</span>`;
 
         html += `
           <tr>
+            ${caixaReconvocacao}
             <td>${escaparHtml(item.mat)}</td>
             <td>${escaparHtml(item.nome)}</td>
             <td>${escaparHtml(item.funcao)}</td>
@@ -1752,6 +1907,7 @@
             <td>${escaparHtml(novaData)}</td>
             <td>${escaparHtml(item.qtdOcorrencias ?? item.ocorrencias ?? 0)}</td>
             <td title="${escaparAtributo(item.ultimoEnvioConvocacao || "")}">${escaparHtml(totalEnviadas)}</td>
+            <td>${escaparHtml(formatarDataEnvioPortal(item.ultimoEnvioConvocacao))}</td>
             <td>${acao}</td>
           </tr>
         `;
@@ -2380,12 +2536,119 @@
     }
 
     function obterEmailsGestor() {
+      // O campo Convocar é independente do campo usado na aba Pendências.
       const emailConvocar = String(document.getElementById("emailGestorConvocacao")?.value || "");
-      const emailPendencia = String(document.getElementById("emailGestorPendencia")?.value || "");
-      return (emailConvocar + ";" + emailPendencia)
+      return emailConvocar
         .split(/[;,]/)
         .map(email => email.trim())
         .filter(Boolean);
+    }
+
+    function alternarTodasReconvocacoes(caixa) {
+      const linhas = Array.from(document.querySelectorAll("#tabelaFaltosos .check-reconvocacao"));
+      selecaoReconvocacoes.clear();
+      linhas.forEach((linha, indice) => {
+        const marcada = caixa.checked && indice < 30;
+        linha.checked = marcada;
+        if (marcada) selecaoReconvocacoes.add(String(linha.dataset.mat || ""));
+      });
+      if (caixa.checked && linhas.length > 30) mostrarErro("O envio em lote aceita até 30 pessoas por e-mail. Foram selecionadas as primeiras 30.");
+      atualizarInterfaceSelecaoReconvocacoes();
+    }
+
+    function atualizarSelecaoReconvocacao(caixa) {
+      const matricula = String(caixa.dataset.mat || "");
+      if (caixa.checked && selecaoReconvocacoes.size >= 30 && !selecaoReconvocacoes.has(matricula)) {
+        caixa.checked = false;
+        mostrarErro("O envio em lote aceita até 30 pessoas por e-mail.");
+        return;
+      }
+      if (caixa.checked) selecaoReconvocacoes.add(matricula);
+      else selecaoReconvocacoes.delete(matricula);
+      atualizarInterfaceSelecaoReconvocacoes();
+    }
+
+    function atualizarInterfaceSelecaoReconvocacoes() {
+      const visiveis = Array.from(document.querySelectorAll("#tabelaFaltosos .check-reconvocacao"));
+      const selecionadas = visiveis.filter(c => selecaoReconvocacoes.has(String(c.dataset.mat || "")));
+      const resumo = document.getElementById("resumoSelecaoReconvocacao");
+      const botao = document.getElementById("enviarReconvocacoesSelecionadas");
+      const todas = document.querySelector("#tabelaFaltosos .check-todas-reconvocacoes");
+      if (resumo) resumo.textContent = selecionadas.length + " selecionada(s)";
+      if (botao) botao.disabled = selecionadas.length === 0 || loteEmProcessamento;
+      if (todas) {
+        todas.checked = visiveis.length > 0 && selecionadas.length === visiveis.length;
+        todas.indeterminate = selecionadas.length > 0 && selecionadas.length < visiveis.length;
+      }
+    }
+
+    function enviarReconvocacoesSelecionadas() {
+      if (loteEmProcessamento) return;
+      const selecionadas = Array.from(document.querySelectorAll("#tabelaFaltosos .check-reconvocacao:checked"))
+        .map(c => ({
+          mat: String(c.dataset.mat || "").trim(),
+          dataAnteriorBR: String(c.dataset.dataAnterior || "").trim()
+        }))
+        .filter(c => c.mat);
+      if (!selecionadas.length) {
+        mostrarErro("Selecione pelo menos uma pessoa na seção Necessita reconvocação.");
+        return;
+      }
+
+      const emails = String(document.getElementById("emailGestorPendencia")?.value || "")
+        .split(/[;,]/).map(e => e.trim()).filter(Boolean);
+      if (!emails.length) {
+        mostrarErro("Informe o e-mail do gestor das pessoas selecionadas.");
+        return;
+      }
+      const invalidos = emails.filter(e => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+      if (invalidos.length) {
+        mostrarErro("E-mail(s) inválido(s): " + invalidos.join(", "));
+        return;
+      }
+      const destinatarios = emails.join("; ");
+      if (!confirm("Enviar " + selecionadas.length + " reconvocação(ões) para " + destinatarios + "? Confirme que todas pertencem ao(s) mesmo(s) gestor(es).")) return;
+
+      const dataInicio = document.getElementById("dataInicio")?.value || "";
+      const dataFim = document.getElementById("dataFim")?.value || "";
+      if (!dataInicio || !dataFim) {
+        mostrarErro("Informe o período antes de enviar as reconvocações.");
+        return;
+      }
+      const dataAnteriorPorMatricula = {};
+      selecionadas.forEach(item => { dataAnteriorPorMatricula[item.mat] = item.dataAnteriorBR; });
+
+      limparMensagens();
+      loteEmProcessamento = true;
+      atualizarInterfaceSelecaoReconvocacoes();
+      mostrarLoading(true);
+      google.script.run
+        .withSuccessHandler(function(resultados) {
+          loteEmProcessamento = false;
+          mostrarLoading(false);
+          const lista = resultados || [];
+          const enviadas = lista.filter(r => r && r.sucesso).length;
+          const falhas = lista.filter(r => r && !r.sucesso).length;
+          selecaoReconvocacoes.clear();
+          carregarDados(true);
+          mostrarOk(enviadas
+            ? enviadas + " reconvocação(ões) enviadas nas conversas originais dos gestores" + (falhas ? "; " + falhas + " registro(s) não enviado(s)." : ".")
+            : "Nenhuma reconvocação foi enviada.");
+          atualizarInterfaceSelecaoReconvocacoes();
+        })
+        .withFailureHandler(function(erro) {
+          loteEmProcessamento = false;
+          mostrarLoading(false);
+          atualizarInterfaceSelecaoReconvocacoes();
+          mostrarErro(erro.message || erro);
+        })
+        .enviarReconvocacoesSelecionadasGestor(
+          selecionadas.map(item => item.mat),
+          destinatarios,
+          dataInicio,
+          dataFim,
+          dataAnteriorPorMatricula
+        );
     }
 
     function enviarPendenciaGestor(mat, dataAnteriorBR) {
@@ -2394,7 +2657,8 @@
         return;
       }
 
-      const emails = obterEmailsGestor();
+      const emails = String(document.getElementById("emailGestorPendencia")?.value || "")
+        .split(/[;,]/).map(email => email.trim()).filter(Boolean);
       if (emails.length === 0) {
         mostrarErro("Informe o e-mail do gestor antes de enviar a pendência.");
         return;

@@ -19,7 +19,22 @@
   const norm=v=>String(v||'').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 
   function removerLimparAntigo(){document.querySelectorAll('.filtros>button,#toolbarModulo>button,.linha-filtros>button').forEach(b=>{if(b.textContent.trim().toLowerCase()==='limpar'&&!b.classList.contains('painel-limpar-periodo'))b.remove();});}
-  function moverPeriodo(){const top=document.querySelector('.painel-topbar'),atualizar=top&&top.querySelector('.painel-atualizar'),filtros=document.querySelector('.filtros'),inicio=document.getElementById('dataInicio'),fim=document.getElementById('dataFim');if(!top||!atualizar||!filtros||!inicio||!fim)return;removerLimparAntigo();if(top.querySelector('.painel-topbar-periodo'))return;const bloco=document.createElement('div');bloco.className='painel-topbar-acoes';const periodo=document.createElement('div');periodo.className='painel-topbar-periodo';periodo.appendChild(inicio.closest('div'));periodo.appendChild(fim.closest('div'));const filtrar=[...filtros.querySelectorAll('button')].find(b=>b.textContent.trim().toLowerCase()==='filtrar');if(filtrar)periodo.appendChild(filtrar);const atalhos=document.createElement('div');atalhos.className='painel-periodo-atalhos';[['Mês atual',0],['Próximo mês',1]].forEach(cfg=>{const b=document.createElement('button');b.type='button';b.className='periodo-atalho';b.textContent=cfg[0];b.onclick=function(){const h=new Date(),base=new Date(h.getFullYear(),h.getMonth()+cfg[1],1),ini=new Date(base.getFullYear(),base.getMonth(),1),fm=new Date(base.getFullYear(),base.getMonth()+1,0);inicio.value=formatarDataInput(ini);fim.value=formatarDataInput(fm);carregarDados(false)};atalhos.appendChild(b)});periodo.appendChild(atalhos);const limpar=document.createElement('button');limpar.type='button';limpar.className='painel-limpar-periodo';limpar.textContent='Limpar';limpar.onclick=function(){const h=new Date(),ini=new Date(h.getFullYear(),h.getMonth(),1),fm=new Date(h.getFullYear(),h.getMonth()+1,0);inicio.value=formatarDataInput(ini);fim.value=formatarDataInput(fm);resetarSituacoes();resetarSituacoesComplementares();document.querySelectorAll('.linha-filtros input[type="text"],.linha-filtros input[type="email"]').forEach(el=>el.value='');document.querySelectorAll('.linha-filtros select').forEach(el=>el.value='');carregarDados(false)};periodo.appendChild(limpar);bloco.appendChild(periodo);const sync=top.querySelector('#painelSync');if(sync)bloco.appendChild(sync);bloco.appendChild(atualizar);top.appendChild(bloco);const vazio=top.querySelector('.painel-topbar-status');if(vazio&&!vazio.children.length)vazio.remove();}
+  function moverPeriodo(){
+    const top=document.querySelector('.painel-topbar'),filtros=document.querySelector('.filtros'),inicio=document.getElementById('dataInicio'),fim=document.getElementById('dataFim');
+    if(!top||!filtros||!inicio||!fim)return;
+    removerLimparAntigo();
+    if(filtros.querySelector('.painel-topbar-periodo'))return;
+    const periodo=document.createElement('div');periodo.className='painel-topbar-periodo';
+    periodo.appendChild(inicio.closest('div'));periodo.appendChild(fim.closest('div'));
+    const filtrar=[...filtros.querySelectorAll('button')].find(b=>b.textContent.trim().toLowerCase()==='filtrar');
+    if(filtrar)periodo.appendChild(filtrar);
+    const atalhos=document.createElement('div');atalhos.className='painel-periodo-atalhos';
+    [['Mês atual',0],['Próximo mês',1]].forEach(cfg=>{const b=document.createElement('button');b.type='button';b.className='periodo-atalho';b.textContent=cfg[0];b.onclick=function(){const h=new Date(),base=new Date(h.getFullYear(),h.getMonth()+cfg[1],1),ini=new Date(base.getFullYear(),base.getMonth(),1),fm=new Date(base.getFullYear(),base.getMonth()+1,0);inicio.value=formatarDataInput(ini);fim.value=formatarDataInput(fm);carregarDados(false)};atalhos.appendChild(b)});
+    periodo.appendChild(atalhos);
+    const limpar=document.createElement('button');limpar.type='button';limpar.className='painel-limpar-periodo';limpar.textContent='Limpar';limpar.onclick=function(){const h=new Date(),ini=new Date(h.getFullYear(),h.getMonth(),1),fm=new Date(h.getFullYear(),h.getMonth()+1,0);inicio.value=formatarDataInput(ini);fim.value=formatarDataInput(fm);resetarSituacoes();resetarSituacoesComplementares();document.querySelectorAll('.linha-filtros input[type="text"],.linha-filtros input[type="email"]').forEach(el=>el.value='');document.querySelectorAll('.linha-filtros select').forEach(el=>el.value='');carregarDados(false)};
+    periodo.appendChild(limpar);
+    const area=filtros.querySelector('#toolbarModulo');filtros.insertBefore(periodo,area||filtros.firstChild);
+  }
 
   function situacoesDisponiveis(){const lista=dadosPortal&&dadosPortal.convocar&&dadosPortal.convocar.todos||[];return[...new Set(lista.map(i=>i.situacao).filter(Boolean))].sort((a,b)=>a.localeCompare(b));}
   function atualizarResumoSituacoes(){const b=document.querySelector('.situacao-multipla:not(.situacao-complementares) .situacao-multipla-botao');if(!b)return;const nomes=situacoesDisponiveis().filter(s=>selecionadas.has(norm(s)));b.textContent=nomes.length<=2?nomes.join(', '):nomes.slice(0,2).join(', ')+' +'+(nomes.length-2);}
@@ -56,8 +71,8 @@
 <style>
 /* A coluna de informações foi acrescentada ao Convocar após as larguras V14.
    O quadro precisa de espaço próprio e rolagem horizontal em telas menores. */
-#tabelaConvocar .tabela-container{overflow-x:auto!important}
-#tabelaConvocar table{width:1800px!important;min-width:1800px!important}
+#tabelaConvocar .tabela-container{overflow-x:hidden!important}
+#tabelaConvocar table{width:100%!important;min-width:0!important;table-layout:fixed!important}
 #tabelaConvocar table th:nth-child(1),#tabelaConvocar table td:nth-child(1){width:2.5%!important}
 #tabelaConvocar table th:nth-child(2),#tabelaConvocar table td:nth-child(2){width:4%!important}
 #tabelaConvocar table th:nth-child(3),#tabelaConvocar table td:nth-child(3){width:12%!important}
@@ -142,3 +157,60 @@
   document.addEventListener("click",evento=>{if(evento.target.closest&&evento.target.closest("#abaConvocar"))setTimeout(consolidarToolbarConvocar,0);},true);
 })();
 </script>
+
+<style>
+/* Barra única de filtros compacta; a navegação lateral fica sem moldura externa. */
+.painel-sidebar,.painel-sidebar .abas{border:0!important;outline:0!important;box-shadow:none!important;border-radius:0!important}
+.painel-sidebar .abas:focus,.painel-sidebar .abas:focus-within{outline:0!important;box-shadow:none!important}
+.filtros{overflow-x:hidden!important;flex-wrap:nowrap!important;gap:5px!important;padding:7px 9px!important}
+.painel-topbar-periodo{display:flex!important;align-items:end!important;gap:4px!important;flex:0 0 auto!important;margin:0!important}
+.painel-topbar-periodo>div{width:92px!important;flex:0 0 92px!important}
+.painel-topbar-periodo label{font-size:8px!important}
+.painel-topbar-periodo input{width:92px!important;min-width:0!important;height:32px!important;padding:4px 5px!important;font-size:9px!important}
+.painel-topbar-periodo>button{height:32px!important;padding:0 5px!important;font-size:8px!important}
+.painel-periodo-atalhos{gap:4px!important}
+.painel-periodo-atalhos button{height:32px!important;padding:0 5px!important;font-size:8px!important}
+#toolbarModulo{flex:1 1 auto!important;min-width:0!important;overflow:visible!important}
+#toolbarModulo .linha-filtros{width:100%!important;min-width:0!important;flex-wrap:nowrap!important;gap:5px!important}
+#toolbarModulo .linha-filtros>div{min-width:0!important}
+#toolbarModulo .situacao-multipla,#toolbarModulo .situacao-complementares{width:120px!important;min-width:120px!important;flex:0 0 120px!important}
+#toolbarModulo .situacao-multipla-botao{height:32px!important;padding:0 22px 0 7px!important;font-size:9px!important}
+#toolbarModulo .linha-filtros select{width:112px!important;min-width:0!important;height:32px!important;padding:4px 5px!important;font-size:9px!important}
+#toolbarModulo .linha-filtros .campo-pesquisa{width:132px!important;min-width:0!important;flex:0 1 132px!important}
+#toolbarModulo .linha-filtros .campo-pesquisa input{width:100%!important;min-width:0!important;height:32px!important;font-size:9px!important;padding:4px 6px!important}
+#toolbarModulo .linha-filtros .email-gestor{width:145px!important;min-width:0!important;flex:0 1 145px!important}
+#toolbarModulo .linha-filtros .email-gestor input{width:100%!important;min-width:0!important;height:32px!important;font-size:8.5px!important;padding:4px 5px!important}
+#toolbarModulo .acoes-lote{gap:4px!important;flex-wrap:nowrap!important}
+#toolbarModulo .acoes-lote button{height:32px!important;padding:0 5px!important;font-size:8px!important;white-space:nowrap!important}
+#toolbarModulo .linha-filtros label{font-size:8px!important;margin-bottom:2px!important}
+#tabelaConvocar .tabela-container{overflow-x:hidden!important}
+#tabelaConvocar table{width:100%!important;min-width:0!important;table-layout:fixed!important}
+#tabelaConvocar th,#tabelaConvocar td{overflow-wrap:anywhere!important;word-break:normal!important}
+#tabelaConvocar th:nth-child(1),#tabelaConvocar td:nth-child(1){width:2%!important}
+#tabelaConvocar th:nth-child(2),#tabelaConvocar td:nth-child(2){width:4%!important}
+#tabelaConvocar th:nth-child(3),#tabelaConvocar td:nth-child(3){width:12%!important}
+#tabelaConvocar th:nth-child(4),#tabelaConvocar td:nth-child(4){width:9%!important}
+#tabelaConvocar th:nth-child(5),#tabelaConvocar td:nth-child(5){width:9%!important}
+#tabelaConvocar th:nth-child(6),#tabelaConvocar td:nth-child(6){width:5%!important}
+#tabelaConvocar th:nth-child(7),#tabelaConvocar td:nth-child(7){width:7%!important}
+#tabelaConvocar th:nth-child(8),#tabelaConvocar td:nth-child(8){width:6%!important}
+#tabelaConvocar th:nth-child(9),#tabelaConvocar td:nth-child(9){width:6%!important}
+#tabelaConvocar th:nth-child(10),#tabelaConvocar td:nth-child(10){width:7%!important}
+#tabelaConvocar th:nth-child(11),#tabelaConvocar td:nth-child(11){width:13%!important}
+#tabelaConvocar th:nth-child(12),#tabelaConvocar td:nth-child(12){width:6%!important}
+#tabelaConvocar th:nth-child(13),#tabelaConvocar td:nth-child(13){width:3%!important}
+#tabelaConvocar th:nth-child(14),#tabelaConvocar td:nth-child(14){width:4%!important}
+#tabelaConvocar th:nth-child(15),#tabelaConvocar td:nth-child(15){width:7%!important}
+@media(max-width:1150px){
+ .painel-topbar-periodo>div,.painel-topbar-periodo input{width:82px!important;min-width:0!important;flex-basis:82px!important}
+ #toolbarModulo .situacao-multipla,#toolbarModulo .situacao-complementares{width:105px!important;min-width:105px!important;flex-basis:105px!important}
+ #toolbarModulo .linha-filtros .campo-pesquisa{width:110px!important;flex-basis:110px!important}
+ #toolbarModulo .linha-filtros .email-gestor{width:125px!important;flex-basis:125px!important}
+}
+@media(max-width:900px){
+ .filtros{overflow-x:auto!important}
+ .painel-topbar-periodo{flex:0 0 auto!important}
+ #toolbarModulo{flex:0 0 auto!important}
+ #toolbarModulo .linha-filtros{width:max-content!important}
+}
+</style>

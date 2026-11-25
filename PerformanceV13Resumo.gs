@@ -28,6 +28,7 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
      permanecem em Convocar e também aparecem em Pendências. */
   const convocar = gerarListaConvocar(lista, dataInicio, dataFim)
     .filter(c => !c.asoRealizadoValido);
+  aplicarHistoricoEnviosPendencias({ convocar: { todos: convocar } });
 
   const complementares = gerarExamesComplementares(lista, dataInicio, dataFim)
     .filter(c => !c.asoRealizadoValido);
@@ -40,6 +41,7 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
   let totalAtrasadosAtivos = 0;
 
   lista.forEach(c => {
+    if (c.matriculaDuplicada) return;
     if (noPeriodo(c.dataAgendada, dataInicio, dataFim)) {
       totalAgendados++;
       if (c.temAsoRealizadoAgenda) totalCompareceram++;
@@ -69,7 +71,8 @@ function obterResumoPortalV13Leve(dataInicio, dataFim, forcarAtualizacao) {
         : ""
     },
     dashboard: {
-      totalColaboradores: lista.length,
+      totalColaboradores: new Set(lista.map(c => String(c.mat || "").trim()).filter(Boolean)).size,
+      totalCadastrosAmbiguos: lista.filter(c => c.matriculaDuplicada).length,
       totalConvocar: convocar.length,
       totalConvocarPendentes: convocar.filter(c => !ehAsoRealizado(c)).length,
       totalConvocarRealizados: convocar.filter(ehAsoRealizado).length,

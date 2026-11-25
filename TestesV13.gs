@@ -1,3 +1,18 @@
+function casoCanceladoBaseTeste_() {
+  return {
+    matriculaCompleta: "2009996",
+    nome: "TESTE REGRA ANUAL",
+    situacao: "Ativo",
+    situacaoNorm: "ATIVO",
+    tipoExame: "",
+    dataUltimoAso: "",
+    dataAgendada: "",
+    dataConvocar: "",
+    dataConvocarBR: "",
+    dataAgendadaBR: ""
+  };
+}
+
 /* =========================================================
    TESTES DE REGRESSÃO E PERFORMANCE V13.2
    Execute no Apps Script antes da implantação.
@@ -97,10 +112,19 @@ function executarRegressaoRegrasConvocacaoV14() {
 
   const setembro = gerarListaConvocar([colaborador], "2026-09-01", "2026-09-30");
   testar(
-    "Colaborador em férias permanece elegível no mês original",
-    setembro.length === 1 && setembro[0].grupoConvocacao === "Convocação do período",
+    "Filtro de período segue mês do agendamento, não da convocação",
+    setembro.length === 0,
     setembro.length ? setembro[0].grupoConvocacao : "não listado"
   );
+
+  testar("Regra anual convoca dez meses após o último ASO",
+    calcularDataConvocarV15_("2025-03-15", "2026-03-15", 12) === "2026-01-15");
+  testar("Vencimento em janeiro não convoca no ano anterior",
+    calcularDataConvocarV15_("2025-01-18", "2026-01-18", 12) === "2026-01-01");
+  testar("Vencimento em fevereiro não convoca no ano anterior",
+    calcularDataConvocarV15_("2025-02-18", "2026-02-18", 12) === "2026-02-01");
+  testar("Técnico em radiologia convoca quinze dias antes",
+    calcularDataConvocarV15_("2026-01-01", "2026-07-01", 6) === "2026-06-16");
 
   testar(
     "PDF não é bloqueado quando convocação nasce em setembro e agenda é outubro",
@@ -129,6 +153,169 @@ function executarRegressaoRegrasConvocacaoV14() {
     "Periódico realizado encerra o ciclo",
     periodico.asoRealizadoValido === true,
     periodico.dataAsoRealizadoAgenda
+  );
+
+
+  const casoDemissional = {
+    mat: "TESTE_DEMISSIONAL",
+    matriculaCompleta: "2009998",
+    nome: "TESTE DEMISSIONAL",
+    situacao: "Ativo",
+    situacaoNorm: "ATIVO",
+    tipoExame: "DEMISSIONAL",
+    dataUltimoAso: "2026-08-15",
+    dataAgendada: "",
+    dataConvocar: "",
+    dataConvocarBR: "",
+    dataAgendadaBR: ""
+  };
+  const eventosDemissional = new Map();
+  eventosDemissional.set("TESTE_DEMISSIONAL", [
+    {
+      mat: "TESTE_DEMISSIONAL", data: "2026-08-01", dataBR: "01/08/2026",
+      tipo: "PERIÓDICO", tipoNorm: "PERIODICO", status: "Não compareceu ASO",
+      ehAsoRealizado: false, ehNaoCompareceu: true, ehReagendou: false, ehCancelado: false
+    },
+    {
+      mat: "TESTE_DEMISSIONAL", data: "2026-08-15", dataBR: "15/08/2026",
+      tipo: "DEMISSIONAL", tipoNorm: "DEMISSIONAL", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    }
+  ]);
+  const pendenciasDemissional = gerarPendencias([casoDemissional], eventosDemissional);
+  testar(
+    "ASO demissional encerra a pendência operacional",
+    pendenciasDemissional.operacionais.length === 0,
+    pendenciasDemissional.operacionais.length
+  );
+
+  const casoASOAno = Object.assign({}, casoCanceladoBaseTeste_(), {
+    mat: "TESTE_ASO_ANO",
+    periodicidade: 12,
+    funcao: "ENFERMEIRO"
+  });
+  const eventosASOAno = new Map();
+  eventosASOAno.set("TESTE_ASO_ANO", [
+    {
+      mat: "TESTE_ASO_ANO", data: "2026-01-10", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "Não compareceu ASO",
+      ehAsoRealizado: false, ehNaoCompareceu: true, ehReagendou: false, ehCancelado: false
+    },
+    {
+      mat: "TESTE_ASO_ANO", data: "2026-10-01", tipo: "RETORNO AO TRABALHO",
+      tipoNorm: "RETORNO AO TRABALHO", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    }
+  ]);
+  testar(
+    "ASO realizado no ano vigente encerra pendência anual fora da janela de 90 dias",
+    gerarPendencias([casoASOAno], eventosASOAno).operacionais.length === 0
+  );
+
+  const casoRadiologia = Object.assign({}, casoASOAno, {
+    mat: "TESTE_RADIOLOGIA_ANUAL",
+    funcao: "TECNICO(A) EM RADIOLOGIA",
+    periodicidade: 6
+  });
+  const eventosRadiologia = new Map();
+  eventosRadiologia.set("TESTE_RADIOLOGIA_ANUAL", [
+    {
+      mat: "TESTE_RADIOLOGIA_ANUAL", data: "2026-01-10", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "Não compareceu ASO",
+      ehAsoRealizado: false, ehNaoCompareceu: true, ehReagendou: false, ehCancelado: false
+    },
+    {
+      mat: "TESTE_RADIOLOGIA_ANUAL", data: "2026-08-01", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    },
+  ]);
+  testar(
+    "Técnico em Radiologia sem dois ASOs no ano ainda pode ter pendência",
+    gerarPendencias([casoRadiologia], eventosRadiologia).operacionais.length === 1
+  );
+
+  const casoRadiologia2 = Object.assign({}, casoRadiologia, { mat: "TESTE_RADIOLOGIA_DOIS_ASOS" });
+  eventosRadiologia.set("TESTE_RADIOLOGIA_DOIS_ASOS", [
+    {
+      mat: "TESTE_RADIOLOGIA_DOIS_ASOS", data: "2026-01-10", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "Não compareceu ASO",
+      ehAsoRealizado: false, ehNaoCompareceu: true, ehReagendou: false, ehCancelado: false
+    },
+    {
+      mat: "TESTE_RADIOLOGIA_DOIS_ASOS", data: "2026-07-01", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    },
+    {
+      mat: "TESTE_RADIOLOGIA_DOIS_ASOS", data: "2026-11-01", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    }
+  ]);
+  testar(
+    "Dois ASOs realizados no ano encerram pendência do Técnico em Radiologia",
+    gerarPendencias([casoRadiologia2], eventosRadiologia).operacionais.length === 0
+  );
+
+  const casoCancelado = {
+    mat: "TESTE_CANCELADO",
+    matriculaCompleta: "2009997",
+    nome: "TESTE CANCELADO",
+    situacao: "Ativo",
+    situacaoNorm: "ATIVO",
+    tipoExame: "",
+    dataUltimoAso: "",
+    dataAgendada: "",
+    dataConvocar: "",
+    dataConvocarBR: "",
+    dataAgendadaBR: ""
+  };
+  const eventosCancelados = new Map();
+  eventosCancelados.set("TESTE_CANCELADO", [
+    {
+      mat: "TESTE_CANCELADO", data: "2026-01-10", dataBR: "10/01/2026",
+      tipo: "PERIÓDICO", tipoNorm: "PERIODICO", status: "Cancelado",
+      ehAsoRealizado: false, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: true
+    },
+    {
+      mat: "TESTE_CANCELADO", data: "2026-11-20", dataBR: "20/11/2026",
+      tipo: "RETORNO AO TRABALHO", tipoNorm: "RETORNO AO TRABALHO", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    }
+  ]);
+  const pendenciasCancelado = gerarPendencias([casoCancelado], eventosCancelados);
+  testar(
+    "Cancelamento é baixado quando há retorno realizado no mesmo ano",
+    pendenciasCancelado.operacionais.length === 0,
+    { operacionais: pendenciasCancelado.operacionais.length }
+  );
+
+  const colaboradorVencendoComHistorico = {
+    mat: "TESTE_HISTORICO",
+    situacao: "Ativo",
+    situacaoNorm: "ATIVO",
+    diasParaVencer: 10,
+    temAsoRealizadoAgenda: true,
+    dataAsoRealizadoAgenda: "2025-11-24",
+    dataUltimoAso: "2025-11-24",
+    dataConvocar: "2026-09-24",
+    proximoVencimento: "2026-11-24"
+  };
+  prepararFlagsPortal([colaboradorVencendoComHistorico]);
+  testar(
+    "ASO histórico antigo não retira vencimento atual da prioridade",
+    colaboradorVencendoComHistorico.asoRealizadoValido === false &&
+      colaboradorVencendoComHistorico.asoRealizadoAgendaAtual === false,
+    {
+      valido: colaboradorVencendoComHistorico.asoRealizadoValido,
+      atual: colaboradorVencendoComHistorico.asoRealizadoAgendaAtual
+    }
+  );
+
+  testar(
+    "Reconvocação sem nova data agendada é bloqueada",
+    motivoNaoBaixarConvocacao({ situacao: "Ativo", situacaoNorm: "ATIVO" }, "", "", true) === "Sem data agendada"
   );
 
   const falhas = resultados.filter(r => !r.ok);
