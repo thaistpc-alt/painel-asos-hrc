@@ -282,8 +282,7 @@ function situacaoPermiteBaixarConvocacao(c) {
 }
 
 function motivoNaoBaixarConvocacao(c, dataInicio, dataFim) {
-  const reconvocacao = arguments.length > 3 && arguments[3] === true;
-  if (!c || (!c.dataAgendada && !reconvocacao)) {
+  if (!c || !c.dataAgendada) {
     return "Sem data agendada";
   }
 
