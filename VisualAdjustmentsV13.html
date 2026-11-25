@@ -142,3 +142,154 @@
   document.addEventListener("click",evento=>{if(evento.target.closest&&evento.target.closest("#abaConvocar"))setTimeout(consolidarToolbarConvocar,0);},true);
 })();
 </script>
+
+
+<!-- Correção consolidada do cabeçalho e filtros da convocação -->
+<style id="layout-convocacao-unico">
+  html, body { max-width:100%; overflow-x:hidden; }
+  .topo.topo-com-filtros { display:flex!important; align-items:center!important; justify-content:space-between!important; gap:18px!important; flex-wrap:wrap!important; }
+  .topo-com-filtros > h1, .topo-com-filtros > p { flex:0 1 auto; }
+  .topo-com-filtros > p { margin-right:auto!important; }
+  #painelTopbarTools { display:flex!important; align-items:center!important; justify-content:flex-end!important; gap:10px!important; flex:1 1 500px!important; min-width:0!important; }
+  #painelTopbarTools .campo-pesquisa { width:240px!important; min-width:210px!important; flex:0 1 240px!important; margin:0!important; }
+  #painelTopbarTools .campo-pesquisa label,
+  #barraFiltrosAgenda label { display:block!important; margin:0 0 4px!important; color:#334155!important; font-size:12px!important; line-height:15px!important; font-weight:700!important; white-space:nowrap!important; }
+  #painelTopbarTools .campo-pesquisa input { width:100%!important; min-width:0!important; height:40px!important; font-size:13px!important; }
+  #painelTopbarTools #infoSincronizacaoAgenda,
+  #painelTopbarTools #painelSync { display:block!important; flex:0 1 auto!important; min-width:150px!important; font-size:11px!important; white-space:nowrap!important; }
+  #painelTopbarTools button { flex:0 0 auto!important; height:40px!important; font-size:12px!important; }
+  .filtros { display:block!important; width:100%!important; max-width:100%!important; min-width:0!important; padding:12px!important; overflow:visible!important; }
+  #barraFiltrosAgenda { display:grid!important; grid-template-columns:minmax(118px,1.2fr) minmax(68px,.7fr) minmax(78px,.8fr) minmax(58px,.6fr) minmax(104px,1.05fr) minmax(122px,1.2fr) minmax(150px,1.5fr) minmax(100px,1fr) minmax(124px,1.25fr)!important; gap:4px!important; align-items:end!important; width:100%!important; min-width:0!important; box-sizing:border-box!important; }
+  #barraFiltrosAgenda > * { width:100%!important; min-width:0!important; max-width:100%!important; margin:0!important; box-sizing:border-box!important; }
+  #barraFiltrosAgenda input,#barraFiltrosAgenda select,#barraFiltrosAgenda .filtro-situacao-check-botao,
+  #barraFiltrosAgenda .filtro-grupo-convocacao-v15 select { width:100%!important; min-width:0!important; max-width:100%!important; height:40px!important; box-sizing:border-box!important; padding:6px 8px!important; font-size:12px!important; }
+  #barraFiltrosAgenda button { min-width:0!important; width:100%!important; max-width:100%!important; min-height:40px!important; height:auto!important; padding:6px 5px!important; font-size:12px!important; line-height:1.2!important; white-space:normal!important; overflow-wrap:anywhere!important; }
+  #barraFiltrosAgenda .filtro-situacao-check { width:100%!important; min-width:0!important; flex:none!important; }
+  #barraFiltrosAgenda .periodo-seletor { position:relative!important; }
+  #barraFiltrosAgenda .periodo-trigger { display:flex!important; align-items:center!important; justify-content:space-between!important; gap:5px!important; border:1px solid #cbd5e1!important; border-radius:8px!important; background:#fff!important; color:#0f172a!important; cursor:pointer!important; text-align:left!important; }
+  #barraFiltrosAgenda .periodo-trigger span { display:block; font-size:12px!important; line-height:1.2!important; }
+  #barraFiltrosAgenda .periodo-popover { display:none; position:absolute!important; top:calc(100% + 8px)!important; left:0!important; z-index:40000!important; width:min(360px,calc(100vw - 24px))!important; padding:14px!important; border:1px solid #cbd5e1!important; border-radius:10px!important; background:#fff!important; box-shadow:0 12px 30px rgba(15,23,42,.2)!important; }
+  #barraFiltrosAgenda .periodo-seletor.aberto .periodo-popover { display:block!important; }
+  #barraFiltrosAgenda .periodo-popover .periodo-campos { display:grid!important; grid-template-columns:1fr 1fr!important; gap:10px!important; }
+  #barraFiltrosAgenda .periodo-popover .periodo-campos > div { min-width:0!important; }
+  #barraFiltrosAgenda .periodo-popover input[type=date] { width:100%!important; min-width:0!important; height:40px!important; font-size:13px!important; }
+  #barraFiltrosAgenda .periodo-popover .periodo-aplicar { margin-top:12px!important; background:#047857!important; color:#fff!important; }
+  #barraFiltrosAgenda .filtro-situacao-check-lista { z-index:40001!important; }
+  #convocar .linha-filtros { display:none!important; }
+  @media(max-width:1100px) {
+    #barraFiltrosAgenda { grid-template-columns:repeat(3,minmax(0,1fr))!important; }
+    .topo.topo-com-filtros { align-items:flex-start!important; }
+    #painelTopbarTools { flex-basis:100%!important; justify-content:flex-start!important; }
+  }
+  @media(max-width:620px) {
+    #barraFiltrosAgenda { grid-template-columns:repeat(2,minmax(0,1fr))!important; }
+    #painelTopbarTools { flex-wrap:wrap!important; }
+    #painelTopbarTools .campo-pesquisa { flex:1 1 100%!important; max-width:none!important; }
+  }
+</style>
+<script>
+(function(){
+  'use strict';
+  const $=(s,r=document)=>r.querySelector(s);
+  const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+  function texto(el){return String(el&&el.textContent||'').trim().toLowerCase();}
+  function dataBR(v){if(!v)return 'Selecionar período';const p=v.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:v;}
+  function organizarFiltrosAgenda(){
+    const filtros=$('.filtros'), topo=$('.topo'), linha=$('#convocar .linha-filtros');
+    const inicio=$('#dataInicio'), fim=$('#dataFim'), pesquisa=$('#pesquisaConvocar');
+    if(!filtros||!topo||!inicio||!fim||!pesquisa)return false;
+
+    topo.classList.add('topo-com-filtros');
+    let ferramentas=$('#painelTopbarTools');
+    if(!ferramentas){ferramentas=document.createElement('div');ferramentas.id='painelTopbarTools';topo.appendChild(ferramentas);}
+    const busca=pesquisa.closest('.campo-pesquisa')||pesquisa.parentElement;
+    if(busca&&busca.parentElement!==ferramentas)ferramentas.prepend(busca);
+    const atualiza=$$('button').find(b=>(b.getAttribute('onclick')||'').includes('atualizarDadosForcado'));
+    if(atualiza&&atualiza.parentElement!==ferramentas)ferramentas.appendChild(atualiza);
+    const sync=$('#painelSync')||$('#infoSincronizacaoAgenda');
+    if(sync&&sync.parentElement!==ferramentas)ferramentas.insertBefore(sync,atualiza||null);
+
+    let barra=$('#barraFiltrosAgenda');
+    if(!barra){barra=document.createElement('div');barra.id='barraFiltrosAgenda';filtros.prepend(barra);}
+    let seletor=$('#barraFiltrosAgenda .periodo-seletor');
+    if(!seletor){
+      seletor=document.createElement('div');seletor.className='periodo-seletor';
+      seletor.innerHTML='<label>Período</label><button type="button" class="periodo-trigger" aria-haspopup="dialog" aria-expanded="false"><span></span><b aria-hidden="true">▾</b></button><div class="periodo-popover" role="dialog" aria-label="Selecionar período"><div class="periodo-campos"></div><button type="button" class="periodo-aplicar">Aplicar período</button></div>';
+      barra.appendChild(seletor);
+      const trigger=$('.periodo-trigger',seletor);
+      trigger.addEventListener('click',()=>{const aberto=seletor.classList.toggle('aberto');trigger.setAttribute('aria-expanded',String(aberto));});
+      $('.periodo-aplicar',seletor).addEventListener('click',()=>{
+        const a=inicio.value,b=fim.value;
+        if(!a||!b||a>b){alert('Selecione uma data inicial e uma data final válidas.');return;}
+        seletor.classList.remove('aberto');trigger.setAttribute('aria-expanded','false');atualizarPeriodo();carregarDados(false);
+      });
+    }
+    const pop=$('.periodo-campos',seletor);
+    [inicio,fim].forEach((input,idx)=>{
+      const caixa=input.closest('div');
+      if(caixa&&caixa.parentElement!==pop){pop.appendChild(caixa);}
+      input.removeAttribute('onchange');
+      const label=caixa&&ca.querySelector('label');if(label)label.textContent=idx===0?'Data inicial':'Data final';
+    });
+    function atualizarPeriodo(){
+      const span=$('.periodo-trigger span',seletor);
+      if(span)span.textContent=(inicio.value&&fim.value)?dataBR(inicio.value)+' a '+dataBR(fim.value):'Selecionar período';
+    }
+    atualizarPeriodo();
+
+    const barraPeriodo=$('.painel-topbar-periodo');
+    const botoesPeriodo=$$('.periodo-atalho',barraPeriodo||filtros);
+    let mesAtual=botoesPeriodo.find(b=>texto(b)==='mês atual');
+    let mesSeguinte=botoesPeriodo.find(b=>['próximo mês','mes seguinte','mês seguinte'].includes(texto(b)));
+    if(!mesAtual)mesAtual=$$('button').find(b=>texto(b)==='mês atual');
+    if(!mesSeguinte)mesSeguinte=$$('button').find(b=>['próximo mês','mes seguinte','mês seguinte'].includes(texto(b)));
+    const limpar=$('.painel-limpar-periodo');
+    if(!mesAtual||!mesSeguinte||!limpar)return false;
+    mesAtual.textContent='Mês atual';mesSeguinte.textContent='Mês seguinte';
+    [mesAtual,mesSeguinte,limpar].forEach(b=>{if(b.parentElement!==barra)barra.appendChild(b);});
+    if(!mesAtual.dataset.periodoAtualizado){mesAtual.addEventListener('click',()=>setTimeout(atualizarPeriodo,0));mesAtual.dataset.periodoAtualizado='1';}
+    if(!mesSeguinte.dataset.periodoAtualizado){mesSeguinte.addEventListener('click',()=>setTimeout(atualizarPeriodo,0));mesSeguinte.dataset.periodoAtualizado='1';}
+
+    const situacao=$('#barraFiltrosAgenda .filtro-situacao-check[data-tipo="convocar"]')||$('.filtro-situacao-check[data-tipo="convocar"]');
+    const situacaoMultipla=$('.situacao-multipla:not(.situacao-complementares)');
+    const controleSituacao=situacao||situacaoMultipla;
+    const origem=$('.filtro-grupo-convocacao-v15');
+    const email=$('#emailGestorConvocacao')?.closest('.email-gestor');
+    const botoesAcao=$$('button');
+    const enviar=botoesAcao.find(b=>(b.getAttribute('onclick')||'').includes('enviarSelecionadosGestor')||(b.getAttribute('onclick')||'').includes('enviarLoteGestor'));
+    const pdf=botoesAcao.find(b=>(b.getAttribute('onclick')||'').includes('gerarSelecionadosEmLote'));
+    if(!controleSituacao||!origem||!email||!enviar||!pdf)return false;
+    [controleSituacao,origem,email,enviar,pdf].forEach(el=>{if(el.parentElement!==barra)barra.appendChild(el);});
+    enviar.textContent='Enviar convocação';pdf.textContent='Gerar PDF selecionados';
+    $$('button',linha||document).forEach(b=>{
+      const acao=b.getAttribute('onclick')||'';
+      if(acao.includes('marcarConvocacoesVisiveis')||acao.includes('gerarTodosVisiveisEmLote'))b.remove();
+    });
+    const desmarcar=$$('button',barra).find(b=>(b.getAttribute('onclick')||'').includes('marcarConvocacoesVisiveis(false)'));
+    if(desmarcar)desmarcar.remove();
+    if(linha&&linha!==barra&&!linha.querySelector('#pesquisaConvocar'))linha.style.display='none';
+
+    if(!limpar.dataset.limpezaFinal){
+      limpar.onclick=function(){
+        const h=new Date(),ini=new Date(h.getFullYear(),h.getMonth(),1),fm=new Date(h.getFullYear(),h.getMonth()+1,0);
+        inicio.value=formatarDataInput(ini);fim.value=formatarDataInput(fm);
+        const campo=$('#pesquisaConvocar');if(campo)campo.value='';
+        const grupo=$('#filtroGrupoConvocacaoV15');if(grupo)grupo.value='';
+        $$('.filtro-situacao-check[data-tipo="convocar"] input:not(:disabled)').forEach(cb=>{if(cb.checked){cb.checked=false;cb.dispatchEvent(new Event('change',{bubbles:true}));}});
+        const gestor=$('#emailGestorConvocacao');if(gestor)gestor.value='';
+        atualizarPeriodo();seletor.classList.remove('aberto');carregarDados(false);
+      };
+      limpar.dataset.limpezaFinal='1';
+    }
+    $$('button',barra).forEach(b=>{if(b!==mesAtual&&b!==mesSeguinte&&b!==limpar&&b!==enviar&&b!==pdf&&!b.classList.contains('periodo-trigger')&&!b.classList.contains('periodo-aplicar'))b.remove();});
+    return true;
+  }
+  let tentativas=0,temporizador;
+  function iniciar(){if(organizarFiltrosAgenda()||tentativas++>80)clearInterval(temporizador);}
+  document.addEventListener('DOMContentLoaded',()=>{temporizador=setInterval(iniciar,350);iniciar();});
+  window.addEventListener('load',iniciar);
+  document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#abaConvocar'))setTimeout(iniciar,250);});
+  const observador=new MutationObserver(()=>{if($('#convocar')&&$('#convocar').style.display!=='none')setTimeout(iniciar,0);});
+  document.addEventListener('DOMContentLoaded',()=>{const a=$('#convocar');if(a)observador.observe(a,{childList:true,subtree:true});});
+})();
+</script>
