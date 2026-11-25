@@ -20,20 +20,61 @@
 
   function removerLimparAntigo(){document.querySelectorAll('.filtros>button,#toolbarModulo>button,.linha-filtros>button').forEach(b=>{if(b.textContent.trim().toLowerCase()==='limpar'&&!b.classList.contains('painel-limpar-periodo'))b.remove();});}
   function moverPeriodo(){
-    const top=document.querySelector('.painel-topbar'),filtros=document.querySelector('.filtros'),inicio=document.getElementById('dataInicio'),fim=document.getElementById('dataFim');
-    if(!top||!filtros||!inicio||!fim)return;
+    const filtros=document.querySelector('.filtros');
+    const seletor=filtros&&filtros.querySelector('.filtro-data-wrap');
+    if(!filtros||!seletor)return;
     removerLimparAntigo();
     if(filtros.querySelector('.painel-topbar-periodo'))return;
-    const periodo=document.createElement('div');periodo.className='painel-topbar-periodo';
-    periodo.appendChild(inicio.closest('div'));periodo.appendChild(fim.closest('div'));
-    const filtrar=[...filtros.querySelectorAll('button')].find(b=>b.textContent.trim().toLowerCase()==='filtrar');
-    if(filtrar)periodo.appendChild(filtrar);
-    const atalhos=document.createElement('div');atalhos.className='painel-periodo-atalhos';
-    [['Mês atual',0],['Próximo mês',1]].forEach(cfg=>{const b=document.createElement('button');b.type='button';b.className='periodo-atalho';b.textContent=cfg[0];b.onclick=function(){const h=new Date(),base=new Date(h.getFullYear(),h.getMonth()+cfg[1],1),ini=new Date(base.getFullYear(),base.getMonth(),1),fm=new Date(base.getFullYear(),base.getMonth()+1,0);inicio.value=formatarDataInput(ini);fim.value=formatarDataInput(fm);carregarDados(false)};atalhos.appendChild(b)});
+
+    const inicio=document.getElementById('dataInicio');
+    const fim=document.getElementById('dataFim');
+    if(!inicio||!fim)return;
+
+    // O seletor de período é uma unidade: o botão abre o popover com as duas datas.
+    // Não mover os inputs individualmente, pois isso quebra o layout e esvazia o popover.
+    const periodo=document.createElement('div');
+    periodo.className='painel-topbar-periodo';
+    periodo.appendChild(seletor);
+
+    const atalhos=document.createElement('div');
+    atalhos.className='painel-periodo-atalhos';
+    [['Mês atual',0],['Próximo mês',1]].forEach(cfg=>{
+      const b=document.createElement('button');
+      b.type='button';
+      b.className='periodo-atalho';
+      b.textContent=cfg[0];
+      b.onclick=function(){
+        const h=new Date(),base=new Date(h.getFullYear(),h.getMonth()+cfg[1],1);
+        const ini=new Date(base.getFullYear(),base.getMonth(),1);
+        const fm=new Date(base.getFullYear(),base.getMonth()+1,0);
+        inicio.value=formatarDataInput(ini);
+        fim.value=formatarDataInput(fm);
+        if(typeof aplicarPeriodoSelecionado==='function')aplicarPeriodoSelecionado();
+        else carregarDados(false);
+      };
+      atalhos.appendChild(b);
+    });
     periodo.appendChild(atalhos);
-    const limpar=document.createElement('button');limpar.type='button';limpar.className='painel-limpar-periodo';limpar.textContent='Limpar';limpar.onclick=function(){const h=new Date(),ini=new Date(h.getFullYear(),h.getMonth(),1),fm=new Date(h.getFullYear(),h.getMonth()+1,0);inicio.value=formatarDataInput(ini);fim.value=formatarDataInput(fm);resetarSituacoes();resetarSituacoesComplementares();document.querySelectorAll('.linha-filtros input[type="text"],.linha-filtros input[type="email"]').forEach(el=>el.value='');document.querySelectorAll('.linha-filtros select').forEach(el=>el.value='');carregarDados(false)};
+
+    const limpar=document.createElement('button');
+    limpar.type='button';
+    limpar.className='painel-limpar-periodo';
+    limpar.textContent='Limpar';
+    limpar.onclick=function(){
+      const h=new Date(),ini=new Date(h.getFullYear(),h.getMonth(),1),fm=new Date(h.getFullYear(),h.getMonth()+1,0);
+      inicio.value=formatarDataInput(ini);
+      fim.value=formatarDataInput(fm);
+      resetarSituacoes();
+      resetarSituacoesComplementares();
+      document.querySelectorAll('.linha-filtros input[type="text"],.linha-filtros input[type="email"]').forEach(el=>el.value='');
+      document.querySelectorAll('.linha-filtros select').forEach(el=>el.value='');
+      if(typeof aplicarPeriodoSelecionado==='function')aplicarPeriodoSelecionado();
+      else carregarDados(false);
+    };
     periodo.appendChild(limpar);
-    const area=filtros.querySelector('#toolbarModulo');filtros.insertBefore(periodo,area||filtros.firstChild);
+
+    const area=filtros.querySelector('#toolbarModulo');
+    filtros.insertBefore(periodo,area||seletor);
   }
 
   function situacoesDisponiveis(){const lista=dadosPortal&&dadosPortal.convocar&&dadosPortal.convocar.todos||[];return[...new Set(lista.map(i=>i.situacao).filter(Boolean))].sort((a,b)=>a.localeCompare(b));}
@@ -213,4 +254,114 @@
  #toolbarModulo{flex:0 0 auto!important}
  #toolbarModulo .linha-filtros{width:max-content!important}
 }
+
+/* Correção do seletor de período e da barra de filtros. */
+.filtros{
+  overflow:visible!important;
+  flex-wrap:nowrap!important;
+  gap:8px!important;
+  align-items:flex-end!important;
+}
+.painel-topbar-periodo{
+  display:flex!important;
+  align-items:flex-end!important;
+  gap:7px!important;
+  flex:0 0 auto!important;
+  min-width:0!important;
+  margin:0!important;
+}
+.painel-topbar-periodo .filtro-data-wrap{
+  position:relative!important;
+  width:152px!important;
+  min-width:152px!important;
+  flex:0 0 152px!important;
+}
+.painel-topbar-periodo .filtro-data-wrap>label{
+  font-size:11px!important;
+  margin-bottom:5px!important;
+}
+.painel-topbar-periodo .filtro-data-trigger{
+  width:100%!important;
+  min-width:0!important;
+  min-height:44px!important;
+  padding:8px 10px!important;
+  font-size:13px!important;
+  line-height:1.2!important;
+  white-space:normal!important;
+}
+.painel-topbar-periodo .periodo-popover{
+  width:min(390px,calc(100vw - 24px))!important;
+  min-width:320px!important;
+  left:0!important;
+  top:calc(100% + 7px)!important;
+  z-index:30000!important;
+}
+.painel-periodo-atalhos{
+  display:flex!important;
+  align-items:stretch!important;
+  gap:6px!important;
+  flex:0 0 auto!important;
+}
+.painel-periodo-atalhos button,.painel-topbar-periodo>button{
+  min-width:68px!important;
+  max-width:88px!important;
+  min-height:44px!important;
+  height:auto!important;
+  padding:6px 8px!important;
+  font-size:12px!important;
+  line-height:1.15!important;
+  white-space:normal!important;
+}
+#toolbarModulo{
+  min-width:0!important;
+  flex:1 1 auto!important;
+  overflow:visible!important;
+}
+#toolbarModulo .linha-filtros{
+  display:flex!important;
+  width:100%!important;
+  min-width:0!important;
+  flex-wrap:nowrap!important;
+  align-items:flex-end!important;
+  gap:8px!important;
+}
+#toolbarModulo .linha-filtros>div{min-width:0!important}
+#toolbarModulo .situacao-multipla,
+#toolbarModulo .situacao-complementares{
+  width:132px!important;min-width:132px!important;flex:0 0 132px!important;
+}
+#toolbarModulo .linha-filtros select{
+  width:125px!important;min-width:0!important;height:40px!important;
+  padding:7px 8px!important;font-size:12px!important;
+}
+#toolbarModulo .linha-filtros .campo-pesquisa{
+  width:175px!important;min-width:130px!important;flex:1 1 175px!important;
+}
+#toolbarModulo .linha-filtros .campo-pesquisa input,
+#toolbarModulo .linha-filtros .email-gestor input{
+  width:100%!important;min-width:0!important;height:40px!important;
+  padding:7px 8px!important;font-size:12px!important;
+}
+#toolbarModulo .linha-filtros .email-gestor{
+  width:175px!important;min-width:145px!important;flex:1 1 175px!important;
+}
+#toolbarModulo .acoes-lote{
+  display:flex!important;align-items:flex-end!important;gap:6px!important;
+  flex:0 0 auto!important;flex-wrap:nowrap!important;
+}
+#toolbarModulo .acoes-lote button{
+  min-width:70px!important;max-width:100px!important;min-height:40px!important;
+  height:auto!important;padding:6px 8px!important;font-size:11px!important;
+  line-height:1.15!important;white-space:normal!important;
+}
+#toolbarModulo .linha-filtros label{
+  font-size:10px!important;margin-bottom:4px!important;
+}
+@media(max-width:1150px){
+  .filtros{overflow-x:auto!important}
+  .painel-topbar-periodo .filtro-data-wrap{width:136px!important;min-width:136px!important;flex-basis:136px!important}
+  #toolbarModulo{flex:0 0 auto!important}
+  #toolbarModulo .linha-filtros{width:max-content!important}
+}
+
 </style>
