@@ -666,8 +666,8 @@ body{overflow-x:hidden!important}
 .painel-atualizar{height:40px!important;white-space:nowrap!important}
 
 .filtros{position:sticky!important;top:94px!important;z-index:50!important;display:grid!important;
- grid-template-columns:minmax(100px,1.05fr) minmax(70px,.78fr) minmax(80px,.9fr) minmax(64px,.7fr)
- minmax(98px,1.1fr) minmax(112px,1.25fr) minmax(150px,1.65fr) minmax(120px,1.25fr) minmax(138px,1.5fr)!important;
+ grid-template-columns:minmax(94px,1.05fr) minmax(64px,.78fr) minmax(74px,.9fr) minmax(60px,.7fr)
+ minmax(92px,1.1fr) minmax(115px,1.25fr) minmax(145px,1.65fr) minmax(115px,1.25fr) minmax(132px,1.5fr)!important;
  align-items:end!important;gap:6px!important;width:auto!important;min-width:0!important;margin:16px 20px 0!important;
  padding:12px!important;overflow:visible!important;background:#fff!important;border:1px solid var(--borda)!important;border-radius:12px!important}
 .filtros>.painel-topbar-periodo,.painel-topbar-periodo{display:contents!important}
@@ -736,10 +736,12 @@ body{overflow-x:hidden!important}
 #tabelaFaltosos .tabela-reconvocacao th:nth-child(12),#tabelaFaltosos .tabela-reconvocacao td:nth-child(12){width:7%!important}
 #tabelaFaltosos .tabela-reconvocacao th:nth-child(13),#tabelaFaltosos .tabela-reconvocacao td:nth-child(13){width:4%!important}
 @media(max-width:1280px){
- .filtros{grid-template-columns:repeat(5,minmax(0,1fr))!important}
  .painel-topbar{grid-template-columns:minmax(220px,1fr) auto!important}
  .painel-topbar-status{flex-wrap:wrap!important}
  .painel-topbar-status .painel-busca-global{width:240px!important;min-width:190px!important}
+}
+@media(max-width:1100px){
+ .filtros{grid-template-columns:repeat(5,minmax(0,1fr))!important}
 }
 @media(max-width:900px){
  .painel-topbar{position:relative!important;left:auto!important;right:auto!important;height:auto!important;grid-template-columns:1fr!important}
