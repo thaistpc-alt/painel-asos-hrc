@@ -167,7 +167,8 @@ function anoDaDataISO(dataISO) {
 }
 
 function ehTipoPeriodicoIndicadorASO(c) {
-  return normalizarTexto(c && c.tipoExame ? c.tipoExame : "") === "PERIODICO";
+  const tipo = normalizarTexto(c && c.tipoExame ? c.tipoExame : "");
+  return tipo.includes("PERIODIC") || tipo.includes("PERIODICO");
 }
 
 function ehAtivoIndicadorASO(c) {
