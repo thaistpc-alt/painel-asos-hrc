@@ -208,8 +208,84 @@ function executarRegressaoRegrasConvocacaoV14() {
     }
   ]);
   testar(
-    "ASO realizado no ano vigente encerra pendência anual fora da janela de 90 dias",
+    "ASO qualificável no ano vigente encerra pendência anual",
     gerarPendencias([casoASOAno], eventosASOAno).operacionais.length === 0
+  );
+
+  const casoASOConsulta = Object.assign({}, casoASOAno, { mat: "TESTE_ASO_CONSULTA" });
+  const eventosConsulta = new Map();
+  eventosConsulta.set("TESTE_ASO_CONSULTA", [
+    {
+      mat: "TESTE_ASO_CONSULTA", data: "2026-01-10", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "Não compareceu ASO",
+      ehAsoRealizado: false, ehNaoCompareceu: true, ehReagendou: false, ehCancelado: false
+    },
+    {
+      mat: "TESTE_ASO_CONSULTA", data: "2026-11-20", tipo: "CONSULTA",
+      tipoNorm: "CONSULTA", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    }
+  ]);
+  testar(
+    "Consulta realizada não encerra pendência de ASO",
+    gerarPendencias([casoASOConsulta], eventosConsulta).operacionais.length === 1
+  );
+
+  const casoASOPeriodoAnterior = Object.assign({}, casoASOAno, { mat: "TESTE_ASO_ANO_ANTERIOR" });
+  const eventosAnoAnterior = new Map();
+  eventosAnoAnterior.set("TESTE_ASO_ANO_ANTERIOR", [
+    {
+      mat: "TESTE_ASO_ANO_ANTERIOR", data: "2025-11-20", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    },
+    {
+      mat: "TESTE_ASO_ANO_ANTERIOR", data: "2026-01-10", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "Não compareceu ASO",
+      ehAsoRealizado: false, ehNaoCompareceu: true, ehReagendou: false, ehCancelado: false
+    }
+  ]);
+  testar(
+    "ASO qualificável de ano anterior não encerra pendência do ano vigente",
+    gerarPendencias([casoASOPeriodoAnterior], eventosAnoAnterior).operacionais.length === 1
+  );
+
+  const casoAdmissional = Object.assign({}, casoASOAno, { mat: "TESTE_ASO_ADMISSIONAL" });
+  const eventosAdmissional = new Map();
+  eventosAdmissional.set("TESTE_ASO_ADMISSIONAL", [
+    {
+      mat: "TESTE_ASO_ADMISSIONAL", data: "2026-01-10", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "Não compareceu ASO",
+      ehAsoRealizado: false, ehNaoCompareceu: true, ehReagendou: false, ehCancelado: false
+    },
+    {
+      mat: "TESTE_ASO_ADMISSIONAL", data: "2026-10-01", tipo: "ADMISSIONAL",
+      tipoNorm: "ADMISSIONAL", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    }
+  ]);
+  testar(
+    "Admissional realizado no ano vigente encerra pendência",
+    gerarPendencias([casoAdmissional], eventosAdmissional).operacionais.length === 0
+  );
+
+  const casoMudancaRisco = Object.assign({}, casoASOAno, { mat: "TESTE_ASO_MUDANCA_RISCO" });
+  const eventosMudancaRisco = new Map();
+  eventosMudancaRisco.set("TESTE_ASO_MUDANCA_RISCO", [
+    {
+      mat: "TESTE_ASO_MUDANCA_RISCO", data: "2026-01-10", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "Não compareceu ASO",
+      ehAsoRealizado: false, ehNaoCompareceu: true, ehReagendou: false, ehCancelado: false
+    },
+    {
+      mat: "TESTE_ASO_MUDANCA_RISCO", data: "2026-10-01", tipo: "MUDANÇA DE RISCO",
+      tipoNorm: "MUDANCA DE RISCO", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    }
+  ]);
+  testar(
+    "Mudança de risco realizada no ano vigente encerra pendência",
+    gerarPendencias([casoMudancaRisco], eventosMudancaRisco).operacionais.length === 0
   );
 
   const casoRadiologia = Object.assign({}, casoASOAno, {
@@ -274,12 +350,12 @@ function executarRegressaoRegrasConvocacaoV14() {
   const eventosCancelados = new Map();
   eventosCancelados.set("TESTE_CANCELADO", [
     {
-      mat: "TESTE_CANCELADO", data: "2025-01-10", dataBR: "10/01/2025",
+      mat: "TESTE_CANCELADO", data: "2026-01-10", dataBR: "10/01/2026",
       tipo: "PERIÓDICO", tipoNorm: "PERIODICO", status: "Cancelado",
       ehAsoRealizado: false, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: true
     },
     {
-      mat: "TESTE_CANCELADO", data: "2025-11-20", dataBR: "20/11/2025",
+      mat: "TESTE_CANCELADO", data: "2026-11-20", dataBR: "20/11/2026",
       tipo: "RETORNO AO TRABALHO", tipoNorm: "RETORNO AO TRABALHO", status: "ASO Realizado",
       ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
     }
