@@ -313,6 +313,11 @@ function executarRegressaoRegrasConvocacaoV14() {
     }
   );
 
+  testar(
+    "Reconvocação sem nova data agendada é bloqueada",
+    motivoNaoBaixarConvocacao({ situacao: "Ativo", situacaoNorm: "ATIVO" }, "", "", true) === "Sem data agendada"
+  );
+
   const falhas = resultados.filter(r => !r.ok);
   const resumo = {
     sucesso: falhas.length === 0,
