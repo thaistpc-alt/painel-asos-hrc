@@ -274,12 +274,12 @@ function executarRegressaoRegrasConvocacaoV14() {
   const eventosCancelados = new Map();
   eventosCancelados.set("TESTE_CANCELADO", [
     {
-      mat: "TESTE_CANCELADO", data: "2026-01-10", dataBR: "10/01/2026",
+      mat: "TESTE_CANCELADO", data: "2025-01-10", dataBR: "10/01/2025",
       tipo: "PERIÓDICO", tipoNorm: "PERIODICO", status: "Cancelado",
       ehAsoRealizado: false, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: true
     },
     {
-      mat: "TESTE_CANCELADO", data: "2026-11-20", dataBR: "20/11/2026",
+      mat: "TESTE_CANCELADO", data: "2025-11-20", dataBR: "20/11/2025",
       tipo: "RETORNO AO TRABALHO", tipoNorm: "RETORNO AO TRABALHO", status: "ASO Realizado",
       ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
     }
