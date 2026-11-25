@@ -228,8 +228,10 @@ function gerarConvocacaoPorColaborador(colaborador, dadosAgenda, opcoes) {
       [colaborador.setor]
     ]);
 
-    if (colaborador.dataAgendadaBR) {
-      modeloTemp.getRange("C18").setValue(colaborador.dataAgendadaBR);
+    if (colaborador.dataAgendada) {
+      modeloTemp.getRange("C18").setValue(
+        colaborador.dataAgendadaBR || formatarDataBR(colaborador.dataAgendada)
+      );
     } else {
       modeloTemp.getRange("C18").setValue(
         colaborador.dataConvocarBR ||
@@ -579,7 +581,7 @@ function enviarConvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInici
                 return {
                   matricula: matricula,
                   dataAnteriorBR: String(mapaDatasAnteriores[matricula] || ""),
-                  novaDataBR: item.dataAgendadaBR || item.dataConvocarBR || item.dataLimiteBR || ""
+                  novaDataBR: item.dataAgendadaBR || formatarDataBR(item.dataAgendada) || ""
                 };
               })
             : []
@@ -685,7 +687,7 @@ function obterReferenciaMesConvocacoes(dataInicio, dataFim) {
 
 function obterNovaDataConvocacaoBR(convocacoes) {
   const primeira = (convocacoes || [])[0] || {};
-  return primeira.dataAgendadaBR || primeira.dataConvocarBR || primeira.dataLimiteBR || "";
+  return primeira.dataAgendadaBR || formatarDataBR(primeira.dataAgendada) || "";
 }
 
 function montarCorpoEmailGestor(convocacoes, dataInicio, dataFim, contexto) {
