@@ -652,9 +652,6 @@
 (function(){
   'use strict';
   function organizarFiltros(){
-    const toolbar=document.getElementById('toolbarModulo');
-    const linha=document.querySelector('#convocar .linha-filtros');
-    if(toolbar&&linha&&linha.parentElement!==toolbar)toolbar.appendChild(linha);
     if(typeof window.atualizarTextoPeriodo==='function')window.atualizarTextoPeriodo();
   }
   function selecionarAgendaInicial(){
