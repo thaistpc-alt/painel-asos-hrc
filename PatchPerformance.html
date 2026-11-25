@@ -14,7 +14,7 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
   const NOMES={abaColaboradores:'Colaboradores',abaFaltosos:'Pendências',abaPrioridade:'A vencer',abaConvocar:'Agenda e convocação',abaComplementares:'Exames complementares',abaVencidos:'Atrasados',abaIndicadores:'Indicadores'};
   const MODULOS={convocar:'CONVOCAR',faltosos:'PENDENCIAS',prioridade:'PRIORIDADE',vencidos:'VENCIDOS',complementares:'COMPLEMENTARES',colaboradores:'COLABORADORES',indicadores:'INDICADORES'};
   const carregados=new Set(),origens=new Map();
-  let filtroAtivo=null,abaAtual='indicadores',requisicao=0,timerGrafico=null,graficoCarregado=false;
+  let filtroAtivo=null,abaAtual='convocar',requisicao=0,timerGrafico=null,graficoCarregado=false;
   const periodo=()=>({inicio:document.getElementById('dataInicio').value,fim:document.getElementById('dataFim').value});
   const chaveModulo=id=>{const p=periodo();return p.inicio+'|'+p.fim+'|'+id};
   function debounce(fn,ms){let t;return function(){clearTimeout(t);const a=arguments,c=this;t=setTimeout(()=>fn.apply(c,a),ms)}}
@@ -109,6 +109,20 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
   function montarShell(){
     if(document.querySelector('.painel-sidebar'))return;
     const abas=document.querySelector('.abas');if(!abas)return;
+    const painelDashboard=document.getElementById('dashboard');
+    const indicadores=document.getElementById('indicadores');
+    const cardsDashboard=painelDashboard&&painelDashboard.querySelector('.cards');
+    if(cardsDashboard&&indicadores&&!indicadores.contains(cardsDashboard)){
+      const resumo=document.createElement('section');
+      resumo.className='resumo-geral-indicadores';
+      resumo.innerHTML='<h3>Resumo geral</h3>';
+      resumo.appendChild(cardsDashboard);
+      const referencia=indicadores.querySelector('.painel-indicador-topo');
+      indicadores.insertBefore(resumo,referencia||indicadores.firstChild);
+    }
+    const abaDashboard=document.getElementById('abaDashboard');
+    if(abaDashboard)abaDashboard.remove();
+    if(painelDashboard)painelDashboard.style.display='none';
     [['Operação',['abaConvocar','abaFaltosos','abaPrioridade','abaVencidos']],['Consulta e gestão',['abaColaboradores','abaComplementares','abaIndicadores']]].forEach(g=>{const titulo=document.createElement('div');titulo.className='menu-grupo';titulo.textContent=g[0];abas.appendChild(titulo);g[1].forEach(id=>{const el=document.getElementById(id);if(el)abas.appendChild(el)})});
     const sidebar=document.createElement('aside');sidebar.className='painel-sidebar';sidebar.innerHTML='<div class="painel-brand"><div class="painel-logo">S</div><div><strong>SESMT HRC</strong><span>Painel de ASOs</span></div></div>';sidebar.appendChild(abas);
     const rodape=document.createElement('div');rodape.className='painel-rodape';rodape.innerHTML='<button type="button"><span class="menu-icone">↤</span><span class="toggle-texto">Recolher menu</span></button>';sidebar.appendChild(rodape);document.body.appendChild(sidebar);
@@ -175,6 +189,18 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
   window.atualizarDadosForcado=()=>carregarResumo(true);
   window.renderizarAbaAtiva=function(){if(abaAtual!=='dashboard')carregarModulo(abaAtual,false)};
   window.abrirAba=function(id,botao){document.querySelectorAll('.conteudo').forEach(d=>d.style.display='none');const alvo=document.getElementById(id);if(alvo)alvo.style.display='block';document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));if(botao)botao.classList.add('ativa');abaAtual=id;moverFiltro(id);if(id==='indicadores')agendarGrafico();if(id!=='dashboard')carregarModulo(id,false)};
-  window.onload=function(){montarShell();const hoje=new Date(),ini=new Date(hoje.getFullYear(),hoje.getMonth(),1),fim=new Date(hoje.getFullYear(),hoje.getMonth()+1,0);document.getElementById('dataInicio').value=formatarDataInput(ini);document.getElementById('dataFim').value=formatarDataInput(fim);document.getElementById('dataInicio').removeAttribute('onchange');document.getElementById('dataFim').removeAttribute('onchange');moverFiltro('indicadores');carregarResumo(false)};
+  window.onload=function(){
+    montarShell();
+    const hoje=new Date(),ini=new Date(hoje.getFullYear(),hoje.getMonth(),1),fim=new Date(hoje.getFullYear(),hoje.getMonth()+1,0);
+    document.getElementById('dataInicio').value=formatarDataInput(ini);
+    document.getElementById('dataFim').value=formatarDataInput(fim);
+    document.getElementById('dataInicio').removeAttribute('onchange');
+    document.getElementById('dataFim').removeAttribute('onchange');
+    document.querySelectorAll('.conteudo').forEach(d=>d.style.display=d.id==='convocar'?'block':'none');
+    document.querySelectorAll('.aba').forEach(b=>b.classList.toggle('ativa',b.id==='abaConvocar'));
+    abaAtual='convocar';
+    moverFiltro('convocar');
+    carregarResumo(false);
+  };
 })();
 </script>
