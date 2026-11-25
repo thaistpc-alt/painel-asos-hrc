@@ -191,7 +191,7 @@ function situacaoExcluidaIndicador(situacaoNorm) {
 ========================================================= */
 
 function obterDadosPortal(dataInicio, dataFim, forcarAtualizacao) {
-  const chaveCache = "DADOS_" + dataInicio + "_" + dataFim;
+  const chaveCache = "DADOS_V11_5_" + dataInicio + "_" + dataFim;
   const cacheado = forcarAtualizacao ? null : obterCachePortal(chaveCache);
 
   if (cacheado) {
@@ -450,6 +450,18 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
 
     const realizadosTodos = eventosComData.filter(e => e.ehAsoRealizado);
     const realizadosPeriodicos = realizadosTodos.filter(ehEventoPeriodicoAgenda);
+    const anoVigente = String(hojeISO || obterHojeISO()).slice(0, 4);
+    const realizadosNoAno = realizadosTodos.filter(e => String(e.data || "").slice(0, 4) === anoVigente);
+    const datasRealizadasNoAno = new Set(realizadosNoAno.map(e => String(e.data || "") + "|" + normalizarTexto(e.tipoNorm || e.tipo || "")));
+    const fonteTemAsoNoAno = String(c.dataUltimoAso || "").slice(0, 4) === anoVigente &&
+      !realizadosNoAno.some(e => String(e.data || "") === String(c.dataUltimoAso || ""));
+    c.asosRealizadosNoAnoVigente = datasRealizadasNoAno.size + (fonteTemAsoNoAno ? 1 : 0);
+    c.asoDemissionalRealizado = realizadosTodos.some(e =>
+      normalizarTexto(e.tipoNorm || e.tipo || "").includes("DEMISSIONAL")
+    ) || (
+      normalizarTexto(c.tipoExame || "").includes("DEMISSIONAL") &&
+      !!c.dataUltimoAso
+    );
 
     c.asosRealizadosNaoPeriodicos = realizadosTodos
       .filter(e => !ehEventoPeriodicoAgenda(e))
@@ -553,25 +565,22 @@ function calcularStatusGeralPortalV14_7_(c, hojeISO) {
 function temAsoRealizadoValido(c) {
   if (!c) return false;
 
-  const dataRealizado = c.dataAsoRealizadoAgenda || "";
-  if (!dataRealizado) return false;
+  if (c.asoDemissionalRealizado) return true;
 
-  const dataUltimoFonte = c.dataUltimoAso || "";
-  const dataConvocar = c.dataConvocar || "";
-  const proximoVencimento = c.proximoVencimento || "";
-
-  if (dataUltimoFonte && dataMaiorQue(dataRealizado, dataUltimoFonte)) return true;
-
-  if (dataConvocar && (dataRealizado >= dataConvocar)) return true;
-
-  if (proximoVencimento) {
-    const diasAntesDoVencimento = calcularDiferencaDias(proximoVencimento, dataRealizado);
-    if (diasAntesDoVencimento !== null && diasAntesDoVencimento >= 0 && diasAntesDoVencimento <= 120) {
-      return true;
-    }
+  const anoVigente = String(obterHojeISO()).slice(0, 4);
+  let quantidade = Number(c.asosRealizadosNoAnoVigente) || 0;
+  const dataUltimoFonte = String(c.dataUltimoAso || "");
+  if (
+    dataUltimoFonte.slice(0, 4) === anoVigente &&
+    !String(c.dataAsoRealizadoAgenda || "").startsWith(anoVigente)
+  ) {
+    quantidade = Math.max(quantidade, 1);
   }
 
-  return false;
+  const periodicidade = Number(c.periodicidade) ||
+    periodicidadeFonteV15_(valorTexto(c.funcao || ""));
+  const limiteAnual = periodicidade === 6 ? 2 : 1;
+  return quantidade >= limiteAnual;
 }
 
 function dataMaiorQue(dataA, dataB) {
@@ -632,6 +641,33 @@ function obterEventosPorColaborador(eventosPorMatricula, colaborador) {
   return eventos;
 }
 
+function deveIgnorarPendenciaPorAsoNoAno_(colaborador, eventos) {
+  const anoVigente = String(obterHojeISO()).slice(0, 4);
+  const realizados = (eventos || []).filter(e => e && e.ehAsoRealizado && e.data);
+  const demissionalNaAgenda = realizados.some(e =>
+    normalizarTexto(e.tipoNorm || e.tipo || "").includes("DEMISSIONAL")
+  );
+  const demissionalNaFonte = normalizarTexto(colaborador && colaborador.tipoExame || "")
+    .includes("DEMISSIONAL") && !!(colaborador && colaborador.dataUltimoAso);
+  if (demissionalNaAgenda || demissionalNaFonte) return true;
+
+  const chaves = new Set();
+  realizados
+    .filter(e => String(e.data || "").slice(0, 4) === anoVigente)
+    .forEach(e => chaves.add(String(e.data) + "|" + normalizarTexto(e.tipoNorm || e.tipo || "")));
+
+  const dataFonte = String(colaborador && colaborador.dataUltimoAso || "");
+  if (dataFonte.slice(0, 4) === anoVigente &&
+      !realizados.some(e => String(e.data || "") === dataFonte)) {
+    chaves.add(dataFonte + "|" + normalizarTexto(colaborador.tipoExame || ""));
+  }
+
+  const periodicidade = Number(colaborador && colaborador.periodicidade) ||
+    periodicidadeFonteV15_(valorTexto(colaborador && colaborador.funcao || ""));
+  const limiteAnual = periodicidade === 6 ? 2 : 1;
+  return chaves.size >= limiteAnual;
+}
+
 function gerarPendencias(lista, eventosPorMatriculaParam) {
   const eventosPorMatricula = eventosPorMatriculaParam || montarEventosAgendaPorMatricula();
   const necessitaReconvocacao = [];
@@ -647,6 +683,7 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
 
     // A lista já vem consolidada, sem duplicidades e em ordem cronológica.
     const eventos = obterEventosPorColaborador(eventosPorMatricula, colaborador);
+    if (deveIgnorarPendenciaPorAsoNoAno_(colaborador, eventos)) return;
     const eventosPendencia = eventos.filter(e =>
       ehEventoPeriodicoAgenda(e) &&
       (e.ehNaoCompareceu || e.ehReagendou || e.ehCancelado)
