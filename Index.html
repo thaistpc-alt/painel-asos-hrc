@@ -59,9 +59,102 @@
 
     .filtros {
       display: flex;
-      gap: 10px;
-      align-items: end;
+      gap: 12px;
+      align-items: center;
       flex-wrap: wrap;
+      padding: 16px;
+    }
+
+    .filtros button {
+      min-height: 46px;
+      min-width: 126px;
+      padding: 10px 14px;
+      font-size: 14px;
+      line-height: 1.2;
+      white-space: normal;
+    }
+
+    .filtro-data-wrap {
+      position: relative;
+      flex: 0 0 220px;
+    }
+
+    .filtro-data-trigger {
+      width: 100%;
+      min-width: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: #0f172a;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .filtro-data-trigger:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+    }
+
+    .filtro-data-icone {
+      color: #1d4ed8;
+      font-size: 18px;
+      flex: 0 0 auto;
+    }
+
+    .periodo-popover {
+      display: none;
+      position: absolute;
+      z-index: 50;
+      top: calc(100% + 8px);
+      left: 0;
+      width: min(400px, calc(100vw - 36px));
+      padding: 16px;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      box-shadow: 0 16px 38px rgba(15, 23, 42, .2);
+    }
+
+    .periodo-popover.aberto { display: block; }
+
+    .periodo-titulo {
+      margin: 0 0 12px;
+      font-size: 15px;
+      color: #0f172a;
+    }
+
+    .periodo-campos {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .periodo-campos label {
+      font-size: 13px;
+      margin: 0;
+    }
+
+    .periodo-campos input {
+      width: 100%;
+      min-width: 0;
+      margin-top: 6px;
+      font-size: 14px;
+    }
+
+    .periodo-acoes {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .periodo-acoes button {
+      min-width: 104px;
+      min-height: 42px;
+      font-size: 14px;
     }
 
     label {
@@ -959,6 +1052,14 @@
       .acoes-lote { margin-left: 0; } .abas { overflow-x: auto; flex-wrap: nowrap; }
       .aba { flex: 0 0 auto; } .cards, .indicador-resumo-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
+    @media (max-width: 640px) {
+      .filtro-data-wrap { flex: 1 1 100%; }
+      .filtro-data-trigger { min-width: 0; }
+      .periodo-campos { grid-template-columns: 1fr; }
+      .periodo-popover { left: 0; }
+      .filtros button { min-width: 112px; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
     }
@@ -973,17 +1074,30 @@
   </div>
 
   <div class="filtros">
-    <div>
-      <label>Data inicial</label>
-      <input type="date" id="dataInicio" onchange="carregarDados()">
+    <div class="filtro-data-wrap">
+      <label for="botaoPeriodo">Período</label>
+      <button type="button" class="filtro-data-trigger" id="botaoPeriodo"
+        aria-haspopup="dialog" aria-expanded="false" onclick="alternarSeletorPeriodo(event)">
+        <span id="textoPeriodo">Selecionar período</span>
+        <span class="filtro-data-icone" aria-hidden="true">▾</span>
+      </button>
+      <div class="periodo-popover" id="popoverPeriodo" role="dialog" aria-label="Selecionar período">
+        <h3 class="periodo-titulo">Escolha a data inicial e a data final</h3>
+        <div class="periodo-campos">
+          <label>Data inicial
+            <input type="date" id="dataInicio">
+          </label>
+          <label>Data final
+            <input type="date" id="dataFim">
+          </label>
+        </div>
+        <div class="periodo-acoes">
+          <button type="button" class="cinza" onclick="fecharSeletorPeriodo()">Cancelar</button>
+          <button type="button" onclick="aplicarPeriodoSelecionado()">Aplicar</button>
+        </div>
+      </div>
     </div>
 
-    <div>
-      <label>Data final</label>
-      <input type="date" id="dataFim" onchange="carregarDados()">
-    </div>
-
-    <button onclick="carregarDados()">Filtrar</button>
     <button class="azul" onclick="atualizarDadosForcado()">Atualizar dados</button>
     <button class="cinza" onclick="limparFiltrosLocais()">Limpar filtros locais</button>
     <span class="loading" id="loading">Carregando...</span>
@@ -993,8 +1107,8 @@
   <div id="msgOk" class="ok"></div>
 
   <div class="abas">
-    <button class="aba ativa" id="abaDashboard" onclick="abrirAba('dashboard', this)">Dashboard</button>
-    <button class="aba" id="abaConvocar" onclick="abrirAba('convocar', this)">Convocar</button>
+    <button class="aba" id="abaDashboard" onclick="abrirAba('dashboard', this)">Dashboard</button>
+    <button class="aba ativa" id="abaConvocar" onclick="abrirAba('convocar', this)">✉ Agenda e convocação</button>
     <button class="aba" id="abaFaltosos" onclick="abrirAba('faltosos', this)">Pendências</button>
     <button class="aba" id="abaPrioridade" onclick="abrirAba('prioridade', this)">Prioridade</button>
     <button class="aba" id="abaVencidos" onclick="abrirAba('vencidos', this)">Vencidos</button>
@@ -1052,8 +1166,8 @@
     <div class="rodape-info" id="infoSincronizacaoAgenda"></div>
   </div>
 
-  <div class="conteudo" id="convocar" style="display:none;">
-    <h2>Convocar</h2>
+  <div class="conteudo" id="convocar">
+    <h2>Agenda e convocação</h2>
 
     <div class="linha-filtros">
       <div>
@@ -1210,7 +1324,16 @@
 
       document.getElementById("dataInicio").value = formatarDataInput(primeiroDia);
       document.getElementById("dataFim").value = formatarDataInput(ultimoDia);
+      atualizarTextoPeriodo();
 
+      document.addEventListener("click", function(evento) {
+        if (!evento.target.closest(".filtro-data-wrap")) fecharSeletorPeriodo();
+      });
+      document.addEventListener("keydown", function(evento) {
+        if (evento.key === "Escape") fecharSeletorPeriodo();
+      });
+
+      abrirAba("convocar", document.getElementById("abaConvocar"));
       carregarDados();
     };
 
@@ -1229,6 +1352,55 @@
       const mes = String(data.getMonth() + 1).padStart(2, "0");
       const dia = String(data.getDate()).padStart(2, "0");
       return `${ano}-${mes}-${dia}`;
+    }
+
+    function formatarDataPeriodo(valor) {
+      const partes = String(valor || "").split("-");
+      return partes.length === 3 ? partes[2] + "/" + partes[1] + "/" + partes[0] : "";
+    }
+
+    function atualizarTextoPeriodo() {
+      const inicio = document.getElementById("dataInicio")?.value || "";
+      const fim = document.getElementById("dataFim")?.value || "";
+      const texto = inicio && fim
+        ? formatarDataPeriodo(inicio) + " a " + formatarDataPeriodo(fim)
+        : "Selecionar período";
+      const destino = document.getElementById("textoPeriodo");
+      if (destino) destino.textContent = texto;
+    }
+
+    function alternarSeletorPeriodo(evento) {
+      if (evento) evento.stopPropagation();
+      const popover = document.getElementById("popoverPeriodo");
+      const botao = document.getElementById("botaoPeriodo");
+      if (!popover || !botao) return;
+      const abrir = !popover.classList.contains("aberto");
+      popover.classList.toggle("aberto", abrir);
+      botao.setAttribute("aria-expanded", String(abrir));
+      if (abrir) document.getElementById("dataInicio").focus();
+    }
+
+    function fecharSeletorPeriodo() {
+      const popover = document.getElementById("popoverPeriodo");
+      const botao = document.getElementById("botaoPeriodo");
+      if (popover) popover.classList.remove("aberto");
+      if (botao) botao.setAttribute("aria-expanded", "false");
+    }
+
+    function aplicarPeriodoSelecionado() {
+      const inicio = document.getElementById("dataInicio").value;
+      const fim = document.getElementById("dataFim").value;
+      if (!inicio || !fim) {
+        mostrarErro("Selecione a data inicial e a data final.");
+        return;
+      }
+      if (inicio > fim) {
+        mostrarErro("A data inicial deve ser anterior ou igual à data final.");
+        return;
+      }
+      atualizarTextoPeriodo();
+      fecharSeletorPeriodo();
+      carregarDados();
     }
 
     function formatarDataEnvioPortal(valor) {
