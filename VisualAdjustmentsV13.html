@@ -35,6 +35,8 @@
     const periodo=document.createElement('div');
     periodo.className='painel-topbar-periodo';
     periodo.appendChild(seletor);
+    // Retira o popover da barra para que nenhum contêiner o recorte ou comprima.
+    if(popover.parentElement!==document.body)document.body.appendChild(popover);
 
     let atalhos=popover.querySelector('.periodo-atalhos');
     if(!atalhos){
@@ -290,7 +292,7 @@
   line-height:1.2!important;
   white-space:normal!important;
 }
-.painel-topbar-periodo .periodo-popover{
+#popoverPeriodo{
   width:min(390px,calc(100vw - 24px))!important;
   min-width:320px!important;
   left:0!important;
@@ -421,7 +423,7 @@
   box-shadow:0 18px 48px rgba(15,23,42,.25)!important;
 }
 .painel-topbar-periodo .periodo-popover.aberto{display:block!important}
-.painel-topbar-periodo .periodo-campos{
+#popoverPeriodo .periodo-campos{
   display:grid!important;
   grid-template-columns:repeat(2,minmax(0,1fr))!important;
   gap:14px!important;
@@ -431,12 +433,12 @@
   width:100%!important;min-width:0!important;height:42px!important;
   padding:8px!important;font-size:13px!important;
 }
-.painel-topbar-periodo .periodo-atalhos{
+#popoverPeriodo .periodo-atalhos{
   display:flex!important;flex-wrap:wrap!important;gap:8px!important;
   margin-top:14px!important;
 }
 .painel-topbar-periodo .periodo-atalhos button,
-.painel-topbar-periodo .periodo-acoes button{
+#popoverPeriodo .periodo-acoes button{
   min-width:90px!important;min-height:40px!important;
   height:auto!important;padding:8px 11px!important;
   font-size:12px!important;line-height:1.2!important;
