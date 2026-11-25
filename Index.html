@@ -1377,7 +1377,7 @@
       const abrir = !popover.classList.contains("aberto");
       popover.classList.toggle("aberto", abrir);
       botao.setAttribute("aria-expanded", String(abrir));
-      if (abrir) document.getElementById("dataInicio").focus();
+      // O painel é posicionado sem deslocar a página nem abrir o seletor nativo automaticamente.
     }
 
     function fecharSeletorPeriodo() {
