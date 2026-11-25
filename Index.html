@@ -1327,7 +1327,7 @@
       atualizarTextoPeriodo();
 
       document.addEventListener("click", function(evento) {
-        if (!evento.target.closest(".filtro-data-wrap")) fecharSeletorPeriodo();
+        if (!evento.target.closest(".filtro-data-wrap") && !evento.target.closest("#popoverPeriodo")) fecharSeletorPeriodo();
       });
       document.addEventListener("keydown", function(evento) {
         if (evento.key === "Escape") fecharSeletorPeriodo();
