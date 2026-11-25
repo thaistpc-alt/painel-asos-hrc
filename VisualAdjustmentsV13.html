@@ -410,7 +410,7 @@
   line-height:1.2!important;
   white-space:normal!important;
 }
-.painel-topbar-periodo .periodo-popover{
+#popoverPeriodo{
   position:fixed!important;
   display:none;
   z-index:30000!important;
@@ -422,14 +422,14 @@
   border-radius:14px!important;
   box-shadow:0 18px 48px rgba(15,23,42,.25)!important;
 }
-.painel-topbar-periodo .periodo-popover.aberto{display:block!important}
+#popoverPeriodo.aberto{display:block!important}
 #popoverPeriodo .periodo-campos{
   display:grid!important;
   grid-template-columns:repeat(2,minmax(0,1fr))!important;
   gap:14px!important;
 }
-.painel-topbar-periodo .periodo-campos label{font-size:12px!important}
-.painel-topbar-periodo .periodo-campos input{
+#popoverPeriodo .periodo-campos label{font-size:12px!important}
+#popoverPeriodo .periodo-campos input{
   width:100%!important;min-width:0!important;height:42px!important;
   padding:8px!important;font-size:13px!important;
 }
@@ -437,14 +437,14 @@
   display:flex!important;flex-wrap:wrap!important;gap:8px!important;
   margin-top:14px!important;
 }
-.painel-topbar-periodo .periodo-atalhos button,
+#popoverPeriodo .periodo-atalhos button,
 #popoverPeriodo .periodo-acoes button{
   min-width:90px!important;min-height:40px!important;
   height:auto!important;padding:8px 11px!important;
   font-size:12px!important;line-height:1.2!important;
   white-space:normal!important;
 }
-.painel-topbar-periodo .periodo-acoes{
+#popoverPeriodo .periodo-acoes{
   display:flex!important;justify-content:flex-end!important;
   gap:8px!important;margin-top:14px!important;
 }
@@ -503,7 +503,7 @@
 @media(max-width:700px){
   .filtros{align-items:flex-start!important}
   .painel-topbar-periodo{flex-basis:145px!important;width:145px!important;min-width:145px!important}
-  .painel-topbar-periodo .periodo-campos{grid-template-columns:1fr!important}
+  #popoverPeriodo .periodo-campos{grid-template-columns:1fr!important}
   #toolbarModulo{flex-basis:840px!important}
 }
 </style>
