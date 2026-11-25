@@ -42,167 +42,24 @@ function incluirArquivoHtml(nomeArquivo) {
 }
 
 function enviarConvocacoesSelecionadasGestorComCopia(matriculas, emailsGestor, dataInicio, dataFim, opcoes) {
-  opcoes = opcoes || {};
-  const emails = validarEmailsGestor(emailsGestor);
-  const selecionadas = (matriculas || []).map(m => String(m || "").trim()).filter(Boolean);
-
-  if (selecionadas.length === 0) return [];
-  if (selecionadas.length > LIMITE_ANEXOS_EMAIL_GESTOR) {
-    throw new Error("Envie no máximo " + LIMITE_ANEXOS_EMAIL_GESTOR + " convocações por e-mail. O painel divide lotes maiores automaticamente.");
-  }
-
-  const lista = obterListaAtualizadaParaConvocacao_(dataInicio, dataFim);
-  const dadosAgenda = lerAgendaDados();
-  const turnosAgenda = montarUltimosTurnosAgenda(dadosAgenda);
-  const mapa = new Map();
-
-  lista.forEach(c => {
-    mapa.set(String(c.mat || "").trim(), c);
-    if (c.matriculaCompleta) mapa.set(String(c.matriculaCompleta || "").trim(), c);
-  });
-
-  const resultados = [];
-  const anexos = [];
-  const enviados = [];
-  let contextoGeracao = null;
-
-  try {
-    selecionadas.forEach(mat => {
-    const colaborador = mapa.get(mat);
-
-    if (!colaborador) {
-      resultados.push({
-        sucesso: false,
-        ignorado: false,
-        matricula: mat,
-        colaborador: "",
-        erro: "Colaborador não encontrado"
-      });
-      return;
-    }
-
-    const motivo = motivoNaoBaixarConvocacao(colaborador, dataInicio, dataFim, !!opcoes.reconvocacao);
-    if (motivo) {
-      resultados.push({
-        sucesso: false,
-        ignorado: true,
-        colaborador: colaborador.nome,
-        matricula: colaborador.mat,
-        situacao: colaborador.situacao,
-        dataAgendadaBR: colaborador.dataAgendadaBR,
-        motivo: motivo
-      });
-      return;
-    }
-
-    try {
-      if (!contextoGeracao) contextoGeracao = criarContextoGeracaoConvocacoes();
-      const pdf = gerarConvocacaoPorColaborador(colaborador, dadosAgenda, {
-        turnosAgenda: turnosAgenda,
-        incluirAnexo: true,
-        contextoGeracao: contextoGeracao
-      });
-
-      anexos.push(pdf.anexo);
-      enviados.push(pdf);
-      resultados.push({
-        sucesso: true,
-        ignorado: false,
-        colaborador: colaborador.nome,
-        matricula: colaborador.mat,
-        arquivo: pdf.arquivo,
-        url: pdf.url
-      });
-    } catch (e) {
-      resultados.push({
-        sucesso: false,
-        ignorado: false,
-        colaborador: colaborador.nome,
-        matricula: colaborador.mat,
-        erro: e.message
-      });
-    }
-    });
-  } finally {
-    if (contextoGeracao) encerrarContextoGeracaoConvocacoes(contextoGeracao);
-  }
-
-  if (anexos.length > 0) {
-    const assunto = montarAssuntoEmailGestor(dataInicio, dataFim);
-    const contexto = opcoes.reconvocacao
-      ? {
-          reconvocacao: true,
-          dataAnteriorBR: opcoes.dataAnteriorBR || "",
-          novaDataBR: obterNovaDataConvocacaoBR(enviados),
-          colaborador: enviados.length === 1
-            ? (enviados[0].colaborador || enviados[0].nome || "")
-            : ""
-        }
-      : {};
-
-    const corpo = montarCorpoEmailGestor(enviados, dataInicio, dataFim, contexto);
-    const thread = opcoes.responderThreadId
-      ? obterThreadGmailPorId(opcoes.responderThreadId)
-      : null;
-
-    const destinatariosOriginais = thread
-      ? obterDestinatariosOriginaisThread(thread)
-      : [];
-    const destinatariosEnvio = Array.from(new Set(
-      emails.concat(destinatariosOriginais)
-        .map(email => String(email || "").trim().toLowerCase())
-        .filter(email => email && email !== EMAIL_COPIA_CONVOCACOES.toLowerCase())
-    ));
-
-    if (destinatariosEnvio.length === 0) {
-      throw new Error("Não foi possível identificar os e-mails dos coordenadores.");
-    }
-
-    GmailApp.sendEmail(destinatariosEnvio.join(","), assunto, corpo.texto, {
-      htmlBody: corpo.html,
-      attachments: anexos,
-      cc: EMAIL_COPIA_CONVOCACOES
-    });
-
-    emails.splice(0, emails.length, ...destinatariosEnvio);
-
-    const threadId = thread ? thread.getId() : localizarThreadEnviada(assunto);
-
-    resultados.forEach(r => {
-      if (!r.sucesso) return;
-
-      r.emailEnviado = true;
-      r.destinatarios = emails.join(", ");
-      r.copia = EMAIL_COPIA_CONVOCACOES;
-
-      registrarHistoricoEnvioConvocacao(r.matricula, {
-        destinatarios: emails,
-        assunto: assunto,
-        threadId: threadId,
-        arquivo: r.arquivo,
-        url: r.url,
-        reconvocacao: !!opcoes.reconvocacao
-      });
-    });
-  }
-
-  return resultados;
-}
-
-function enviarReconvocacaoPendenciaGestorComCopia(mat, emailsGestor, dataInicio, dataFim, dataAnteriorBR) {
-  const historico = obterHistoricoEnvioConvocacao(mat);
-  const threadAnterior = historico.threadId || localizarThreadAnteriorConvocacao(mat);
-
-  return enviarConvocacoesSelecionadasGestorComCopia(
-    [mat],
+  // Usa o fluxo único para convocação e reconvocação: ele valida participantes,
+  // exige nova data na AGENDA e responde na conversa original com replyAll.
+  return enviarConvocacoesSelecionadasGestor(
+    matriculas,
     emailsGestor,
     dataInicio,
     dataFim,
-    {
-      reconvocacao: true,
-      dataAnteriorBR: dataAnteriorBR || "",
-      responderThreadId: threadAnterior
-    }
+    opcoes || {}
+  );
+}
+
+function enviarReconvocacaoPendenciaGestorComCopia(mat, emailsGestor, dataInicio, dataFim, dataAnteriorBR) {
+  return enviarReconvocacaoPendenciaGestor(
+    mat,
+    emailsGestor,
+    dataInicio,
+    dataFim,
+    dataAnteriorBR || ""
   );
 }
 
@@ -779,113 +636,100 @@ function doGet() {
 
   const ajustesLayout = `
 <style>
-/* Filtros em uma linha e navegação sem contorno externo */
+/* Camada única e final do layout: uma grade estável para os filtros. */
+:root{--menu:#0f172a;--menu2:#1e293b;--app:#f3f6fa;--borda:#dce4ee;--azul:#1d4ed8}
+body{overflow-x:hidden!important}
 .painel-sidebar,.painel-sidebar .abas{border:0!important;outline:0!important;box-shadow:none!important;border-radius:0!important}
 .painel-sidebar .abas:focus,.painel-sidebar .abas:focus-within{outline:0!important;box-shadow:none!important}
-.filtros{overflow-x:hidden!important;display:flex!important;align-items:flex-end!important;flex-wrap:nowrap!important;column-gap:9px!important;padding:8px 10px!important}
-.painel-topbar-periodo{display:flex!important;align-items:flex-end!important;gap:7px!important;flex:0 0 auto!important;flex-wrap:nowrap!important;margin:0!important}
-.painel-topbar-periodo>div:not(.painel-periodo-atalhos){width:92px!important;min-width:0!important;flex:0 0 92px!important}
-.painel-topbar-periodo>.painel-periodo-atalhos{width:auto!important;min-width:max-content!important;flex:0 0 auto!important}
-.painel-topbar-periodo label{font-size:8px!important}
-.painel-topbar-periodo input{width:92px!important;min-width:0!important;height:32px!important;padding:4px 5px!important;font-size:9px!important}
-.painel-topbar-periodo>button{height:32px!important;min-width:42px!important;padding:0 6px!important;font-size:8px!important;white-space:nowrap!important;flex:0 0 auto!important}
-.painel-periodo-atalhos{display:flex!important;align-items:center!important;gap:5px!important;flex:0 0 auto!important;flex-wrap:nowrap!important;width:auto!important}
-.painel-periodo-atalhos button{height:32px!important;padding:0 6px!important;font-size:8px!important;white-space:nowrap!important;flex:0 0 auto!important}
-#toolbarModulo{flex:1 1 0%!important;min-width:0!important;overflow:visible!important}
-#toolbarModulo .linha-filtros{display:flex!important;align-items:flex-end!important;width:100%!important;min-width:0!important;flex-wrap:nowrap!important;gap:9px!important}
-#toolbarModulo .linha-filtros>div{min-width:0!important}
-#toolbarModulo .linha-filtros>.filtro-situacao-check,#toolbarModulo .linha-filtros>.filtro-grupo-convocacao-v15,#toolbarModulo .linha-filtros>.campo-pesquisa,#toolbarModulo .linha-filtros>.acoes-lote{flex-shrink:0!important}
-#toolbarModulo .filtro-situacao-check{width:118px!important;min-width:118px!important;flex:0 0 118px!important}
-#toolbarModulo .filtro-situacao-check-botao{height:32px!important;padding:0 21px 0 7px!important;font-size:9px!important}
-#toolbarModulo .filtro-grupo-convocacao-v15{width:108px!important;min-width:108px!important;flex:0 0 108px!important}
-#toolbarModulo .linha-filtros select{width:108px!important;min-width:0!important;height:32px!important;padding:4px 5px!important;font-size:9px!important}
-#toolbarModulo .linha-filtros .campo-pesquisa{width:170px!important;min-width:0!important;flex:0 0 170px!important}
-#toolbarModulo .linha-filtros .campo-pesquisa input{width:100%!important;min-width:0!important;height:32px!important;font-size:9px!important;padding:4px 6px!important}
-#toolbarModulo .linha-filtros .email-gestor{width:170px!important;min-width:0!important;flex:0 0 170px!important}
-#toolbarModulo .linha-filtros .email-gestor input{width:100%!important;min-width:0!important;height:32px!important;font-size:8.5px!important;padding:4px 5px!important}
-#toolbarModulo .acoes-lote{gap:5px!important;flex-wrap:nowrap!important;min-width:0!important;flex:1 1 auto!important}
-#toolbarModulo .acoes-lote button{height:32px!important;padding:0 5px!important;font-size:8px!important;white-space:nowrap!important;flex:0 0 auto!important}
-#toolbarModulo .linha-filtros label{font-size:8px!important;margin-bottom:2px!important}
-/* Convocar: largura responsiva para não criar barra horizontal */
+.painel-topbar{display:grid!important;grid-template-columns:minmax(250px,1fr) auto!important;gap:20px!important;align-items:center!important}
+.painel-topbar-status{display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important}
+.painel-topbar-status .painel-busca-global{display:block!important;flex:0 1 245px!important;width:245px!important;min-width:200px!important;margin:0!important}
+.painel-topbar-status .painel-busca-global label{display:block!important;font-size:11px!important;line-height:1.2!important;margin:0 0 4px!important}
+.painel-topbar-status .painel-busca-global input{width:100%!important;min-width:0!important;height:40px!important;font-size:13px!important;padding:8px 10px!important}
+.painel-topbar-status .painel-sync{font-size:10px!important;white-space:nowrap!important}
+.painel-atualizar{height:40px!important;white-space:nowrap!important}
+
+.filtros{position:sticky!important;top:94px!important;z-index:50!important;display:grid!important;
+ grid-template-columns:minmax(112px,1.05fr) minmax(72px,.65fr) minmax(84px,.75fr) minmax(62px,.55fr)
+ minmax(108px,1fr) minmax(112px,1fr) minmax(145px,1.3fr) minmax(112px,1fr) minmax(128px,1.1fr)!important;
+ align-items:end!important;gap:8px!important;width:auto!important;min-width:0!important;margin:16px 20px 0!important;
+ padding:12px!important;overflow:visible!important;background:#fff!important;border:1px solid var(--borda)!important;border-radius:12px!important}
+.filtros>.painel-topbar-periodo,.painel-topbar-periodo{display:contents!important}
+.painel-topbar-periodo .filtro-data-wrap{display:block!important;position:relative!important;width:100%!important;min-width:0!important;flex:none!important;margin:0!important}
+.painel-topbar-periodo .filtro-data-wrap>label,#toolbarModulo .linha-filtros label{display:block!important;white-space:normal!important;overflow-wrap:anywhere!important;font-size:11px!important;line-height:1.2!important;margin:0 0 5px!important}
+.painel-topbar-periodo .filtro-data-trigger{width:100%!important;min-width:0!important;height:44px!important;min-height:44px!important;padding:8px 9px!important;font-size:12px!important;line-height:1.2!important;white-space:normal!important}
+.painel-topbar-periodo>button,.filtros button.periodo-barra-btn{width:100%!important;min-width:0!important;max-width:none!important;min-height:44px!important;height:44px!important;padding:5px 7px!important;font-size:11.5px!important;line-height:1.15!important;white-space:normal!important;overflow-wrap:anywhere!important}
+#toolbarModulo,#toolbarModulo .linha-filtros,#toolbarModulo .acoes-lote{display:contents!important}
+#toolbarModulo .linha-filtros>div{width:100%!important;min-width:0!important;max-width:none!important;flex:none!important;margin:0!important}
+#toolbarModulo .linha-filtros>div:has(#filtroSituacaoConvocar){display:none!important}
+#toolbarModulo #filtroSituacaoConvocar{display:none!important}
+#toolbarModulo .filtro-situacao-check,#toolbarModulo .situacao-multipla{width:100%!important;min-width:0!important;max-width:none!important;flex:none!important}
+#toolbarModulo .filtro-grupo-convocacao-v15{width:100%!important;min-width:0!important;max-width:none!important;flex:none!important}
+#toolbarModulo .linha-filtros select,#toolbarModulo .situacao-multipla-botao,#toolbarModulo .filtro-situacao-check-botao,
+#toolbarModulo .linha-filtros input{width:100%!important;min-width:0!important;height:44px!important;padding:8px 9px!important;font-size:12px!important;line-height:1.2!important}
+#toolbarModulo .acoes-lote button{width:100%!important;min-width:0!important;max-width:none!important;min-height:44px!important;height:44px!important;padding:5px 7px!important;font-size:11.5px!important;line-height:1.15!important;white-space:normal!important;overflow-wrap:anywhere!important}
+#toolbarModulo .email-gestor{width:100%!important;min-width:0!important;max-width:none!important}
+#toolbarModulo .email-gestor input{width:100%!important}
+.filtros>#loading{grid-column:1/-1!important}
+.filtros>.azul,.filtros>.cinza{display:none!important}
+#popoverPeriodo{z-index:30000!important}
+#popoverPeriodo .periodo-campos{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+#popoverPeriodo input{width:100%!important;min-width:0!important}
+
+/* Cabeçalhos preservam os controles de ordenação e mantêm a legenda legível. */
+.conteudo .tabela-container{width:100%!important;max-width:100%!important;overflow-x:hidden!important;overflow-y:auto!important}
+.conteudo table{width:100%!important;min-width:0!important;table-layout:fixed!important}
+.conteudo th,.conteudo td{min-width:0!important;max-width:none!important;overflow-wrap:anywhere!important;word-break:normal!important}
+.conteudo th.ordenavel{position:relative!important;padding-right:13px!important;white-space:normal!important;line-height:1.2!important;vertical-align:middle!important}
+.conteudo th.ordenavel::after{position:absolute!important;right:3px!important;top:50%!important;transform:translateY(-50%)!important;display:inline-block!important;white-space:nowrap!important;margin:0!important;font-size:9px!important}
 #tabelaConvocar .tabela-container{overflow-x:hidden!important;overflow-y:auto!important}
 #tabelaConvocar table{width:100%!important;min-width:0!important;table-layout:fixed!important}
-#tabelaConvocar th,#tabelaConvocar td{overflow-wrap:anywhere!important;word-break:normal!important}
-#tabelaConvocar th.ordenavel{font-size:8.2px!important;white-space:nowrap!important;overflow-wrap:normal!important;word-break:normal!important}
-#tabelaConvocar th.ordenavel::after{content:"↕"!important;display:inline-block!important;white-space:nowrap!important;margin-left:2px!important;font-size:8px!important;vertical-align:baseline!important}
+#tabelaConvocar th,#tabelaConvocar td{padding:6px 5px!important;font-size:10px!important;line-height:1.22!important}
+#tabelaConvocar th{font-size:9px!important}
+#tabelaConvocar td.info-agenda{white-space:normal!important;overflow-wrap:anywhere!important;line-height:1.24!important}
 #tabelaConvocar th:nth-child(1),#tabelaConvocar td:nth-child(1){width:2%!important}
 #tabelaConvocar th:nth-child(2),#tabelaConvocar td:nth-child(2){width:4%!important}
-#tabelaConvocar th:nth-child(3),#tabelaConvocar td:nth-child(3){width:11.5%!important}
-#tabelaConvocar th:nth-child(4),#tabelaConvocar td:nth-child(4){width:8.5%!important}
-#tabelaConvocar th:nth-child(5),#tabelaConvocar td:nth-child(5){width:9%!important}
-#tabelaConvocar th:nth-child(6),#tabelaConvocar td:nth-child(6){width:5%!important}
+#tabelaConvocar th:nth-child(3),#tabelaConvocar td:nth-child(3){width:12%!important}
+#tabelaConvocar th:nth-child(4),#tabelaConvocar td:nth-child(4){width:9%!important}
+#tabelaConvocar th:nth-child(5),#tabelaConvocar td:nth-child(5){width:10%!important}
+#tabelaConvocar th:nth-child(6),#tabelaConvocar td:nth-child(6){width:6%!important}
 #tabelaConvocar th:nth-child(7),#tabelaConvocar td:nth-child(7){width:7%!important}
-#tabelaConvocar th:nth-child(8),#tabelaConvocar td:nth-child(8){width:6.5%!important}
-#tabelaConvocar th:nth-child(9),#tabelaConvocar td:nth-child(9){width:6.5%!important}
+#tabelaConvocar th:nth-child(8),#tabelaConvocar td:nth-child(8){width:6%!important}
+#tabelaConvocar th:nth-child(9),#tabelaConvocar td:nth-child(9){width:6%!important}
 #tabelaConvocar th:nth-child(10),#tabelaConvocar td:nth-child(10){width:7%!important}
-#tabelaConvocar th:nth-child(11),#tabelaConvocar td:nth-child(11){width:9%!important}
-#tabelaConvocar td.info-agenda{white-space:normal!important;overflow-wrap:anywhere!important;line-height:1.24!important}
+#tabelaConvocar th:nth-child(11),#tabelaConvocar td:nth-child(11){width:10%!important}
 #tabelaConvocar th:nth-child(12),#tabelaConvocar td:nth-child(12){width:10%!important}
-#tabelaConvocar th:nth-child(13),#tabelaConvocar td:nth-child(13){width:3%!important}
-#tabelaConvocar th:nth-child(14),#tabelaConvocar td:nth-child(14){width:4%!important}
-#tabelaConvocar th:nth-child(15),#tabelaConvocar td:nth-child(15){width:7%!important}
-
+#tabelaConvocar th:nth-child(13),#tabelaConvocar td:nth-child(13){width:3%!important;text-align:center!important}
+#tabelaConvocar th:nth-child(14),#tabelaConvocar td:nth-child(14){width:3%!important;text-align:center!important}
+#tabelaConvocar th:nth-child(15),#tabelaConvocar td:nth-child(15){width:5%!important;text-align:center!important}
 #tabelaFaltosos .tabela-reconvocacao{width:100%!important;min-width:0!important;table-layout:fixed!important}
+#tabelaFaltosos .tabela-reconvocacao th,#tabelaFaltosos .tabela-reconvocacao td{padding:7px 5px!important;font-size:10px!important}
 #tabelaFaltosos .tabela-reconvocacao th:nth-child(1),#tabelaFaltosos .tabela-reconvocacao td:nth-child(1){width:3%!important}
 #tabelaFaltosos .tabela-reconvocacao th:nth-child(2),#tabelaFaltosos .tabela-reconvocacao td:nth-child(2){width:7%!important}
 #tabelaFaltosos .tabela-reconvocacao th:nth-child(3),#tabelaFaltosos .tabela-reconvocacao td:nth-child(3){width:13%!important}
 #tabelaFaltosos .tabela-reconvocacao th:nth-child(4),#tabelaFaltosos .tabela-reconvocacao td:nth-child(4){width:10%!important}
 #tabelaFaltosos .tabela-reconvocacao th:nth-child(5),#tabelaFaltosos .tabela-reconvocacao td:nth-child(5){width:10%!important}
 #tabelaFaltosos .tabela-reconvocacao th:nth-child(6),#tabelaFaltosos .tabela-reconvocacao td:nth-child(6){width:7%!important}
-#tabelaFaltosos .tabela-reconvocacao th:nth-child(7),#tabelaFaltosos .tabela-reconvocacao td:nth-child(7){width:8%!important}
-#tabelaFaltosos .tabela-reconvocacao th:nth-child(8),#tabelaFaltosos .tabela-reconvocacao td:nth-child(8){width:9%!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(7),#tabelaFaltosos .tabela-reconvocacao td:nth-child(7){width:10%!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(8),#tabelaFaltosos .tabela-reconvocacao td:nth-child(8){width:11%!important}
 #tabelaFaltosos .tabela-reconvocacao th:nth-child(9),#tabelaFaltosos .tabela-reconvocacao td:nth-child(9){width:8%!important}
 #tabelaFaltosos .tabela-reconvocacao th:nth-child(10),#tabelaFaltosos .tabela-reconvocacao td:nth-child(10){width:5%!important}
 #tabelaFaltosos .tabela-reconvocacao th:nth-child(11),#tabelaFaltosos .tabela-reconvocacao td:nth-child(11){width:5%!important}
-#tabelaFaltosos .tabela-reconvocacao th:nth-child(12),#tabelaFaltosos .tabela-reconvocacao td:nth-child(12){width:8%!important}
-#tabelaFaltosos .tabela-reconvocacao th:nth-child(13),#tabelaFaltosos .tabela-reconvocacao td:nth-child(13){width:7%!important}
-#tabelaFaltosos .tabela-reconvocacao .check-coluna input{width:14px!important;min-width:14px!important;height:14px!important;margin:0!important}
-#tabelaFaltosos .tabela-reconvocacao .acoes-pendencia{display:flex!important;flex-direction:column!important;gap:3px!important}
-#tabelaFaltosos .tabela-reconvocacao .acoes-pendencia button{width:100%!important;min-width:0!important;padding:3px 2px!important;font-size:8px!important}
-#tabelaFaltosos .acoes-reconvocacao{display:flex!important;align-items:center!important;gap:10px!important;margin:8px 0!important;font-size:10px!important;color:#475569}
-#tabelaFaltosos .acoes-reconvocacao button{height:30px!important;padding:0 10px!important;font-size:9px!important}
-#tabelaFaltosos .acoes-reconvocacao button:disabled{opacity:.5!important;cursor:not-allowed!important;transform:none!important}
-
-@media(max-width:1150px){
- .painel-topbar-periodo>div:not(.painel-periodo-atalhos),.painel-topbar-periodo input{width:82px!important;min-width:0!important;flex-basis:82px!important}
- #toolbarModulo .filtro-situacao-check{width:105px!important;min-width:105px!important;flex-basis:105px!important}
- #toolbarModulo .filtro-grupo-convocacao-v15{width:98px!important;min-width:98px!important;flex-basis:98px!important}
- #toolbarModulo .linha-filtros .campo-pesquisa{width:110px!important;flex-basis:110px!important}
- #toolbarModulo .linha-filtros .email-gestor{width:125px!important;flex-basis:125px!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(12),#tabelaFaltosos .tabela-reconvocacao td:nth-child(12){width:7%!important}
+#tabelaFaltosos .tabela-reconvocacao th:nth-child(13),#tabelaFaltosos .tabela-reconvocacao td:nth-child(13){width:4%!important}
+@media(max-width:1280px){
+ .filtros{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+ .painel-topbar{grid-template-columns:minmax(220px,1fr) auto!important}
+ .painel-topbar-status .painel-busca-global{width:210px!important;min-width:170px!important}
 }
 @media(max-width:900px){
- .filtros{overflow-x:auto!important}
- #toolbarModulo{flex:0 0 auto!important}
- #toolbarModulo .linha-filtros{width:max-content!important}
+ .painel-topbar{position:relative!important;left:auto!important;right:auto!important;height:auto!important;grid-template-columns:1fr!important}
+ .painel-topbar-status{flex-wrap:wrap!important}
+ .filtros{position:relative!important;top:auto!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;margin:12px!important}
+ .conteudo{margin:12px!important}
 }
-
-/* Aba Convocar: neutraliza larguras mínimas antigas que comprimiam as colunas. */
-#tabelaConvocar .tabela-container{width:100%!important;overflow-x:hidden!important;overflow-y:auto!important}
-#tabelaConvocar table{width:100%!important;min-width:0!important;table-layout:fixed!important}
-#tabelaConvocar th,#tabelaConvocar td{min-width:0!important;max-width:none!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}
-#tabelaConvocar th.ordenavel{white-space:normal!important;line-height:1.2!important}
-#tabelaConvocar th.ordenavel::after{display:inline-block!important;white-space:nowrap!important;vertical-align:baseline!important;margin-left:2px!important}
-#tabelaConvocar th:nth-child(1),#tabelaConvocar td:nth-child(1){width:2%!important}
-#tabelaConvocar th:nth-child(2),#tabelaConvocar td:nth-child(2){width:4%!important}
-#tabelaConvocar th:nth-child(3),#tabelaConvocar td:nth-child(3){width:11%!important}
-#tabelaConvocar th:nth-child(4),#tabelaConvocar td:nth-child(4){width:8%!important}
-#tabelaConvocar th:nth-child(5),#tabelaConvocar td:nth-child(5){width:8%!important}
-#tabelaConvocar th:nth-child(6),#tabelaConvocar td:nth-child(6){width:5%!important}
-#tabelaConvocar th:nth-child(7),#tabelaConvocar td:nth-child(7){width:6%!important}
-#tabelaConvocar th:nth-child(8),#tabelaConvocar td:nth-child(8){width:6%!important}
-#tabelaConvocar th:nth-child(9),#tabelaConvocar td:nth-child(9){width:6%!important}
-#tabelaConvocar th:nth-child(10),#tabelaConvocar td:nth-child(10){width:6%!important}
-#tabelaConvocar th:nth-child(11),#tabelaConvocar td:nth-child(11){width:13.5%!important}
-#tabelaConvocar td.info-agenda{width:13.5%!important;min-width:0!important;max-width:none!important;white-space:normal!important;overflow-wrap:anywhere!important;line-height:1.25!important}
-#tabelaConvocar th:nth-child(12),#tabelaConvocar td:nth-child(12){width:11.5%!important}
-#tabelaConvocar th:nth-child(13),#tabelaConvocar td:nth-child(13){width:3%!important}
-#tabelaConvocar th:nth-child(14),#tabelaConvocar td:nth-child(14){width:4%!important}
-#tabelaConvocar th:nth-child(15),#tabelaConvocar td:nth-child(15){width:6%!important}
 </style>`;
+
   const complementos = patch + "\n" + visual + "\n" + ajustesFinais + "\n" + ajustesLayout;
   const htmlFinal = htmlBase.includes("</body>")
     ? htmlBase.replace("</body>", complementos + "\n</body>")
