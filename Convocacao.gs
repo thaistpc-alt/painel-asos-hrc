@@ -208,6 +208,9 @@ function encerrarContextoGeracaoConvocacoes(contexto) {
 
 function gerarConvocacaoPorColaborador(colaborador, dadosAgenda, opcoes) {
   opcoes = opcoes || {};
+  if (opcoes.reconvocacao && !colaborador.dataAgendada) {
+    throw new Error("A reconvocação só pode ser gerada após informar uma nova data de agendamento.");
+  }
   const contextoProprio = !opcoes.contextoGeracao;
   const contexto = opcoes.contextoGeracao || criarContextoGeracaoConvocacoes();
   const ss = contexto.ss;
@@ -514,7 +517,7 @@ function enviarConvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInici
         return;
       }
 
-      const motivo = motivoNaoBaixarConvocacao(colaborador, dataInicio, dataFim, !!opcoes.reconvocacao);
+      const motivo = motivoNaoBaixarConvocacao(colaborador, dataInicio, dataFim);
 
       if (motivo) {
         resultados.push({
@@ -534,7 +537,8 @@ function enviarConvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInici
         const pdf = gerarConvocacaoPorColaborador(colaborador, dadosAgenda, {
           turnosAgenda: turnosAgenda,
           incluirAnexo: true,
-          contextoGeracao: contextoGeracao
+          contextoGeracao: contextoGeracao,
+          reconvocacao: !!opcoes.reconvocacao
         });
 
         anexos.push(pdf.anexo);
@@ -584,6 +588,10 @@ function enviarConvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInici
       : {};
     const corpo = montarCorpoEmailGestor(enviados, dataInicio, dataFim, contexto);
     const thread = opcoes.responderThreadId ? obterThreadGmailPorId(opcoes.responderThreadId) : null;
+
+    if (opcoes.reconvocacao && !thread) {
+      throw new Error("A convocação original não foi localizada. Para manter a cadeia de e-mail, nenhum envio foi feito.");
+    }
 
     if (thread) {
       // GmailApp.sendEmail cria uma mensagem nova e não assegura a continuidade
@@ -987,11 +995,45 @@ function reconstruirHistoricoEnviosAgosto2026() {
 function enviarReconvocacaoPendenciaGestor(mat, emailsGestor, dataInicio, dataFim, dataAnteriorBR) {
   const historico = obterHistoricoEnvioConvocacao(mat);
   const threadAnterior = historico.threadId || localizarThreadAnteriorConvocacao(mat);
+  if (!threadAnterior) {
+    return [{
+      sucesso: false,
+      ignorado: true,
+      matricula: String(mat || ""),
+      erro: "Convocação original não localizada; nenhum e-mail foi enviado."
+    }];
+  }
   return enviarConvocacoesSelecionadasGestor([mat], emailsGestor, dataInicio, dataFim, {
     reconvocacao: true,
     dataAnteriorBR: dataAnteriorBR || "",
     responderThreadId: threadAnterior
   });
+}
+
+function enviarReconvocacoesSelecionadasGestor(matriculas, emailsGestor, dataInicio, dataFim, dataAnteriorPorMatricula) {
+  const selecionadas = Array.from(new Set((matriculas || []).map(m => String(m || "").trim()).filter(Boolean)));
+  const resultados = [];
+  const anteriores = dataAnteriorPorMatricula || {};
+  selecionadas.forEach(mat => {
+    try {
+      const resposta = enviarReconvocacaoPendenciaGestor(
+        mat,
+        emailsGestor,
+        dataInicio,
+        dataFim,
+        anteriores[mat] || ""
+      );
+      (resposta || []).forEach(item => resultados.push(item));
+    } catch (e) {
+      resultados.push({
+        sucesso: false,
+        ignorado: false,
+        matricula: mat,
+        erro: e && e.message ? e.message : String(e)
+      });
+    }
+  });
+  return resultados;
 }
 
 function localizarThreadAnteriorConvocacao(mat) {
