@@ -74,7 +74,7 @@
     periodo.appendChild(limpar);
 
     const area=filtros.querySelector('#toolbarModulo');
-    filtros.insertBefore(periodo,area||seletor);
+    filtros.insertBefore(periodo,area||filtros.firstChild);
   }
 
   function situacoesDisponiveis(){const lista=dadosPortal&&dadosPortal.convocar&&dadosPortal.convocar.todos||[];return[...new Set(lista.map(i=>i.situacao).filter(Boolean))].sort((a,b)=>a.localeCompare(b));}
