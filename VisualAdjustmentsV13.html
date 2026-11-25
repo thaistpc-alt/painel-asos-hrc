@@ -293,3 +293,52 @@
   document.addEventListener('DOMContentLoaded',()=>{const a=$('#convocar');if(a)observador.observe(a,{childList:true,subtree:true});});
 })();
 </script>
+
+
+<style id="correcao-layout-filtros-tabela">
+/* Impede que os rótulos da barra colidam e mantém todos os controles alinhados. */
+#barraFiltrosAgenda {
+  grid-template-columns:
+    minmax(100px,1.1fr) minmax(72px,.72fr) minmax(86px,.86fr)
+    minmax(60px,.6fr) minmax(110px,1.1fr) minmax(134px,1.3fr)
+    minmax(160px,1.55fr) minmax(112px,1.12fr) minmax(138px,1.35fr) !important;
+  gap:8px !important;
+}
+#barraFiltrosAgenda label,
+#painelTopbarTools .campo-pesquisa label {
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+  line-height:1.15 !important;
+  min-height:14px;
+}
+#barraFiltrosAgenda > *,
+#barraFiltrosAgenda > * > * { min-width:0 !important; }
+#barraFiltrosAgenda .periodo-trigger,
+#barraFiltrosAgenda button { overflow-wrap:anywhere !important; }
+
+/* A tabela se ajusta à área disponível e não força rolagem horizontal na página. */
+#tabelaConvocar .tabela-container {
+  width:100% !important;
+  max-width:100% !important;
+  overflow-x:hidden !important;
+}
+#tabelaConvocar table {
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+  table-layout:fixed !important;
+}
+#tabelaConvocar th,
+#tabelaConvocar td {
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+  word-break:normal !important;
+}
+html, body { overflow-x:hidden !important; }
+@media (max-width:1100px) {
+  #barraFiltrosAgenda { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+}
+@media (max-width:620px) {
+  #barraFiltrosAgenda { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+}
+</style>
