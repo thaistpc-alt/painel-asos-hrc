@@ -1837,7 +1837,7 @@
 
     function montarSecaoPendencia(titulo, lista, tipo) {
       const total = lista ? lista.length : 0;
-      const eReconvocacao = tipo === "reconvocar";
+      const eReconvocacao = tipo === "agendado";
       const barraSelecao = eReconvocacao
         ? '<div class="acoes-reconvocacao"><span id="resumoSelecaoReconvocacao">0 selecionadas</span><button type="button" class="azul" id="enviarReconvocacoesSelecionadas" onclick="enviarReconvocacoesSelecionadas()" disabled>Enviar selecionadas</button></div>'
         : "";
@@ -1879,7 +1879,7 @@
       `;
 
       lista.forEach(item => {
-        const podeBaixar = tipo === "reconvocar" || tipo === "agendado";
+        const podeBaixar = tipo === "agendado" && !!(item.novaDataAgendada || item.dataAgendada);
         const matriculaReconvocacao = String(item.mat || "");
         const dataAnteriorReconvocacao = item.dataUltimaPendenciaBR || item.dataAgendadaBR || "";
         const caixaReconvocacao = eReconvocacao
@@ -1892,7 +1892,7 @@
                <button title="Baixar nova convocação" onclick="gerarIndividual('${escaparAtributo(item.mat)}')">PDF</button>
                <button title="Enviar nova convocação ao gestor" onclick="enviarPendenciaGestor('${escaparAtributo(item.mat)}', '${escaparAtributo(item.dataUltimaPendenciaBR || item.dataAgendadaBR || "")}')">Enviar</button>
              </div>`
-          : `<span class="badge">${escaparHtml(item.grupoPendencia || "")}</span>`;
+          : `<span class="badge">Aguardando novo agendamento</span>`;
 
         html += `
           <tr>
@@ -2632,7 +2632,7 @@
           selecaoReconvocacoes.clear();
           carregarDados(true);
           mostrarOk(enviadas
-            ? enviadas + " reconvocação(ões) enviada(s) ao gestor" + (falhas ? "; " + falhas + " registro(s) não enviado(s)." : ".")
+            ? enviadas + " reconvocação(ões) enviadas nas conversas originais dos gestores" + (falhas ? "; " + falhas + " registro(s) não enviado(s)." : ".")
             : "Nenhuma reconvocação foi enviada.");
           atualizarInterfaceSelecaoReconvocacoes();
         })
@@ -2642,12 +2642,12 @@
           atualizarInterfaceSelecaoReconvocacoes();
           mostrarErro(erro.message || erro);
         })
-        .enviarConvocacoesSelecionadasGestor(
+        .enviarReconvocacoesSelecionadasGestor(
           selecionadas.map(item => item.mat),
           destinatarios,
           dataInicio,
           dataFim,
-          { reconvocacao: true, dataAnteriorPorMatricula: dataAnteriorPorMatricula }
+          dataAnteriorPorMatricula
         );
     }
 
