@@ -28,50 +28,51 @@
 
     const inicio=document.getElementById('dataInicio');
     const fim=document.getElementById('dataFim');
-    if(!inicio||!fim)return;
+    const popover=document.getElementById('popoverPeriodo');
+    if(!inicio||!fim||!popover)return;
 
-    // O seletor de período é uma unidade: o botão abre o popover com as duas datas.
-    // Não mover os inputs individualmente, pois isso quebra o layout e esvazia o popover.
+    // Mantém o controle completo junto: gatilho, calendário e botões de período.
     const periodo=document.createElement('div');
     periodo.className='painel-topbar-periodo';
     periodo.appendChild(seletor);
 
-    const atalhos=document.createElement('div');
-    atalhos.className='painel-periodo-atalhos';
-    [['Mês atual',0],['Próximo mês',1]].forEach(cfg=>{
-      const b=document.createElement('button');
-      b.type='button';
-      b.className='periodo-atalho';
-      b.textContent=cfg[0];
-      b.onclick=function(){
-        const h=new Date(),base=new Date(h.getFullYear(),h.getMonth()+cfg[1],1);
-        const ini=new Date(base.getFullYear(),base.getMonth(),1);
-        const fm=new Date(base.getFullYear(),base.getMonth()+1,0);
-        inicio.value=formatarDataInput(ini);
-        fim.value=formatarDataInput(fm);
-        if(typeof aplicarPeriodoSelecionado==='function')aplicarPeriodoSelecionado();
-        else carregarDados(false);
-      };
-      atalhos.appendChild(b);
-    });
-    periodo.appendChild(atalhos);
+    let atalhos=popover.querySelector('.periodo-atalhos');
+    if(!atalhos){
+      atalhos=document.createElement('div');
+      atalhos.className='periodo-atalhos';
+      const acoes=popover.querySelector('.periodo-acoes');
+      popover.insertBefore(atalhos,acoes||null);
 
-    const limpar=document.createElement('button');
-    limpar.type='button';
-    limpar.className='painel-limpar-periodo';
-    limpar.textContent='Limpar';
-    limpar.onclick=function(){
-      const h=new Date(),ini=new Date(h.getFullYear(),h.getMonth(),1),fm=new Date(h.getFullYear(),h.getMonth()+1,0);
-      inicio.value=formatarDataInput(ini);
-      fim.value=formatarDataInput(fm);
-      resetarSituacoes();
-      resetarSituacoesComplementares();
-      document.querySelectorAll('.linha-filtros input[type="text"],.linha-filtros input[type="email"]').forEach(el=>el.value='');
-      document.querySelectorAll('.linha-filtros select').forEach(el=>el.value='');
-      if(typeof aplicarPeriodoSelecionado==='function')aplicarPeriodoSelecionado();
-      else carregarDados(false);
-    };
-    periodo.appendChild(limpar);
+      [['Mês atual',0],['Próximo mês',1]].forEach(cfg=>{
+        const b=document.createElement('button');
+        b.type='button';
+        b.className='periodo-atalho';
+        b.textContent=cfg[0];
+        b.onclick=function(){
+          const h=new Date(),base=new Date(h.getFullYear(),h.getMonth()+cfg[1],1);
+          inicio.value=formatarDataInput(new Date(base.getFullYear(),base.getMonth(),1));
+          fim.value=formatarDataInput(new Date(base.getFullYear(),base.getMonth()+1,0));
+          aplicarPeriodoSelecionado();
+        };
+        atalhos.appendChild(b);
+      });
+
+      const limpar=document.createElement('button');
+      limpar.type='button';
+      limpar.className='painel-limpar-periodo';
+      limpar.textContent='Limpar filtros';
+      limpar.onclick=function(){
+        const h=new Date();
+        inicio.value=formatarDataInput(new Date(h.getFullYear(),h.getMonth(),1));
+        fim.value=formatarDataInput(new Date(h.getFullYear(),h.getMonth()+1,0));
+        resetarSituacoes();
+        resetarSituacoesComplementares();
+        document.querySelectorAll('.linha-filtros input[type="text"],.linha-filtros input[type="email"]').forEach(el=>el.value='');
+        document.querySelectorAll('.linha-filtros select').forEach(el=>el.value='');
+        aplicarPeriodoSelecionado();
+      };
+      atalhos.appendChild(limpar);
+    }
 
     const area=filtros.querySelector('#toolbarModulo');
     filtros.insertBefore(periodo,area||filtros.firstChild);
@@ -365,3 +366,169 @@
 }
 
 </style>
+
+<style>
+/* Barra de filtros dimensionada para desktop: controles alinhados, sem sobreposição. */
+.filtros{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  align-items:flex-end!important;
+  gap:12px!important;
+  min-height:94px!important;
+  padding:12px 14px!important;
+  overflow-x:auto!important;
+  overflow-y:visible!important;
+}
+.painel-topbar-periodo{
+  display:block!important;
+  flex:0 0 156px!important;
+  width:156px!important;
+  min-width:156px!important;
+  margin:0!important;
+}
+.painel-topbar-periodo .filtro-data-wrap{
+  position:relative!important;
+  width:100%!important;
+  min-width:0!important;
+  flex:initial!important;
+}
+.painel-topbar-periodo .filtro-data-wrap>label{
+  margin:0 0 5px!important;
+  font-size:11px!important;
+}
+.painel-topbar-periodo .filtro-data-trigger{
+  display:flex!important;
+  justify-content:space-between!important;
+  align-items:center!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:44px!important;
+  padding:8px 10px!important;
+  font-size:13px!important;
+  line-height:1.2!important;
+  white-space:normal!important;
+}
+.painel-topbar-periodo .periodo-popover{
+  position:fixed!important;
+  display:none;
+  z-index:30000!important;
+  width:min(420px,calc(100vw - 24px))!important;
+  min-width:min(320px,calc(100vw - 24px))!important;
+  max-height:calc(100vh - 24px)!important;
+  overflow:auto!important;
+  padding:18px!important;
+  border-radius:14px!important;
+  box-shadow:0 18px 48px rgba(15,23,42,.25)!important;
+}
+.painel-topbar-periodo .periodo-popover.aberto{display:block!important}
+.painel-topbar-periodo .periodo-campos{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:14px!important;
+}
+.painel-topbar-periodo .periodo-campos label{font-size:12px!important}
+.painel-topbar-periodo .periodo-campos input{
+  width:100%!important;min-width:0!important;height:42px!important;
+  padding:8px!important;font-size:13px!important;
+}
+.painel-topbar-periodo .periodo-atalhos{
+  display:flex!important;flex-wrap:wrap!important;gap:8px!important;
+  margin-top:14px!important;
+}
+.painel-topbar-periodo .periodo-atalhos button,
+.painel-topbar-periodo .periodo-acoes button{
+  min-width:90px!important;min-height:40px!important;
+  height:auto!important;padding:8px 11px!important;
+  font-size:12px!important;line-height:1.2!important;
+  white-space:normal!important;
+}
+.painel-topbar-periodo .periodo-acoes{
+  display:flex!important;justify-content:flex-end!important;
+  gap:8px!important;margin-top:14px!important;
+}
+#toolbarModulo{
+  display:flex!important;
+  flex:1 1 auto!important;
+  width:auto!important;
+  min-width:0!important;
+  overflow:visible!important;
+}
+#toolbarModulo .linha-filtros{
+  display:grid!important;
+  grid-template-columns:minmax(125px,145px) minmax(115px,130px) minmax(160px,1fr) minmax(420px,1.65fr)!important;
+  align-items:end!important;
+  gap:12px!important;
+  width:100%!important;
+  min-width:0!important;
+  flex-wrap:initial!important;
+}
+#toolbarModulo .linha-filtros>div{min-width:0!important;width:auto!important}
+#toolbarModulo .situacao-multipla,
+#toolbarModulo .situacao-complementares{
+  width:100%!important;min-width:0!important;flex:initial!important;
+}
+#toolbarModulo .linha-filtros select,
+#toolbarModulo .situacao-multipla-botao{
+  width:100%!important;min-width:0!important;height:42px!important;
+  padding:8px 10px!important;font-size:12px!important;
+}
+#toolbarModulo .linha-filtros .campo-pesquisa,
+#toolbarModulo .linha-filtros .email-gestor{
+  width:auto!important;min-width:0!important;flex:initial!important;
+}
+#toolbarModulo .linha-filtros .campo-pesquisa input,
+#toolbarModulo .linha-filtros .email-gestor input{
+  width:100%!important;min-width:0!important;height:42px!important;
+  padding:8px 10px!important;font-size:12px!important;
+}
+#toolbarModulo .acoes-lote{
+  display:grid!important;
+  grid-template-columns:minmax(155px,1fr) repeat(3,minmax(80px,auto))!important;
+  align-items:end!important;gap:8px!important;
+  width:100%!important;min-width:0!important;flex-wrap:initial!important;
+}
+#toolbarModulo .acoes-lote .email-gestor{width:auto!important;min-width:0!important}
+#toolbarModulo .acoes-lote button{
+  min-width:80px!important;max-width:none!important;min-height:42px!important;
+  height:auto!important;padding:8px 10px!important;font-size:11px!important;
+  line-height:1.15!important;white-space:normal!important;
+}
+#toolbarModulo .linha-filtros label{font-size:10px!important;margin-bottom:5px!important}
+@media(max-width:1250px){
+  .filtros{overflow-x:auto!important}
+  #toolbarModulo{flex:0 0 900px!important}
+}
+@media(max-width:700px){
+  .filtros{align-items:flex-start!important}
+  .painel-topbar-periodo{flex-basis:145px!important;width:145px!important;min-width:145px!important}
+  .painel-topbar-periodo .periodo-campos{grid-template-columns:1fr!important}
+  #toolbarModulo{flex-basis:840px!important}
+}
+</style>
+<script>
+(function(){
+  function posicionarPopoverPeriodo(){
+    const botao=document.getElementById('botaoPeriodo');
+    const popover=document.getElementById('popoverPeriodo');
+    if(!botao||!popover||!popover.classList.contains('aberto'))return;
+    const r=botao.getBoundingClientRect(),margem=12;
+    const largura=Math.min(420,window.innerWidth-margem*2);
+    let esquerda=Math.max(margem,Math.min(r.left,window.innerWidth-largura-margem));
+    popover.style.width=largura+'px';
+    popover.style.left=Math.round(esquerda)+'px';
+    popover.style.right='auto';
+    popover.style.top='12px';
+    requestAnimationFrame(function(){
+      const altura=popover.getBoundingClientRect().height;
+      let topo=r.bottom+8;
+      if(topo+altura>window.innerHeight-margem)topo=Math.max(margem,r.top-altura-8);
+      popover.style.top=Math.round(topo)+'px';
+    });
+  }
+  document.addEventListener('click',function(e){
+    if(e.target.closest&&e.target.closest('#botaoPeriodo'))setTimeout(posicionarPopoverPeriodo,0);
+  },true);
+  window.addEventListener('resize',posicionarPopoverPeriodo);
+  window.addEventListener('scroll',posicionarPopoverPeriodo,true);
+})();
+</script>
