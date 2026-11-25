@@ -451,7 +451,10 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
     const realizadosTodos = eventosComData.filter(e => e.ehAsoRealizado);
     const realizadosPeriodicos = realizadosTodos.filter(ehEventoPeriodicoAgenda);
     const anoVigente = String(hojeISO || obterHojeISO()).slice(0, 4);
-    const realizadosNoAno = realizadosTodos.filter(e => String(e.data || "").slice(0, 4) === anoVigente);
+    const realizadosNoAno = realizadosTodos.filter(e =>
+      String(e.data || "").slice(0, 4) === anoVigente &&
+      !normalizarTexto(e.tipoNorm || e.tipo || "").includes("DEMISSIONAL")
+    );
     const datasRealizadasNoAno = new Set(realizadosNoAno.map(e => String(e.data || "") + "|" + normalizarTexto(e.tipoNorm || e.tipo || "")));
     const fonteTemAsoNoAno = String(c.dataUltimoAso || "").slice(0, 4) === anoVigente &&
       !realizadosNoAno.some(e => String(e.data || "") === String(c.dataUltimoAso || ""));
@@ -565,13 +568,16 @@ function calcularStatusGeralPortalV14_7_(c, hojeISO) {
 function temAsoRealizadoValido(c) {
   if (!c) return false;
 
-  if (c.asoDemissionalRealizado) return true;
-
   const anoVigente = String(obterHojeISO()).slice(0, 4);
   let quantidade = Number(c.asosRealizadosNoAnoVigente) || 0;
   const dataUltimoFonte = String(c.dataUltimoAso || "");
+  const dataRealizadoAgenda = String(c.dataAsoRealizadoAgenda || "");
+  if (dataRealizadoAgenda.slice(0, 4) === anoVigente) {
+    quantidade = Math.max(quantidade, 1);
+  }
   if (
     dataUltimoFonte.slice(0, 4) === anoVigente &&
+    !normalizarTexto(c.tipoExame || "").includes("DEMISSIONAL") &&
     !String(c.dataAsoRealizadoAgenda || "").startsWith(anoVigente)
   ) {
     quantidade = Math.max(quantidade, 1);
@@ -653,11 +659,15 @@ function deveIgnorarPendenciaPorAsoNoAno_(colaborador, eventos) {
 
   const chaves = new Set();
   realizados
-    .filter(e => String(e.data || "").slice(0, 4) === anoVigente)
+    .filter(e =>
+      String(e.data || "").slice(0, 4) === anoVigente &&
+      !normalizarTexto(e.tipoNorm || e.tipo || "").includes("DEMISSIONAL")
+    )
     .forEach(e => chaves.add(String(e.data) + "|" + normalizarTexto(e.tipoNorm || e.tipo || "")));
 
   const dataFonte = String(colaborador && colaborador.dataUltimoAso || "");
   if (dataFonte.slice(0, 4) === anoVigente &&
+      !normalizarTexto(colaborador && colaborador.tipoExame || "").includes("DEMISSIONAL") &&
       !realizados.some(e => String(e.data || "") === dataFonte)) {
     chaves.add(dataFonte + "|" + normalizarTexto(colaborador.tipoExame || ""));
   }
