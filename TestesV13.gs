@@ -1,3 +1,18 @@
+function casoCanceladoBaseTeste_() {
+  return {
+    matriculaCompleta: "2009996",
+    nome: "TESTE REGRA ANUAL",
+    situacao: "Ativo",
+    situacaoNorm: "ATIVO",
+    tipoExame: "",
+    dataUltimoAso: "",
+    dataAgendada: "",
+    dataConvocar: "",
+    dataConvocarBR: "",
+    dataAgendadaBR: ""
+  };
+}
+
 /* =========================================================
    TESTES DE REGRESSÃO E PERFORMANCE V13.2
    Execute no Apps Script antes da implantação.
@@ -169,9 +184,83 @@ function executarRegressaoRegrasConvocacaoV14() {
   ]);
   const pendenciasDemissional = gerarPendencias([casoDemissional], eventosDemissional);
   testar(
-    "ASO demissional dentro de 90 dias não resolve falta periódica",
-    pendenciasDemissional.operacionais.length === 1,
+    "ASO demissional encerra a pendência operacional",
+    pendenciasDemissional.operacionais.length === 0,
     pendenciasDemissional.operacionais.length
+  );
+
+  const casoASOAno = Object.assign({}, casoCanceladoBaseTeste_(), {
+    mat: "TESTE_ASO_ANO",
+    periodicidade: 12,
+    funcao: "ENFERMEIRO"
+  });
+  const eventosASOAno = new Map();
+  eventosASOAno.set("TESTE_ASO_ANO", [
+    {
+      mat: "TESTE_ASO_ANO", data: "2026-01-10", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "Não compareceu ASO",
+      ehAsoRealizado: false, ehNaoCompareceu: true, ehReagendou: false, ehCancelado: false
+    },
+    {
+      mat: "TESTE_ASO_ANO", data: "2026-10-01", tipo: "RETORNO AO TRABALHO",
+      tipoNorm: "RETORNO AO TRABALHO", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    }
+  ]);
+  testar(
+    "ASO realizado no ano vigente encerra pendência anual fora da janela de 90 dias",
+    gerarPendencias([casoASOAno], eventosASOAno).operacionais.length === 0
+  );
+
+  const casoRadiologia = Object.assign({}, casoASOAno, {
+    mat: "TESTE_RADIOLOGIA_ANUAL",
+    funcao: "TECNICO(A) EM RADIOLOGIA",
+    periodicidade: 6
+  });
+  const eventosRadiologia = new Map();
+  eventosRadiologia.set("TESTE_RADIOLOGIA_ANUAL", [
+    {
+      mat: "TESTE_RADIOLOGIA_ANUAL", data: "2026-01-10", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "Não compareceu ASO",
+      ehAsoRealizado: false, ehNaoCompareceu: true, ehReagendou: false, ehCancelado: false
+    },
+    {
+      mat: "TESTE_RADIOLOGIA_ANUAL", data: "2026-08-01", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    },
+    {
+      mat: "TESTE_RADIOLOGIA_ANUAL", data: "2026-11-01", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    }
+  ]);
+  testar(
+    "Técnico em Radiologia sem dois ASOs no ano ainda pode ter pendência",
+    gerarPendencias([casoRadiologia], eventosRadiologia).operacionais.length === 1
+  );
+
+  const casoRadiologia2 = Object.assign({}, casoRadiologia, { mat: "TESTE_RADIOLOGIA_DOIS_ASOS" });
+  eventosRadiologia.set("TESTE_RADIOLOGIA_DOIS_ASOS", [
+    {
+      mat: "TESTE_RADIOLOGIA_DOIS_ASOS", data: "2026-01-10", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "Não compareceu ASO",
+      ehAsoRealizado: false, ehNaoCompareceu: true, ehReagendou: false, ehCancelado: false
+    },
+    {
+      mat: "TESTE_RADIOLOGIA_DOIS_ASOS", data: "2026-07-01", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    },
+    {
+      mat: "TESTE_RADIOLOGIA_DOIS_ASOS", data: "2026-11-01", tipo: "PERIÓDICO",
+      tipoNorm: "PERIODICO", status: "ASO Realizado",
+      ehAsoRealizado: true, ehNaoCompareceu: false, ehReagendou: false, ehCancelado: false
+    }
+  ]);
+  testar(
+    "Dois ASOs realizados no ano encerram pendência do Técnico em Radiologia",
+    gerarPendencias([casoRadiologia2], eventosRadiologia).operacionais.length === 0
   );
 
   const casoCancelado = {
