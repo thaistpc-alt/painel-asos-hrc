@@ -342,3 +342,81 @@ html, body { overflow-x:hidden !important; }
   #barraFiltrosAgenda { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
 }
 </style>
+
+
+<style id="correcao-layout-filtros-tabela-v2">
+#barraFiltrosAgenda {
+  grid-template-columns:minmax(100px,1.05fr) minmax(74px,.78fr) minmax(88px,.9fr)
+    minmax(62px,.62fr) minmax(112px,1.12fr) minmax(138px,1.38fr)
+    minmax(160px,1.6fr) minmax(112px,1.12fr) minmax(138px,1.38fr) !important;
+  gap:8px !important;
+}
+#barraFiltrosAgenda label {
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+  line-height:1.15 !important;
+}
+#barraFiltrosAgenda > *,
+#barraFiltrosAgenda > * > * { min-width:0 !important; }
+#barraFiltrosAgenda .periodo-trigger,
+#barraFiltrosAgenda button { overflow-wrap:anywhere !important; }
+#tabelaConvocar .tabela-container {
+  width:100% !important; max-width:100% !important; overflow-x:hidden !important;
+}
+#tabelaConvocar table {
+  width:100% !important; min-width:0 !important; max-width:100% !important; table-layout:fixed !important;
+}
+#tabelaConvocar th,#tabelaConvocar td {
+  white-space:normal !important; overflow-wrap:anywhere !important; word-break:normal !important;
+}
+html,body { overflow-x:hidden !important; }
+@media(max-width:1100px) { #barraFiltrosAgenda { grid-template-columns:repeat(3,minmax(0,1fr)) !important; } }
+@media(max-width:620px) { #barraFiltrosAgenda { grid-template-columns:repeat(2,minmax(0,1fr)) !important; } }
+</style>
+<script id="reparar-controles-barra-agenda">
+(function(){
+  'use strict';
+  const norm=s=>String(s||'').trim().toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\\s+/g,' ');
+  function corrigir(){
+    const bar=document.getElementById('barraFiltrosAgenda');
+    if(!bar)return false;
+    const allButtons=[...document.querySelectorAll('button')];
+    const findButton=(test)=>allButtons.find(b=>test(norm(b.textContent)));
+    const findInBar=(test)=>[...bar.querySelectorAll('button')].find(b=>test(norm(b.textContent)));
+    const moveUnique=(test,preferred)=>{
+      let keep=findInBar(test)||preferred||findButton(test);
+      if(!keep)return null;
+      if(keep.parentElement!==bar)bar.appendChild(keep);
+      allButtons.filter(b=>b!==keep&&test(norm(b.textContent))).forEach(b=>b.remove());
+      return keep;
+    };
+    const periodo=bar.querySelector('.periodo-seletor');
+    const mesAtual=moveUnique(t=>t==='mes atual',null);
+    const mesSeguinte=moveUnique(t=>t==='mes seguinte'||t==='proximo mes',null);
+    const limpar=moveUnique(t=>t==='limpar'||t==='limpar filtros locais',null);
+    const situacao=document.querySelector('#barraFiltrosAgenda .filtro-situacao-check[data-tipo="convocar"]')
+      ||document.querySelector('.filtro-situacao-check[data-tipo="convocar"]')
+      ||document.querySelector('#barraFiltrosAgenda .situacao-multipla:not(.situacao-complementares)')
+      ||document.querySelector('.situacao-multipla:not(.situacao-complementares)');
+    const origem=document.querySelector('#barraFiltrosAgenda .filtro-grupo-convocacao-v15')
+      ||document.querySelector('.filtro-grupo-convocacao-v15');
+    const email=document.querySelector('#emailGestorConvocacao')?.closest('.email-gestor')
+      ||document.querySelector('.email-gestor');
+    const send=moveUnique(t=>t==='enviar convocacao'||t==='enviar gestor',null);
+    const pdf=moveUnique(t=>t==='gerar pdf selecionados'||t==='gerar selecionados',null);
+    const ordered=[periodo,mesAtual,mesSeguinte,limpar,situacao,origem,email,send,pdf].filter(Boolean);
+    ordered.forEach(el=>{if(el.parentElement!==bar)bar.appendChild(el);});
+    ordered.forEach(el=>bar.appendChild(el));
+    if(situacao){
+      const legados=document.querySelectorAll('#filtroSituacaoConvocar');
+      legados.forEach(el=>{if(!el.closest('.filtro-situacao-check'))el.closest('div')?.style.setProperty('display','none','important');});
+    }
+    return true;
+  }
+  let n=0;
+  const timer=setInterval(()=>{corrigir();if(++n>=80)clearInterval(timer);},350);
+  document.addEventListener('DOMContentLoaded',corrigir);
+  document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#abaConvocar'))setTimeout(corrigir,150);},true);
+  new MutationObserver(()=>corrigir()).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
