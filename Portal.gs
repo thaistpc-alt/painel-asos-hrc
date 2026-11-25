@@ -308,6 +308,14 @@ function ehEventoPeriodicoAgenda(evento) {
   return tipo.includes("PERIODIC") || tipo.includes("PERIODICO");
 }
 
+function ehTipoAsoQualificaPendencia_(tipo) {
+  const tipoNorm = normalizarTexto(tipo || "");
+  return tipoNorm.includes("ADMISSIONAL") ||
+    tipoNorm.includes("PERIODIC") || tipoNorm.includes("PERIODICO") ||
+    tipoNorm.includes("RETORNO") ||
+    (tipoNorm.includes("MUDANCA") && tipoNorm.includes("RISCO"));
+}
+
 function aplicarHistoricoEnviosPendencias(dadosPortal) {
   if (!dadosPortal) return dadosPortal;
 
@@ -370,7 +378,7 @@ function consultarDiagnosticoASO(termo) {
     const explicacao = c.matriculaDuplicada
       ? "Cadastro ambíguo: há matrícula duplicada na FONTEpainel. O registro está impedido de entrar em ações até revisão da fonte."
       : p
-        ? "Pendente porque a AGENDA contém ocorrência periódica com status " + (p.statusPendencia || p.statusAgenda || "Não compareceu/Reagendou/Cancelado") + " em " + (p.dataUltimaPendenciaBR || "data não informada") + ", sem ASO qualificável dentro da janela de 90 dias antes ou depois."
+        ? "Pendente porque a AGENDA contém ocorrência periódica com status " + (p.statusPendencia || p.statusAgenda || "Não compareceu/Reagendou/Cancelado") + " em " + (p.dataUltimaPendenciaBR || "data não informada") + ", sem ASO qualificável no ano vigente; Técnico em Radiologia precisa completar dois no ano."
         : c.asoRealizadoValido
           ? "A base/agenda indica ASO periódico realizado em " + (c.dataUltimoAsoBR || c.dataAsoRealizadoAgendaBR || "data não informada") + "; o próximo vencimento é recalculado pela periodicidade da função."
           : "Não há pendência operacional aberta registrada. A data de vencimento é calculada pela data do último ASO mais " + c.periodicidade + " meses.";
@@ -453,10 +461,11 @@ function aplicarAsoRealizadoAgenda(lista, eventosPorMatricula) {
     const anoVigente = String(hojeISO || obterHojeISO()).slice(0, 4);
     const realizadosNoAno = realizadosTodos.filter(e =>
       String(e.data || "").slice(0, 4) === anoVigente &&
-      !normalizarTexto(e.tipoNorm || e.tipo || "").includes("DEMISSIONAL")
+      ehTipoAsoQualificaPendencia_(e.tipoNorm || e.tipo)
     );
     const datasRealizadasNoAno = new Set(realizadosNoAno.map(e => String(e.data || "") + "|" + normalizarTexto(e.tipoNorm || e.tipo || "")));
     const fonteTemAsoNoAno = String(c.dataUltimoAso || "").slice(0, 4) === anoVigente &&
+      ehTipoAsoQualificaPendencia_(c.tipoExame || "") &&
       !realizadosNoAno.some(e => String(e.data || "") === String(c.dataUltimoAso || ""));
     c.asosRealizadosNoAnoVigente = datasRealizadasNoAno.size + (fonteTemAsoNoAno ? 1 : 0);
     c.asoDemissionalRealizado = realizadosTodos.some(e =>
@@ -572,12 +581,15 @@ function temAsoRealizadoValido(c) {
   let quantidade = Number(c.asosRealizadosNoAnoVigente) || 0;
   const dataUltimoFonte = String(c.dataUltimoAso || "");
   const dataRealizadoAgenda = String(c.dataAsoRealizadoAgenda || "");
-  if (dataRealizadoAgenda.slice(0, 4) === anoVigente) {
+  if (
+    dataRealizadoAgenda.slice(0, 4) === anoVigente &&
+    ehTipoAsoQualificaPendencia_(c.tipoAsoRealizadoAgenda || "PERIODICO")
+  ) {
     quantidade = Math.max(quantidade, 1);
   }
   if (
     dataUltimoFonte.slice(0, 4) === anoVigente &&
-    !normalizarTexto(c.tipoExame || "").includes("DEMISSIONAL") &&
+    ehTipoAsoQualificaPendencia_(c.tipoExame || "") &&
     !String(c.dataAsoRealizadoAgenda || "").startsWith(anoVigente)
   ) {
     quantidade = Math.max(quantidade, 1);
@@ -661,13 +673,13 @@ function deveIgnorarPendenciaPorAsoNoAno_(colaborador, eventos) {
   realizados
     .filter(e =>
       String(e.data || "").slice(0, 4) === anoVigente &&
-      !normalizarTexto(e.tipoNorm || e.tipo || "").includes("DEMISSIONAL")
+      ehTipoAsoQualificaPendencia_(e.tipoNorm || e.tipo)
     )
     .forEach(e => chaves.add(String(e.data) + "|" + normalizarTexto(e.tipoNorm || e.tipo || "")));
 
   const dataFonte = String(colaborador && colaborador.dataUltimoAso || "");
   if (dataFonte.slice(0, 4) === anoVigente &&
-      !normalizarTexto(colaborador && colaborador.tipoExame || "").includes("DEMISSIONAL") &&
+      ehTipoAsoQualificaPendencia_(colaborador && colaborador.tipoExame || "") &&
       !realizados.some(e => String(e.data || "") === dataFonte)) {
     chaves.add(dataFonte + "|" + normalizarTexto(colaborador.tipoExame || ""));
   }
@@ -716,104 +728,7 @@ function gerarPendencias(lista, eventosPorMatriculaParam) {
 
     const ultimaPendencia = eventosPendencia[eventosPendencia.length - 1];
 
-    // Cancelamentos costumam ocorrer porque o ASO já foi feito. Nesses casos,
-    // qualquer periódico, retorno ao trabalho ou mudança de risco realizado no
-    // mesmo ano civil encerra a pendência, mesmo que esteja fora da janela de 90 dias.
-    const tipoQualificaCancelamento = tipo => {
-      const tipoNorm = normalizarTexto(tipo || "");
-      return tipoNorm.includes("PERIODIC") || tipoNorm.includes("PERIODICO") ||
-        tipoNorm.includes("RETORNO") ||
-        (tipoNorm.includes("MUDANCA") && tipoNorm.includes("RISCO"));
-    };
-    const mesmoAnoCivil = (dataA, dataB) =>
-      !!dataA && !!dataB && String(dataA).slice(0, 4) === String(dataB).slice(0, 4);
-
-    const ehAsoQueResolvePendencia = e => {
-      if (!e || !e.ehAsoRealizado) return false;
-      const tipo = normalizarTexto(e.tipoNorm || e.tipo || "");
-      return tipo.includes("PERIODIC") || tipo.includes("PERIODICO") ||
-        tipo.includes("RETORNO") || tipo.includes("ADMISSIONAL") ||
-        (tipo.includes("MUDANCA") && tipo.includes("RISCO"));
-    };
-
-    const diferencaAsoPendencia = data => {
-      const diferenca = calcularDiferencaDias(data, ultimaPendencia.data);
-      return diferenca === null ? null : Number(diferenca);
-    };
-    const dentroDaJanelaPendencia = data => {
-      const diferenca = diferencaAsoPendencia(data);
-      return diferenca !== null && Math.abs(diferenca) <= 90;
-    };
-    const resolvePorAso = e => ultimaPendencia.ehCancelado
-      ? tipoQualificaCancelamento(e.tipoNorm || e.tipo) && mesmoAnoCivil(e.data, ultimaPendencia.data)
-      : dentroDaJanelaPendencia(e.data);
-    const realizadosDaJanela = eventos
-      .filter(ehAsoQueResolvePendencia)
-      .filter(resolvePorAso);
-
-    // A FONTEpainel também pode registrar o último ASO antes do espelho da AGENDA.
-    const tipoBase = normalizarTexto(colaborador.tipoExame || "");
-    const baseQualificada = ultimaPendencia.ehCancelado
-      ? tipoQualificaCancelamento(tipoBase)
-      : tipoBase.includes("PERIODIC") || tipoBase.includes("PERIODICO") ||
-        tipoBase.includes("RETORNO") || tipoBase.includes("ADMISSIONAL") ||
-        (tipoBase.includes("MUDANCA") && tipoBase.includes("RISCO"));
-    const diferencaUltimoAso = diferencaAsoPendencia(colaborador.dataUltimoAso);
-    const ultimoAsoResolvePendencia = ultimaPendencia.ehCancelado
-      ? mesmoAnoCivil(colaborador.dataUltimoAso, ultimaPendencia.data)
-      : dentroDaJanelaPendencia(colaborador.dataUltimoAso);
-    if (colaborador.dataUltimoAso && baseQualificada && ultimoAsoResolvePendencia) {
-      const registrado = realizadosDaJanela.some(e => e.data === colaborador.dataUltimoAso);
-      if (!registrado) realizadosDaJanela.push({
-        mat: mat,
-        data: colaborador.dataUltimoAso,
-        dataBR: formatarDataBR(colaborador.dataUltimoAso),
-        tipo: colaborador.tipoExame || "ASO",
-        status: "ASO realizado na base",
-        ehAsoRealizado: true
-      });
-    }
-
-    /* Fallback baseado no periódico validado pela própria rotina da AGENDA. */
-    if (
-      colaborador.temAsoRealizadoAgenda &&
-      colaborador.dataAsoRealizadoAgenda &&
-      dentroDaJanelaPendencia(colaborador.dataAsoRealizadoAgenda)
-    ) {
-      const jaExiste = realizadosDaJanela.some(e =>
-        String(e.data || "") === String(colaborador.dataAsoRealizadoAgenda || "")
-      );
-
-      if (!jaExiste) {
-        realizadosDaJanela.push({
-          mat: mat,
-          data: colaborador.dataAsoRealizadoAgenda,
-          dataBR: colaborador.dataAsoRealizadoAgendaBR || formatarDataBR(colaborador.dataAsoRealizadoAgenda),
-          status: "ASO Realizado",
-          statusNorm: "ASO REALIZADO",
-          tipo: colaborador.tipoAsoRealizadoAgenda || "Periódico",
-          tipoNorm: normalizarTexto(colaborador.tipoAsoRealizadoAgenda || "Periódico"),
-          ehAsoRealizado: true
-        });
-      }
-    }
-
     const itemBase = montarItemPendencia(colaborador, ultimaPendencia, eventosPendencia.length);
-
-    if (realizadosDaJanela.length > 0) {
-      const realizado = realizadosDaJanela.sort((a, b) => String(a.data || "").localeCompare(String(b.data || "")))[0];
-
-      resolvidos.push(Object.assign({}, itemBase, {
-        grupoPendencia: "Resolvido",
-        dataResolucao: realizado.data || "",
-        dataResolucaoBR: realizado.dataBR || formatarDataBR(realizado.data),
-        diasAteResolucao: calcularDiferencaDias(realizado.data, ultimaPendencia.data),
-        acaoPendencia: ultimaPendencia.ehCancelado
-          ? "Cancelamento baixado: ASO qualificável realizado no mesmo ano"
-          : "Resolvido por ASO realizado posteriormente"
-      }));
-      return;
-    }
 
     let novaData = "";
     let novaDataBR = "";
