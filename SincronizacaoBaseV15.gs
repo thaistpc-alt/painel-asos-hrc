@@ -113,28 +113,20 @@ function sincronizarBaseV15_(invalidarCache, forcarAtualizacao) {
       return mapearConvocacaoEnviadaV15_(ss);
     });
 
-    medir("Materializar AGENDA", function() {
-      const destino = ss.getSheetByName(CONFIG.ABA_AGENDA);
-      if (!destino) throw new Error("Aba AGENDA não encontrada na base.");
-      escreverMatrizV15_(destino, dadosAgenda, BASE_V15.COLUNAS_AGENDA);
-    });
-
-    medir("Materializar GESTORES", function() {
-      const destino = ss.getSheetByName("GESTORES");
-      if (destino && dadosGestores.length) {
-        escreverMatrizV15_(destino, dadosGestores, Math.max(1, dadosGestores[0].length));
-        try { CacheService.getScriptCache().remove("GESTORES_V15"); } catch (e) {}
-      }
-    });
-
-    medir("Materializar escala médica", function() {
-      const destino = ss.getSheetByName("Escala médica");
-      if (destino && dadosEscala.length) {
-        const linhasAntigas = Math.max(destino.getLastRow(), dadosEscala.length);
-        destino.getRange(1, 1, linhasAntigas, 5).clearContent();
-        destino.getRange(1, 1, dadosEscala.length, dadosEscala[0].length).setValues(dadosEscala);
-      }
-    });
+    // Valida e calcula tudo antes de modificar qualquer aba materializada.
+    // Uma origem vazia por erro de seleção/permissão não pode apagar a base local.
+    if (!dadosFonte.length) {
+      throw new Error("FONTEpainel sem registros. Sincronização cancelada; os dados existentes foram preservados.");
+    }
+    if (!dadosAgenda.length) {
+      throw new Error("A origem da AGENDA está vazia. Sincronização cancelada; os dados existentes foram preservados.");
+    }
+    const destinoAgenda = ss.getSheetByName(CONFIG.ABA_AGENDA);
+    const destinoGestores = ss.getSheetByName("GESTORES");
+    const destinoEscala = ss.getSheetByName("Escala médica");
+    if (!destinoAgenda) throw new Error("Aba AGENDA não encontrada na base.");
+    if (!destinoGestores) throw new Error("Aba GESTORES não encontrada na base.");
+    if (!destinoEscala) throw new Error("Aba Escala médica não encontrada na base.");
 
     const eventos = medir("Indexar AGENDA em memória", function() {
       return montarEventosAgendaDeMatrizV15_(dadosAgenda);
@@ -144,6 +136,19 @@ function sincronizarBaseV15_(invalidarCache, forcarAtualizacao) {
       return montarColaboradoresFonteV15_(dadosFonte, enviadosPorMatricula, eventos);
     });
     marcarMatriculasAmbiguasPortal_(colaboradores);
+
+    medir("Materializar AGENDA", function() {
+      escreverMatrizV15_(destinoAgenda, dadosAgenda, BASE_V15.COLUNAS_AGENDA);
+    });
+
+    medir("Materializar GESTORES", function() {
+      escreverMatrizV15_(destinoGestores, dadosGestores, Math.max(1, dadosGestores[0]?.length || destinoGestores.getLastColumn() || 1));
+      try { CacheService.getScriptCache().remove("GESTORES_V15"); } catch (e) { console.warn("Não foi possível invalidar o cache GESTORES_V15:", e); }
+    });
+
+    medir("Materializar escala médica", function() {
+      escreverMatrizV15_(destinoEscala, dadosEscala, Math.max(1, dadosEscala[0]?.length || destinoEscala.getLastColumn() || 1));
+    });
 
     medir("Gravar FONTEpainel", function() {
       gravarFontePainelV15_(ss, colaboradores);
