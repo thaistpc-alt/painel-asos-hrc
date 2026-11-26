@@ -191,7 +191,9 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
   window.atualizarDadosForcado=()=>carregarResumo(true);
   window.renderizarAbaAtiva=function(){if(abaAtual!=='dashboard')carregarModulo(abaAtual,false)};
   window.abrirAba=function(id,botao){document.querySelectorAll('.conteudo').forEach(d=>d.style.display='none');const alvo=document.getElementById(id);if(alvo)alvo.style.display='block';document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));if(botao)botao.classList.add('ativa');abaAtual=id;moverFiltro(id);if(id==='indicadores')agendarGrafico();if(id!=='dashboard')carregarModulo(id,false)};
-  window.onload=function(){
+  // Preserve the original Index startup: date listeners, initial tab and data load.
+  const inicializarIndexOriginal=window.onload;
+  window.onload=function(evento){
     const inicio=document.getElementById('dataInicio');
     const fimCampo=document.getElementById('dataFim');
     const hoje=new Date(),ini=new Date(hoje.getFullYear(),hoje.getMonth(),1),fim=new Date(hoje.getFullYear(),hoje.getMonth()+1,0);
@@ -220,6 +222,12 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
         aviso.textContent='A navegação carregou parcialmente. Atualize a página; os dados continuarão disponíveis.';
         document.body.prepend(aviso);
       }
+    }
+    // Run the original startup after the shell exists; keep its data load even if
+    // one of the optional visual adjustments fails.
+    if(typeof inicializarIndexOriginal==='function'){
+      try{inicializarIndexOriginal.call(window,evento)}
+      catch(erro){console.error('Falha na inicialização original do painel:',erro)}
     }
     carregarResumo(false);
   };
