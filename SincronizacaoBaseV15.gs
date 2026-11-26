@@ -668,7 +668,9 @@ function obterGestoresV15() {
   try {
     const salvo = cache.get(chave);
     if (salvo) return JSON.parse(salvo);
-  } catch (e) {}
+  } catch (e) {
+    console.warn("Cache GESTORES_V15 inválido; os dados serão relidos da planilha:", e);
+  }
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const aba = ss.getSheetByName("GESTORES");
@@ -690,7 +692,9 @@ function obterGestoresV15() {
 
   try {
     cache.put(chave, JSON.stringify(gestores), 1800);
-  } catch (e) {}
+  } catch (e) {
+    console.warn("Não foi possível armazenar o cache GESTORES_V15; a consulta seguirá sem cache:", e);
+  }
 
   return gestores;
 }
