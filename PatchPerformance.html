@@ -190,16 +190,35 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
   window.renderizarAbaAtiva=function(){if(abaAtual!=='dashboard')carregarModulo(abaAtual,false)};
   window.abrirAba=function(id,botao){document.querySelectorAll('.conteudo').forEach(d=>d.style.display='none');const alvo=document.getElementById(id);if(alvo)alvo.style.display='block';document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));if(botao)botao.classList.add('ativa');abaAtual=id;moverFiltro(id);if(id==='indicadores')agendarGrafico();if(id!=='dashboard')carregarModulo(id,false)};
   window.onload=function(){
-    montarShell();
+    const inicio=document.getElementById('dataInicio');
+    const fimCampo=document.getElementById('dataFim');
     const hoje=new Date(),ini=new Date(hoje.getFullYear(),hoje.getMonth(),1),fim=new Date(hoje.getFullYear(),hoje.getMonth()+1,0);
-    document.getElementById('dataInicio').value=formatarDataInput(ini);
-    document.getElementById('dataFim').value=formatarDataInput(fim);
-    document.getElementById('dataInicio').removeAttribute('onchange');
-    document.getElementById('dataFim').removeAttribute('onchange');
+    if(inicio)inicio.value=formatarDataInput(ini);
+    if(fimCampo)fimCampo.value=formatarDataInput(fim);
+    if(inicio)inicio.removeAttribute('onchange');
+    if(fimCampo)fimCampo.removeAttribute('onchange');
+
     document.querySelectorAll('.conteudo').forEach(d=>d.style.display=d.id==='convocar'?'block':'none');
     document.querySelectorAll('.aba').forEach(b=>b.classList.toggle('ativa',b.id==='abaConvocar'));
     abaAtual='convocar';
-    moverFiltro('convocar');
+
+    // A estrutura do shell é uma camada visual. Uma falha nela não pode impedir
+    // a seleção da tela inicial nem o carregamento dos dados do painel.
+    try{
+      montarShell();
+      moverFiltro('convocar');
+    }catch(erro){
+      console.error('Falha ao montar a navegação do painel:',erro);
+      let aviso=document.getElementById('painelBootAviso');
+      if(!aviso){
+        aviso=document.createElement('div');
+        aviso.id='painelBootAviso';
+        aviso.setAttribute('role','status');
+        aviso.style.cssText='margin:12px 20px;padding:10px 14px;border:1px solid #f59e0b;border-radius:8px;background:#fffbeb;color:#92400e;font:13px Arial,sans-serif';
+        aviso.textContent='A navegação carregou parcialmente. Atualize a página; os dados continuarão disponíveis.';
+        document.body.prepend(aviso);
+      }
+    }
     carregarResumo(false);
   };
 })();
