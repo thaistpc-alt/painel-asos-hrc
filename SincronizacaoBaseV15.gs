@@ -94,19 +94,23 @@ function sincronizarBaseV15_(invalidarCache, forcarAtualizacao) {
 
     const dadosGestores = medir("Ler GESTORES origem", function() {
       const aba = origemAgenda.getSheetByName(BASE_V15.ORIGEM_GESTORES_ABA);
-      if (!aba) return [];
+      if (!aba) throw new Error("Aba de origem dos GESTORES não encontrada: " + BASE_V15.ORIGEM_GESTORES_ABA);
       const ultimaLinha = aba.getLastRow();
       if (ultimaLinha < 1) return [];
-      return aba.getRange(1, 1, ultimaLinha, Math.min(6, aba.getLastColumn())).getValues();
+      const largura = Math.min(6, aba.getLastColumn());
+      if (largura < 1) return [];
+      return aba.getRange(1, 1, ultimaLinha, largura).getValues();
     });
 
     const dadosEscala = medir("Ler escala médica origem", function() {
       const origem = SpreadsheetApp.openById(idEscala);
       const aba = origem.getSheetByName(abaEscalaOrigem);
-      if (!aba) return [];
+      if (!aba) throw new Error("Aba de origem da escala médica não encontrada: " + abaEscalaOrigem);
       const ultimaLinha = aba.getLastRow();
       if (ultimaLinha < 1) return [];
-      return aba.getRange(1, 1, ultimaLinha, Math.min(5, aba.getLastColumn())).getValues();
+      const largura = Math.min(5, aba.getLastColumn());
+      if (largura < 1) return [];
+      return aba.getRange(1, 1, ultimaLinha, largura).getValues();
     });
 
     const enviadosPorMatricula = medir("Preservar histórico de convocação", function() {
