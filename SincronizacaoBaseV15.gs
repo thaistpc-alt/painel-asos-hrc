@@ -214,9 +214,6 @@ function escreverMatrizV15_(aba, matriz, largura) {
 
   garantirDimensoesV15_(aba, Math.max(linhasNovas, 1), colunas);
 
-  const limparAte = Math.max(linhasAntigas, linhasNovas, 1);
-  aba.getRange(1, 1, limparAte, colunas).clearContent();
-
   if (linhasNovas > 0) {
     aba.getRange(1, 1, linhasNovas, colunas).setValues(
       matriz.map(linha => {
@@ -225,6 +222,12 @@ function escreverMatrizV15_(aba, matriz, largura) {
         return copia;
       })
     );
+  }
+
+  // Só limpa as linhas antigas excedentes depois que a nova matriz foi gravada.
+  const linhasExcedentes = Math.max(0, linhasAntigas - linhasNovas);
+  if (linhasExcedentes > 0) {
+    aba.getRange(linhasNovas + 1, 1, linhasExcedentes, colunas).clearContent();
   }
 }
 
@@ -566,13 +569,16 @@ function gravarBaseIndicadorV15_(ss, lista) {
   });
 
   garantirDimensoesV15_(aba, linhas.length + 1, cabecalho.length);
-  const limparLinhas = Math.max(aba.getLastRow(), linhas.length + 1);
-  aba.getRange(1, 1, limparLinhas, cabecalho.length).clearContent();
+  const ultimaLinhaAnterior = Math.max(aba.getLastRow(), 1);
   aba.getRange(1, 1, 1, cabecalho.length).setValues([cabecalho]);
   if (linhas.length) {
     aba.getRange(2, 1, linhas.length, cabecalho.length).setValues(linhas);
     aba.getRange(2, 7, linhas.length, 2).setNumberFormat("dd/MM/yyyy");
     aba.getRange(2, 10, linhas.length, 1).setNumberFormat("0");
+  }
+  const primeiraLinhaExcedente = linhas.length + 2;
+  if (ultimaLinhaAnterior >= primeiraLinhaExcedente) {
+    aba.getRange(primeiraLinhaExcedente, 1, ultimaLinhaAnterior - linhas.length - 1, cabecalho.length).clearContent();
   }
 
   if (!aba.isSheetHidden()) aba.hideSheet();
@@ -622,9 +628,12 @@ function definirConfigsBaseV15EmLote_(registros) {
   });
 
   const linhas = Array.from(mapa.values());
-  const limparAte = Math.max(aba.getLastRow(), linhas.length + 1);
-  aba.getRange(2, 1, Math.max(1, limparAte - 1), 4).clearContent();
+  const ultimaLinhaAnterior = Math.max(aba.getLastRow(), 1);
   if (linhas.length) aba.getRange(2, 1, linhas.length, 4).setValues(linhas);
+  const primeiraLinhaExcedente = linhas.length + 2;
+  if (ultimaLinhaAnterior >= primeiraLinhaExcedente) {
+    aba.getRange(primeiraLinhaExcedente, 1, ultimaLinhaAnterior - linhas.length - 1, 4).clearContent();
+  }
   if (!aba.isSheetHidden()) aba.hideSheet();
 }
 
