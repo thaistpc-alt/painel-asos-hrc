@@ -506,13 +506,6 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
   line-height:1.2!important;
   white-space:normal!important;
 }
-#popoverPeriodo{
-  width:min(390px,calc(100vw - 24px))!important;
-  min-width:320px!important;
-  left:0!important;
-  top:calc(100% + 7px)!important;
-  z-index:30000!important;
-}
 .painel-periodo-atalhos{
   display:flex!important;
   align-items:stretch!important;
@@ -728,22 +721,20 @@ body.menu-fechado{padding-left:76px!important}.menu-fechado .painel-sidebar{widt
     const popover=document.getElementById('popoverPeriodo');
     if(!botao||!popover||!popover.classList.contains('aberto'))return;
     const r=botao.getBoundingClientRect(),margem=12;
-    const largura=Math.min(420,window.innerWidth-margem*2);
-    let esquerda=Math.max(margem,Math.min(r.left,window.innerWidth-largura-margem));
-    popover.style.width=largura+'px';
+    const {width:largura, height:altura}=popover.getBoundingClientRect();
+    const esquerda=Math.max(margem,Math.min(r.left,window.innerWidth-largura-margem));
+    const abaixo=r.bottom+8;
+    const topo=abaixo+altura<=window.innerHeight-margem
+      ? abaixo
+      : Math.max(margem,r.top-altura-8);
     popover.style.left=Math.round(esquerda)+'px';
-    popover.style.right='auto';
-    popover.style.top='12px';
-    requestAnimationFrame(function(){
-      const altura=popover.getBoundingClientRect().height;
-      let topo=r.bottom+8;
-      if(topo+altura>window.innerHeight-margem)topo=Math.max(margem,r.top-altura-8);
-      popover.style.top=Math.round(topo)+'px';
-    });
+    popover.style.top=Math.round(topo)+'px';
   }
-  document.addEventListener('click',function(e){
-    if(e.target.closest&&e.target.closest('#botaoPeriodo'))setTimeout(posicionarPopoverPeriodo,0);
-  },true);
+  const botaoPeriodo=document.getElementById('botaoPeriodo');
+  botaoPeriodo.onclick=function(evento){
+    alternarSeletorPeriodo(evento);
+    posicionarPopoverPeriodo();
+  };
   window.addEventListener('resize',posicionarPopoverPeriodo);
   window.addEventListener('scroll',posicionarPopoverPeriodo,true);
 })();
